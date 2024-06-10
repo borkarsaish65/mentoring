@@ -463,7 +463,6 @@ module.exports = class SessionsHelper {
 				}
 				const validationData = removeDefaultOrgEntityTypes(entityTypes, orgId)
 				let res = utils.validateInput(bodyData, validationData, sessionModelName)
-				console.log('validationData :::::::::::::::', validationData)
 				if (!res.success) {
 					return responses.failureResponse({
 						message: 'SESSION_CREATION_FAILED',
@@ -550,11 +549,10 @@ module.exports = class SessionsHelper {
 						await this.removeMentees(sessionId, menteesToRemove, bodyData.time_zone)
 					}
 				}
-				console.log('bodyData::::::::::::::::', bodyData)
 				const { rowsAffected, updatedRows } = await sessionQueries.updateOne({ id: sessionId }, bodyData, {
 					returning: true,
 				})
-				console.log('updatedRows ::::::::::::::::', rowsAffected, updatedRows)
+				console.log('bodyData::::::::::::::::', bodyData)
 				if (rowsAffected == 0) {
 					return responses.failureResponse({
 						message: 'SESSION_ALREADY_UPDATED',
@@ -563,6 +561,7 @@ module.exports = class SessionsHelper {
 					})
 				}
 				message = 'SESSION_UPDATED_SUCCESSFULLY'
+				console.log('updatedRows ::::::::::::::::', rowsAffected, updatedRows)
 				updatedSessionData = updatedRows[0].dataValues
 				// check what are the values changed only if session is updated/deleted by manager
 				// This is to decide on which email to trigger
