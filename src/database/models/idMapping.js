@@ -1,8 +1,8 @@
 'use strict'
 
 module.exports = (sequelize, DataTypes) => {
-	const IdUuidMapping = sequelize.define(
-		'IdUuidMapping',
+	const IdMapping = sequelize.define(
+		'IdMapping',
 		{
 			id: {
 				type: DataTypes.INTEGER,
@@ -40,5 +40,5 @@ module.exports = (sequelize, DataTypes) => {
 		}
 	)
 
-	return IdUuidMapping
+	return IdMapping
 }
