@@ -30,22 +30,39 @@ module.exports = async function (req, res, next) {
 		if (!authHeader) return await checkPublicAccess(req, next)
 
 		//Check if role should be validated
-		let roleValidation = common.roleValidationPaths.some((path) => req.path.includes(path))
 
 		const decodedToken = await authenticateUser(authHeader, req, next)
 
 		if (process.env.SESSION_VERIFICATION_METHOD === common.SESSION_VERIFICATION_METHOD.USER_SERVICE)
 			await validateSession(authHeader)
 
-		if (roleValidation) await handleRoleValidation(decodedToken, req)
-		else
-			req.decodedToken = {
-				id: decodedToken.data.id,
-				roles: decodedToken.data.roles,
-				name: decodedToken.data.name,
-				token: authHeader,
-				organization_id: decodedToken.data.organization_id,
-			}
+		let roleValidation = common.roleValidationPaths.some((path) => req.path.includes(path))
+		if (roleValidation) {
+			if (process.env.AUTH_METHOD == common.AUTH_METHOD.NATIVE) await nativeRoleValidation(decodedToken)
+			else if (process.env.AUTH_METHOD == common.AUTH_METHOD.KEYCLOAK_PUBLIC_KEY)
+				await dbBasedRoleValidation(decodedToken)
+		}
+
+		const isPermissionValid = await checkPermissions(
+			decodedToken.data.roles.map((role) => role.title),
+			req.path,
+			req.method
+		)
+
+		if (!isPermissionValid)
+			throw responses.failureResponse({
+				message: 'PERMISSION_DENIED',
+				statusCode: httpStatusCode.unauthorized,
+				responseCode: 'UNAUTHORIZED',
+			})
+
+		req.decodedToken = {
+			id: decodedToken.data.id,
+			roles: decodedToken.data.roles,
+			name: decodedToken.data.name,
+			token: authHeader,
+			organization_id: decodedToken.data.organization_id,
+		}
 
 		next()
 	} catch (err) {
@@ -133,23 +150,45 @@ async function fetchUserProfile(userId) {
 	const profileUrl = `${userBaseUrl}${endpoints.USER_PROFILE_DETAILS}/${userId}`
 	const user = await requests.get(profileUrl, null, true)
 
-	if (!user || !user.success) {
+	if (!user || !user.success)
 		throw responses.failureResponse({
 			message: 'USER_NOT_FOUND',
 			statusCode: httpStatusCode.unauthorized,
 			responseCode: 'UNAUTHORIZED',
 		})
-	}
 
-	if (user.data.result.deleted_at !== null) {
+	if (user.data.result.deleted_at !== null)
 		throw responses.failureResponse({
 			message: 'USER_ROLE_UPDATED',
 			statusCode: httpStatusCode.unauthorized,
 			responseCode: 'UNAUTHORIZED',
 		})
-	}
-
 	return user.data.result
+}
+
+function isMentorRole(roles) {
+	return roles.some((role) => role.title === common.MENTOR_ROLE)
+}
+
+async function dbBasedRoleValidation(decodedToken) {
+	const userId = decodedToken.data.id
+	const roles = decodedToken.data.roles
+	const isMentor = isMentorRole(roles)
+	const menteeExtension = await MenteeExtensionQueries.getMenteeExtension(userId, ['user_id'])
+	const mentorExtension = await MentorExtensionQueries.getMentorExtension(userId, ['user_id'])
+
+	if (!menteeExtension && !mentorExtension)
+		throw responses.failureResponse({
+			message: 'USER_NOT_FOUND',
+			statusCode: httpStatusCode.unauthorized,
+			responseCode: 'UNAUTHORIZED',
+		})
+	else if ((isMentor && menteeExtension) || (!isMentor && mentorExtension))
+		throw responses.failureResponse({
+			message: 'USER_ROLE_UPDATED',
+			statusCode: httpStatusCode.unauthorized,
+			responseCode: 'UNAUTHORIZED',
+		})
 }
 
 function isAdminRole(roles) {
@@ -157,7 +196,7 @@ function isAdminRole(roles) {
 }
 
 async function authenticateUser(authHeader, req, next) {
-	const [authType, token] = authHeader.split(' ')
+	const [authType, token] = authHeader ? authHeader.split(' ') : []
 	if (authType !== 'bearer') throw createUnauthorizedResponse()
 
 	let decodedToken = null
@@ -177,32 +216,10 @@ async function authenticateUser(authHeader, req, next) {
 	return decodedToken
 }
 
-async function handleRoleValidation(decodedToken, req) {
+async function nativeRoleValidation(decodedToken) {
 	const userProfile = await fetchUserProfile(decodedToken.data.id)
 	decodedToken.data.roles = userProfile.user_roles
 	decodedToken.data.organization_id = userProfile.organization_id
-
-	const isPermissionValid = await checkPermissions(
-		decodedToken.data.roles.map((role) => role.title),
-		req.path,
-		req.method
-	)
-
-	if (!isPermissionValid) {
-		throw responses.failureResponse({
-			message: 'PERMISSION_DENIED',
-			statusCode: httpStatusCode.unauthorized,
-			responseCode: 'UNAUTHORIZED',
-		})
-	}
-
-	req.decodedToken = {
-		id: decodedToken.data.id,
-		roles: decodedToken.data.roles,
-		name: decodedToken.data.name,
-		token: authHeader,
-		organization_id: decodedToken.data.organization_id,
-	}
 }
 
 const keycloakPublicKeyPath = `${process.env.KEYCLOAK_PUBLIC_KEY_PATH}/`
@@ -220,7 +237,23 @@ async function keycloakPublicKeyAuthentication(token) {
 			? accessKeyFile
 			: `${PEM_FILE_BEGIN_STRING}\n${accessKeyFile}\n${PEM_FILE_END_STRING}`
 		const verifiedClaims = await verifyKeycloakToken(token, cert)
-		const intUserId = await Id
+		const externalUserId = verifiedClaims.sub.split(':').pop()
+		const mentoringUserId = await IdUuidMappingQueries.getIdByUuid(externalUserId)
+		let userExtensionData
+		if (mentoringUserId) {
+			userExtensionData = verifiedClaims.resource_access.account.roles.includes(common.MENTOR_ROLE)
+				? await MentorExtensionQueries.getMentorExtension(mentoringUserId, ['organization_id'])
+				: await MenteeExtensionQueries.getMenteeExtension(mentoringUserId, ['organization_id'])
+		}
+		return {
+			data: {
+				id: mentoringUserId,
+				roles: [{ title: 'mentor' }],
+				name: verifiedClaims.name,
+				organization_id: userExtensionData.organization_id || process.env.DEFAULT_ORG_ID,
+				externalId: externalUserId,
+			},
+		}
 	} catch (err) {
 		if (err.code === 'ENOENT') {
 			throw createUnauthorizedResponse()
