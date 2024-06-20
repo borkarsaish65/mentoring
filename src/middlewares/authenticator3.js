@@ -7,7 +7,6 @@ const rolePermissionMappingQueries = require('@database/queries/role-permission-
 const responses = require('@helpers/responses')
 const { Op } = require('sequelize')
 const fs = require('fs')
-
 const IdUuidMappingQueries = require('@database/queries/idUuidMapping')
 const MentorExtensionQueries = require('@database/queries/mentorExtension')
 const MenteeExtensionQueries = require('@database/queries/userExtension')
@@ -16,7 +15,6 @@ module.exports = async function (req, res, next) {
 	try {
 		const authHeader = req.get('X-auth-token')
 
-		//Check if the API is internal access
 		const isInternalAccess = common.internalAccessUrls.some((path) => {
 			if (req.path.includes(path)) {
 				if (req.headers.internal_access_token === process.env.INTERNAL_ACCESS_TOKEN) return true
@@ -26,20 +24,17 @@ module.exports = async function (req, res, next) {
 		})
 		if (isInternalAccess && !authHeader) return next()
 
-		//If no authHeader is found, check if the API is publicly accessible
 		if (!authHeader) return await checkPublicAccess(req, next)
-
-		//Check if role should be validated
 
 		const decodedToken = await authenticateUser(authHeader, req, next)
 
 		if (process.env.SESSION_VERIFICATION_METHOD === common.SESSION_VERIFICATION_METHOD.USER_SERVICE)
 			await validateSession(authHeader)
 
-		let roleValidation = common.roleValidationPaths.some((path) => req.path.includes(path))
+		const roleValidation = common.roleValidationPaths.some((path) => req.path.includes(path))
 		if (roleValidation) {
-			if (process.env.AUTH_METHOD == common.AUTH_METHOD.NATIVE) await nativeRoleValidation(decodedToken)
-			else if (process.env.AUTH_METHOD == common.AUTH_METHOD.KEYCLOAK_PUBLIC_KEY)
+			if (process.env.AUTH_METHOD === common.AUTH_METHOD.NATIVE) await nativeRoleValidation(decodedToken)
+			else if (process.env.AUTH_METHOD === common.AUTH_METHOD.KEYCLOAK_PUBLIC_KEY)
 				await dbBasedRoleValidation(decodedToken)
 		}
 
@@ -49,12 +44,7 @@ module.exports = async function (req, res, next) {
 			req.method
 		)
 
-		if (!isPermissionValid)
-			throw responses.failureResponse({
-				message: 'PERMISSION_DENIED',
-				statusCode: httpStatusCode.unauthorized,
-				responseCode: 'UNAUTHORIZED',
-			})
+		if (!isPermissionValid) throw createUnauthorizedResponse('PERMISSION_DENIED')
 
 		req.decodedToken = {
 			id: decodedToken.data.id,
@@ -66,14 +56,14 @@ module.exports = async function (req, res, next) {
 
 		next()
 	} catch (err) {
-		console.log(err)
+		console.error(err)
 		next(err)
 	}
 }
 
-function createUnauthorizedResponse() {
+function createUnauthorizedResponse(message = 'UNAUTHORIZED_REQUEST') {
 	return responses.failureResponse({
-		message: 'UNAUTHORIZED_REQUEST',
+		message,
 		statusCode: httpStatusCode.unauthorized,
 		responseCode: 'UNAUTHORIZED',
 	})
@@ -81,12 +71,7 @@ function createUnauthorizedResponse() {
 
 async function checkPublicAccess(req, next) {
 	const isPermissionValid = await checkPermissions(common.PUBLIC_ROLE, req.path, req.method)
-	if (!isPermissionValid)
-		throw responses.failureResponse({
-			message: 'PERMISSION_DENIED',
-			statusCode: httpStatusCode.unauthorized,
-			responseCode: 'UNAUTHORIZED',
-		})
+	if (!isPermissionValid) throw createUnauthorizedResponse('PERMISSION_DENIED')
 	return next()
 }
 
@@ -110,11 +95,7 @@ function getApiPaths(parts) {
 
 async function fetchPermissions(roleTitle, apiPath, module) {
 	if (Array.isArray(roleTitle) && !roleTitle.includes(common.PUBLIC_ROLE)) roleTitle.push(common.PUBLIC_ROLE)
-	const filter = {
-		role_title: roleTitle,
-		module: module,
-		api_path: { [Op.in]: apiPath },
-	}
+	const filter = { role_title: roleTitle, module, api_path: { [Op.in]: apiPath } }
 	const attributes = ['request_type', 'api_path', 'module']
 	return await rolePermissionMappingQueries.findAll(filter, attributes)
 }
@@ -123,13 +104,7 @@ async function verifyToken(token) {
 	try {
 		return jwt.verify(token, process.env.ACCESS_TOKEN_SECRET)
 	} catch (err) {
-		if (err.name === 'TokenExpiredError') {
-			throw responses.failureResponse({
-				message: 'ACCESS_TOKEN_EXPIRED',
-				statusCode: httpStatusCode.unauthorized,
-				responseCode: 'UNAUTHORIZED',
-			})
-		}
+		if (err.name === 'TokenExpiredError') throw createUnauthorizedResponse('ACCESS_TOKEN_EXPIRED')
 		throw createUnauthorizedResponse()
 	}
 }
@@ -150,19 +125,8 @@ async function fetchUserProfile(userId) {
 	const profileUrl = `${userBaseUrl}${endpoints.USER_PROFILE_DETAILS}/${userId}`
 	const user = await requests.get(profileUrl, null, true)
 
-	if (!user || !user.success)
-		throw responses.failureResponse({
-			message: 'USER_NOT_FOUND',
-			statusCode: httpStatusCode.unauthorized,
-			responseCode: 'UNAUTHORIZED',
-		})
-
-	if (user.data.result.deleted_at !== null)
-		throw responses.failureResponse({
-			message: 'USER_ROLE_UPDATED',
-			statusCode: httpStatusCode.unauthorized,
-			responseCode: 'UNAUTHORIZED',
-		})
+	if (!user || !user.success) throw createUnauthorizedResponse('USER_NOT_FOUND')
+	if (user.data.result.deleted_at !== null) throw createUnauthorizedResponse('USER_ROLE_UPDATED')
 	return user.data.result
 }
 
@@ -177,18 +141,9 @@ async function dbBasedRoleValidation(decodedToken) {
 	const menteeExtension = await MenteeExtensionQueries.getMenteeExtension(userId, ['user_id'])
 	const mentorExtension = await MentorExtensionQueries.getMentorExtension(userId, ['user_id'])
 
-	if (!menteeExtension && !mentorExtension)
-		throw responses.failureResponse({
-			message: 'USER_NOT_FOUND',
-			statusCode: httpStatusCode.unauthorized,
-			responseCode: 'UNAUTHORIZED',
-		})
-	else if ((isMentor && menteeExtension) || (!isMentor && mentorExtension))
-		throw responses.failureResponse({
-			message: 'USER_ROLE_UPDATED',
-			statusCode: httpStatusCode.unauthorized,
-			responseCode: 'UNAUTHORIZED',
-		})
+	if (!menteeExtension && !mentorExtension) throw createUnauthorizedResponse('USER_NOT_FOUND')
+	if ((isMentor && menteeExtension) || (!isMentor && mentorExtension))
+		throw createUnauthorizedResponse('USER_ROLE_UPDATED')
 }
 
 function isAdminRole(roles) {
@@ -196,21 +151,20 @@ function isAdminRole(roles) {
 }
 
 async function authenticateUser(authHeader, req, next) {
-	const [authType, token] = authHeader ? authHeader.split(' ') : []
+	if (!authHeader) throw createUnauthorizedResponse()
+	const [authType, token] = authHeader.split(' ')
 	if (authType !== 'bearer') throw createUnauthorizedResponse()
 
 	let decodedToken = null
-	if (process.env.AUTH_METHOD == common.AUTH_METHOD.NATIVE) decodedToken = await verifyToken(token)
-	else if (process.env.AUTH_METHOD == common.AUTH_METHOD.KEYCLOAK_PUBLIC_KEY)
+	if (process.env.AUTH_METHOD === common.AUTH_METHOD.NATIVE) decodedToken = await verifyToken(token)
+	else if (process.env.AUTH_METHOD === common.AUTH_METHOD.KEYCLOAK_PUBLIC_KEY)
 		decodedToken = await keycloakPublicKeyAuthentication(token)
 
 	if (!decodedToken) throw createUnauthorizedResponse()
 
-	if (decodedToken.data.roles) {
-		if (isAdminRole(decodedToken.data.roles)) {
-			req.decodedToken = decodedToken.data
-			return next()
-		}
+	if (decodedToken.data.roles && isAdminRole(decodedToken.data.roles)) {
+		req.decodedToken = decodedToken.data
+		return next()
 	}
 
 	return decodedToken
@@ -255,11 +209,7 @@ async function keycloakPublicKeyAuthentication(token) {
 			},
 		}
 	} catch (err) {
-		if (err.code === 'ENOENT') {
-			throw createUnauthorizedResponse()
-		} else {
-			throw err // Re-throw other unexpected errors
-		}
+		throw createUnauthorizedResponse()
 	}
 }
 
@@ -267,13 +217,7 @@ async function verifyKeycloakToken(token, cert) {
 	try {
 		return jwt.verify(token, cert, { algorithms: ['sha1', 'RS256', 'HS256'] })
 	} catch (err) {
-		if (err.name === 'TokenExpiredError') {
-			throw responses.failureResponse({
-				message: 'ACCESS_TOKEN_EXPIRED',
-				statusCode: httpStatusCode.unauthorized,
-				responseCode: 'UNAUTHORIZED',
-			})
-		}
+		if (err.name === 'TokenExpiredError') throw createUnauthorizedResponse('ACCESS_TOKEN_EXPIRED')
 		throw createUnauthorizedResponse()
 	}
 }
