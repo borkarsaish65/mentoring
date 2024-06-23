@@ -6,10 +6,41 @@ const IdMappingQueries = require('@database/queries/idMapping')
 const organisationExtensionQueries = require('@database/queries/organisationExtension')
 const mentorsService = require('@services/mentors')
 const menteesService = require('@services/mentees')
-const externalRequests = require('@requests/external')
+const userRequests = require('@requests/user')
 
 module.exports = class ExternalHelper {
-	static async externalWrapper(userExternalId) {
+	static async create(decodedToken) {
+		console.log('DECODED TOKENNNNNNNNNNN: ', decodedToken)
+		const externalUserId = decodedToken.externalId
+		const userDetails = await userRequests.details('', externalUserId)
+		await this.createOrg(userDetails.data.result.response.rootOrg)
+
+		const mentoringData = userDetails.data.result.response.mentoring
+		const userData = {
+			id: userDetails.data.result.response.id,
+			org: {
+				id: userDetails.data.result.response.rootOrgId,
+			},
+			roles: mentoringData.roles.map((role) => {
+				return { title: role } //Validate each role here first
+			}),
+		}
+		console.log('USER DATAAAAAAAAAA: ', userData)
+		const result = await this.createUser(userData)
+		if (!userDetails.data.result)
+			return responses.failureResponse({
+				message: 'SOMETHING_WENT_WRONG',
+				statusCode: httpStatusCode.not_found,
+				responseCode: 'UNAUTHORIZED',
+			})
+		return responses.successResponse({
+			statusCode: httpStatusCode.ok,
+			message: 'ENTITY_FETCHED_SUCCESSFULLY',
+			result: userDetails.data,
+		})
+	}
+
+	/* static async externalWrapper(userExternalId) {
 		try {
 			console.log('EXTERNAL USER ID: ', userExternalId)
 			const userDetails = await externalRequests.getUserDetails(userExternalId)
@@ -34,7 +65,7 @@ module.exports = class ExternalHelper {
 			console.log(error)
 			throw error
 		}
-	}
+	} */
 	static async createOrg(orgData) {
 		try {
 			console.log({ orgData })

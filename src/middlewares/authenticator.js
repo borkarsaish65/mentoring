@@ -58,6 +58,7 @@ module.exports = async function (req, res, next) {
 			name: decodedToken.data.name,
 			token: authHeader,
 			organization_id: decodedToken.data.organization_id,
+			externalId: decodedToken.data.externalId,
 		}
 
 		console.log('DECODED TOKEN FINAL: ', req.decodedToken)

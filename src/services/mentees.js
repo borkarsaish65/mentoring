@@ -402,7 +402,8 @@ module.exports = class MenteesHelper {
 				})
 			}
 			const organizationName = mentorExtension
-				? (await userRequests.fetchDefaultOrgDetails(mentorExtension.organization_id))?.data?.result?.name
+				? (await userRequests.fetchDefaultOrgDetails({ organizationId: mentorExtension.organization_id }))?.data
+						?.result?.name
 				: ''
 			if ((isAMentor && menteeExtension) || (!isAMentor && mentorExtension))
 				throw responses.failureResponse({
@@ -577,7 +578,7 @@ module.exports = class MenteesHelper {
 	static async createMenteeExtension(data, userId, orgId) {
 		try {
 			// Call user service to fetch organisation details --SAAS related changes
-			let userOrgDetails = await userRequests.fetchDefaultOrgDetails(orgId)
+			let userOrgDetails = await userRequests.fetchDefaultOrgDetails({ organizationId: orgId })
 			// Return error if user org does not exists
 			if (!userOrgDetails.success || !userOrgDetails.data || !userOrgDetails.data.result) {
 				return responses.failureResponse({
@@ -922,7 +923,9 @@ module.exports = class MenteesHelper {
 				} else if (visibilityPolicy === common.ASSOCIATED || visibilityPolicy === common.ALL) {
 					organizationIds.push(orgExtension.organization_id)
 					let relatedOrgs = []
-					let userOrgDetails = await userRequests.fetchDefaultOrgDetails(orgExtension.organization_id)
+					let userOrgDetails = await userRequests.fetchDefaultOrgDetails({
+						organizationId: orgExtension.organization_id,
+					})
 					if (userOrgDetails.success && userOrgDetails.data?.result?.related_orgs?.length > 0) {
 						relatedOrgs = userOrgDetails.data.result.related_orgs
 					}

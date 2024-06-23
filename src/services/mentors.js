@@ -306,8 +306,8 @@ module.exports = class MentorsHelper {
 	static async createMentorExtension(data, userId, orgId) {
 		try {
 			// Call user service to fetch organisation details --SAAS related changes
-			let userOrgDetails = await userRequests.fetchDefaultOrgDetails(orgId)
-
+			let userOrgDetails = await userRequests.fetchDefaultOrgDetails({ organizationId: orgId })
+			console.log('USER ORG DETAILS: ', userOrgDetails)
 			// Return error if user org does not exists
 			if (!userOrgDetails.success || !userOrgDetails.data || !userOrgDetails.data.result) {
 				return responses.failureResponse({
