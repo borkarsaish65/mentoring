@@ -20,7 +20,7 @@ const IdMappingQueries = require('@database/queries/idMapping')
  * @returns {Promise} A promise that resolves with the organization details or rejects with an error.
  */
 
-const fetchDefaultOrgDetails = async function ({ organizationCode, organizationId }) {
+const fetchOrgDetails = async function ({ organizationCode, organizationId }) {
 	try {
 		let orgReadUrl
 		if (process.env.IS_EXTERNAL_USER_SERVICE == 'true') {
@@ -34,10 +34,8 @@ const fetchDefaultOrgDetails = async function ({ organizationCode, organizationI
 		}
 		const internalToken = true
 		const orgDetails = await requests.get(orgReadUrl, '', internalToken)
-		if (process.env.IS_EXTERNAL_USER_SERVICE == 'true') {
+		if (process.env.IS_EXTERNAL_USER_SERVICE == 'true')
 			orgDetails.data.result.id = await IdMappingQueries.getIdByUuid(orgDetails.data.result.id)
-		}
-		console.log(orgDetails)
 		return orgDetails
 	} catch (error) {
 		console.error('Error fetching organization details:', error)
@@ -54,16 +52,19 @@ const fetchDefaultOrgDetails = async function ({ organizationCode, organizationI
  * @returns {JSON} - User profile details.
  */
 
-const details = async function (token = '', userId = '') {
+const fetchUserDetails = async ({ token, userId }) => {
 	try {
-		let profileUrl = userBaseUrl + endpoints.USER_PROFILE_DETAILS
-		let internalToken = true // All internal API calls require internal access token
-		if (userId !== '') profileUrl = profileUrl + '/' + userId
-		console.log('PROFILE URLLLLLLLLLLLLLLLLLLLLLLLLLL: ', profileUrl)
-		const profileDetails = await requests.get(profileUrl, token, internalToken)
-		return profileDetails
+		let profileUrl = `${userBaseUrl}${endpoints.USER_PROFILE_DETAILS}`
+
+		if (process.env.IS_EXTERNAL_USER_SERVICE === 'true' && userId)
+			userId = await IdMappingQueries.getUuidById(userId)
+
+		if (userId) profileUrl += `/${userId}`
+
+		const isInternalTokenRequired = true
+		return await requests.get(profileUrl, token, isInternalTokenRequired)
 	} catch (error) {
-		console.log(error)
+		console.error(error)
 		throw error
 	}
 }
@@ -332,8 +333,8 @@ const listOrganization = function (organizationIds = []) {
 }
 
 module.exports = {
-	fetchDefaultOrgDetails,
-	details,
+	fetchOrgDetails,
+	fetchUserDetails,
 	getListOfUserDetails,
 	list,
 	share,

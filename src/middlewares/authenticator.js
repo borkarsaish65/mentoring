@@ -23,17 +23,11 @@ module.exports = async function (req, res, next) {
 			return false
 		})
 		if (isInternalAccess && !authHeader) return next()
-		console.log('PAST INTERNALL ACCESS CHECK')
-
 		if (!authHeader) return await checkPublicAccess(req, next)
-		console.log('PAST PUBLIC ACCESS CHECK')
-
 		const decodedToken = await authenticateUser(authHeader, req, next)
-		console.log('PAST AUTHENTICATE USER CHECK')
 
 		if (process.env.SESSION_VERIFICATION_METHOD === common.SESSION_VERIFICATION_METHOD.USER_SERVICE)
 			await validateSession(authHeader)
-		console.log('PAST SESSION VALIDATION USER CHECK')
 
 		const roleValidation = common.roleValidationPaths.some((path) => req.path.includes(path))
 		if (roleValidation) {
@@ -41,7 +35,6 @@ module.exports = async function (req, res, next) {
 			else if (process.env.AUTH_METHOD === common.AUTH_METHOD.KEYCLOAK_PUBLIC_KEY)
 				await dbBasedRoleValidation(decodedToken)
 		}
-		console.log('PAST ROLE VALIDATION CHECK CHECK')
 
 		const isPermissionValid = await checkPermissions(
 			decodedToken.data.roles.map((role) => role.title),
@@ -50,7 +43,6 @@ module.exports = async function (req, res, next) {
 		)
 
 		if (!isPermissionValid) throw createUnauthorizedResponse('PERMISSION_DENIED')
-		console.log('PAST ROLE PERMISSION CHECK')
 
 		req.decodedToken = {
 			id: decodedToken.data.id,
@@ -60,8 +52,6 @@ module.exports = async function (req, res, next) {
 			organization_id: decodedToken.data.organization_id,
 			externalId: decodedToken.data.externalId,
 		}
-
-		console.log('DECODED TOKEN FINAL: ', req.decodedToken)
 
 		next()
 	} catch (err) {
@@ -169,7 +159,6 @@ async function authenticateUser(authHeader, req, next) {
 	if (process.env.AUTH_METHOD === common.AUTH_METHOD.NATIVE) decodedToken = await verifyToken(token)
 	else if (process.env.AUTH_METHOD === common.AUTH_METHOD.KEYCLOAK_PUBLIC_KEY)
 		decodedToken = await keycloakPublicKeyAuthentication(token)
-	console.log('DECODED TOKEN: ', decodedToken)
 	if (!decodedToken) throw createUnauthorizedResponse()
 
 	if (decodedToken.data.roles && isAdminRole(decodedToken.data.roles)) {
@@ -192,10 +181,8 @@ const PEM_FILE_END_STRING = '-----END PUBLIC KEY-----'
 
 async function keycloakPublicKeyAuthentication(token) {
 	try {
-		console.log('REACHED KEY CLOAK PUBLIC KEY AUTHENTICATION')
 		const tokenClaims = jwt.decode(token, { complete: true })
 		if (!tokenClaims || !tokenClaims.header) throw createUnauthorizedResponse()
-		console.log('HELLO 1')
 		const kid = tokenClaims.header.kid
 		const path = keycloakPublicKeyPath + kid.replace(/\.\.\//g, '')
 		const accessKeyFile = await fs.promises.readFile(path, 'utf8')
@@ -205,18 +192,16 @@ async function keycloakPublicKeyAuthentication(token) {
 		const verifiedClaims = await verifyKeycloakToken(token, cert)
 		const externalUserId = verifiedClaims.sub.split(':').pop()
 		const mentoringUserId = await IdMappingQueries.getIdByUuid(externalUserId)
-		console.log('HELLO 2')
 		let userExtensionData
 		if (mentoringUserId) {
 			userExtensionData = verifiedClaims.resource_access.account.roles.includes(common.MENTOR_ROLE)
 				? await MentorExtensionQueries.getMentorExtension(mentoringUserId, ['organization_id'])
 				: await MenteeExtensionQueries.getMenteeExtension(mentoringUserId, ['organization_id'])
 		}
-		console.log('HELLO 3')
 		return {
 			data: {
 				id: mentoringUserId,
-				roles: [{ title: 'mentor' }],
+				roles: [{ title: 'mentee' }],
 				name: verifiedClaims.name,
 				organization_id: userExtensionData?.organization_id || process.env.DEFAULT_ORG_ID,
 				externalId: externalUserId,
