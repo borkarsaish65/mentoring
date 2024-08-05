@@ -28,7 +28,7 @@ const fetchOrgDetails = async function ({ organizationCode, organizationId }) {
 			orgReadUrl = `${userBaseUrl}${endpoints.ORGANIZATION_READ}?organisation_id=${organizationId}`
 		else if (organizationCode)
 			orgReadUrl = `${userBaseUrl}${endpoints.ORGANIZATION_READ}?organisation_code=${organizationCode}`
-
+		console.log('URLLLLL:', orgReadUrl)
 		const internalToken = true
 		const orgDetails = await requests.get(orgReadUrl, '', internalToken)
 		return orgDetails

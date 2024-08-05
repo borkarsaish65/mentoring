@@ -101,6 +101,7 @@ module.exports = class UserHelper {
 			})
 		}
 		const orgExtension = await this.#createOrUpdateOrg({ id: userDetails.data.result.organization_id })
+		console.log('ORG EXTENSIONS: ', orgExtension)
 		const userExtensionData = this.#getExtensionData(userDetails.data.result, orgExtension)
 		console.log('EXTENSION DATA: ', userExtensionData)
 		const result = isNew ? await this.#createUser(userExtensionData) : await this.#updateUser(userExtensionData)
