@@ -91,6 +91,7 @@ module.exports = class UserHelper {
 
 	static async #createOrUpdateUserAndOrg(userId, updateData = null) {
 		const isNew = await this.#checkUserExistence(userId)
+		console.log('Is user newwwwwwwwwwwwwwwWW:', isNew)
 		const userDetails = await userRequests.fetchUserDetails({ userId })
 		if (!userDetails?.data?.result) {
 			return responses.failureResponse({
@@ -101,6 +102,7 @@ module.exports = class UserHelper {
 		}
 		const orgExtension = await this.#createOrUpdateOrg({ id: userDetails.data.result.organization_id })
 		const userExtensionData = this.#getExtensionData(userDetails.data.result, orgExtension)
+		console.log('EXTENSION DATA: ', userExtensionData)
 		const result = isNew ? await this.#createUser(userExtensionData) : await this.#updateUser(userExtensionData)
 
 		return responses.successResponse({

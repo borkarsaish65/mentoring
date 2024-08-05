@@ -383,6 +383,7 @@ module.exports = class MentorsHelper {
 				result: processDbResponse,
 			})
 		} catch (error) {
+			console.log('createMentorExtension Error:', error)
 			if (error instanceof UniqueConstraintError) {
 				return responses.failureResponse({
 					message: 'MENTOR_EXTENSION_CREATION_FAILED',
@@ -508,6 +509,7 @@ module.exports = class MentorsHelper {
 				result: processDbResponse,
 			})
 		} catch (error) {
+			console.log('updateMentorExtension Error:', error)
 			return error
 		}
 	}

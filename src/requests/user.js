@@ -61,6 +61,7 @@ const fetchUserDetails = async ({ token, userId }) => {
 		userDetails.data.result = userDetails.data.result || {}
 		userDetails.data.result.user_roles = userDetails.data.result.user_roles || [{ title: common.MENTEE_ROLE }]
 
+		console.log('ROLES FROM KB  USER: ', userDetails.data.result.user_roles)
 		if (
 			userDetails.data.result.user_roles.length === 1 &&
 			userDetails.data.result.user_roles[0].title === common.MENTEE_ROLE
@@ -77,7 +78,7 @@ const fetchUserDetails = async ({ token, userId }) => {
 			}
 			return acc
 		}, [])
-
+		console.log('ROLES AFTER REDUCE: ', roles)
 		if (!isMentor && !isMenteeRolePresent) roles.push({ title: common.MENTEE_ROLE })
 		userDetails.data.result.user_roles = roles
 

@@ -704,6 +704,7 @@ module.exports = class MenteesHelper {
 				result: processDbResponse,
 			})
 		} catch (error) {
+			console.log('createMenteeExtension Error:', error)
 			if (error instanceof UniqueConstraintError) {
 				return responses.failureResponse({
 					message: 'MENTEE_EXTENSION_EXITS',
@@ -831,6 +832,7 @@ module.exports = class MenteesHelper {
 				result: processDbResponse,
 			})
 		} catch (error) {
+			console.log('updateMenteeExtension Error:', error)
 			return error
 		}
 	}
