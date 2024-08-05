@@ -636,6 +636,7 @@ module.exports = class MenteesHelper {
 			}
 			// Call user service to fetch organisation details --SAAS related changes
 			let userOrgDetails = await userRequests.fetchOrgDetails({ organizationId: orgId })
+			console.log('USER ORG DETAILS:', JSON.stringify(userOrgDetails, null, 4))
 			// Return error if user org does not exists
 			if (!userOrgDetails.success || !userOrgDetails.data || !userOrgDetails.data.result) {
 				return responses.failureResponse({
@@ -650,6 +651,7 @@ module.exports = class MenteesHelper {
 			data.user_id = userId
 
 			const defaultOrgId = await getDefaultOrgId()
+			console.log('DEFAULT ORGANIZATION ID:', JSON.stringify(defaultOrgId, null, 4))
 			if (!defaultOrgId)
 				return responses.failureResponse({
 					message: 'DEFAULT_ORG_ID_NOT_SET',
@@ -670,6 +672,7 @@ module.exports = class MenteesHelper {
 			const validationData = removeDefaultOrgEntityTypes(entityTypes, orgId)
 
 			let res = utils.validateInput(data, validationData, userExtensionsModelName, skipValidation)
+			console.log('VALIDATION RES:', JSON.stringify(res, null, 4))
 			if (!res.success) {
 				return responses.failureResponse({
 					message: 'MENTEE_EXTENSION_CREATION_FAILED',
@@ -697,7 +700,7 @@ module.exports = class MenteesHelper {
 
 			const response = await menteeQueries.createMenteeExtension(data)
 			const processDbResponse = utils.processDbResponse(response.toJSON(), validationData)
-
+			console.log('Process DB RESPONSE:', JSON.stringify(processDbResponse, null, 4))
 			return responses.successResponse({
 				statusCode: httpStatusCode.ok,
 				message: 'MENTEE_EXTENSION_CREATED',
