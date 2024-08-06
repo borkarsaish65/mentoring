@@ -315,7 +315,9 @@ module.exports = class MentorsHelper {
 				data.email = emailEncryption.encrypt(data.email.toLowerCase())
 			}
 			// Call user service to fetch organisation details --SAAS related changes
+			console.log('ORG ID: ', JSON.stringify(orgId, null, 4))
 			let userOrgDetails = await userRequests.fetchOrgDetails({ organizationId: orgId })
+			console.log('USER ORG DETAILS:', JSON.stringify(userOrgDetails, null, 4))
 			// Return error if user org does not exists
 			if (!userOrgDetails.success || !userOrgDetails.data || !userOrgDetails.data.result) {
 				return responses.failureResponse({
@@ -326,9 +328,10 @@ module.exports = class MentorsHelper {
 			}
 			// Find organisation policy from organisation_extension table
 			let organisationPolicy = await organisationExtensionQueries.findOrInsertOrganizationExtension(orgId)
-
+			console.log('organisationPolicy: ', JSON.stringify(organisationPolicy, null, 4))
 			data.user_id = userId
 			const defaultOrgId = await getDefaultOrgId()
+			console.log('DEFAULT ORGANIZATION ID:', JSON.stringify(defaultOrgId, null, 4))
 			if (!defaultOrgId)
 				return responses.failureResponse({
 					message: 'DEFAULT_ORG_ID_NOT_SET',
@@ -348,6 +351,7 @@ module.exports = class MentorsHelper {
 			//validationData = utils.removeParentEntityTypes(JSON.parse(JSON.stringify(validationData)))
 			const validationData = removeDefaultOrgEntityTypes(entityTypes, orgId)
 			let res = utils.validateInput(data, validationData, mentorExtensionsModelName, skipValidation)
+			console.log('VALIDATION RES:', JSON.stringify(res, null, 4))
 			if (!res.success) {
 				return responses.failureResponse({
 					message: 'SESSION_CREATION_FAILED',
@@ -376,7 +380,7 @@ module.exports = class MentorsHelper {
 			const response = await mentorQueries.createMentorExtension(data)
 
 			const processDbResponse = utils.processDbResponse(response.toJSON(), validationData)
-
+			console.log('Process DB RESPONSE:', JSON.stringify(processDbResponse, null, 4))
 			return responses.successResponse({
 				statusCode: httpStatusCode.ok,
 				message: 'MENTOR_EXTENSION_CREATED',
