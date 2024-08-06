@@ -346,8 +346,9 @@ const getAllowFilteringEntityTypes = async () => {
 const triggerViewBuild = async () => {
 	try {
 		const allowFilteringEntityTypes = await getAllowFilteringEntityTypes()
+		console.log('allowFilteringEntityTypes', JSON.stringify(allowFilteringEntityTypes, null, 3))
 		const entityTypesGroupedByModel = await groupByModelNames(allowFilteringEntityTypes)
-
+		console.log('entityTypesGroupedByModel', JSON.stringify(entityTypesGroupedByModel, null, 3))
 		await Promise.all(
 			entityTypesGroupedByModel.map(async (modelEntityTypes) => {
 				return generateMaterializedView(modelEntityTypes)
