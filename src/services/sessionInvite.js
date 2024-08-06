@@ -303,7 +303,7 @@ module.exports = class UserInviteHelper {
 							if (process.env.DEFAULT_MEETING_SERVICE === common.BBB_VALUE) {
 								setMeetingInfo(common.MEETING_VALUES.BBB_LABEL, common.BBB_VALUE)
 							} else {
-								setMeetingInfo(common.MEETING_VALUES.BBB_LABEL, '')
+								setMeetingInfo(process.env.DEFAULT_MEETING_SERVICE, process.env.DEFAULT_MEETING_SERVICE)
 								lastEntry.statusMessage = await processInvalidLink(
 									lastEntry.statusMessage,
 									'Set Meeting Later'
@@ -862,7 +862,10 @@ module.exports = class UserInviteHelper {
 				})
 
 				if (meeting_info) {
-					const meetingPlatform = meeting_info.platform
+					const meetingPlatform =
+						meeting_info.platform === process.env.DEFAULT_MEETING_SERVICE
+							? common.MEETING_VALUES.BBB_LABEL
+							: meeting_info.platform
 					const meetingLinkOrId = meeting_info.link
 					let meetingPasscode = ''
 
@@ -913,6 +916,10 @@ module.exports = class UserInviteHelper {
 						data.time_zone == common.TIMEZONE
 							? (data.time_zone = common.IST_TIMEZONE)
 							: (data.time_zone = common.UTC_TIMEZONE)
+					const previousMeetingInfo = data.meeting_info
+					if (data.meeting_info.platform === '' && data.meeting_info.link === '') {
+						delete data.meeting_info
+					}
 					const { id, ...dataWithoutId } = data
 					const sessionCreation = await sessionService.create(
 						dataWithoutId,
@@ -927,6 +934,9 @@ module.exports = class UserInviteHelper {
 						data.recommended_for = sessionCreation.result.recommended_for.map((item) => item.label)
 						data.categories = sessionCreation.result.categories.map((item) => item.label)
 						data.medium = sessionCreation.result.medium.map((item) => item.label)
+						if (previousMeetingInfo.platform === '' && previousMeetingInfo.link === '') {
+							data.meeting_info = previousMeetingInfo
+						}
 						data.time_zone =
 							data.time_zone == common.IST_TIMEZONE
 								? (data.time_zone = common.TIMEZONE)
