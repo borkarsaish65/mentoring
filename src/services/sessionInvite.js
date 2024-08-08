@@ -273,6 +273,21 @@ module.exports = class UserInviteHelper {
 							lastEntry.statusMessage = await processInvalidLink(lastEntry.statusMessage, 'Invalid Link')
 						}
 					}
+					const validateWebex = async () => {
+						const webexRegex = common.WEBEX_REGEX
+						const match = meetingLinkOrId.match(webexRegex)
+						const platformName = match ? match[1] : ''
+						const meetingId = match ? match[2] : ''
+						if (platformName === common.MEETING_VALUES.WEBEX_VALUE || !meetingLinkOrId) {
+							setMeetingInfo(common.MEETING_VALUES.WEBEX_LABEL, common.MEETING_VALUES.WEBEX_VALUE, {
+								meetingId: meetingId,
+								password: `${meetingPasscode}`,
+							})
+						} else {
+							lastEntry.status = 'Invalid'
+							lastEntry.statusMessage = await processInvalidLink(lastEntry.statusMessage, 'Invalid Link')
+						}
+					}
 					//WhatsApp Validation
 					const validateWhatsApp = async () => {
 						const match = meetingLinkOrId.match(platformNameRegex)
