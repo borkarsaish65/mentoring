@@ -915,7 +915,6 @@ module.exports = class MenteesHelper {
 	 */
 	static async getFilterList(organization, entity_type, filterType, tokenInformation) {
 		try {
-			organization = 'false'
 			let result = {
 				organizations: [],
 				entity_types: {},
@@ -936,7 +935,7 @@ module.exports = class MenteesHelper {
 				if (organization_ids.length > 0) {
 					//get organization list
 
-					if (organization.toLowerCase() === common.FALSE) {
+					if ((organization = 'false')) {
 						const organizationList = await userRequests.listOrganization(organization_ids)
 						if (organizationList.success && organizationList.data?.result?.length > 0) {
 							result.organizations = organizationList.data.result
