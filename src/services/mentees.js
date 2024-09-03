@@ -938,6 +938,8 @@ module.exports = class MenteesHelper {
 
 					if (organization.toLowerCase() === common.FALSE) {
 						const organizationList = await userRequests.listOrganization(organization_ids)
+
+						console.log('=======organizationList ================', organizationList)
 						if (organizationList.success && organizationList.data?.result?.length > 0) {
 							result.organizations = organizationList.data.result
 						}

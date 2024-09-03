@@ -387,6 +387,7 @@ const listOrganization = function (organizationIds = []) {
 				if (err) {
 					result.success = false
 				} else {
+					console.log('========listOrganization========================', data.body)
 					response = JSON.parse(data.body)
 					result.data = response
 				}
