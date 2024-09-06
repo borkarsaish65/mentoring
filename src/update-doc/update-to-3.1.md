@@ -84,7 +84,7 @@ There are new environment variables added in the 3.1 release. Keep a backup of t
   <summary>ENV</summary>
 
 ```env
-ACCESS_TOKEN_SECRET= "ACCESS_TOKEN_SECRET"
+ACCESS_TOKEN_SECRET= "46b25a59f758ffe3fb95c1c1d91bc4f391f0a3c18d2c95985d80ac53db82df3b"
 ALLOWED_HOST= "https://mentoring.ALLOWED_HOST.org"
 API_DOC_URL= "/mentoring/api-doc"
 APPLICATION_BASE_URL= "/mentoring/"
@@ -113,8 +113,8 @@ DEV_DATABASE_URL= "postgres://user:password@localhost:9700/elevate_mentoring"
 DISABLE_LOG= "false"
 DOWNLOAD_URL_EXPIRATION_DURATION= "300000"
 EMAIL_ID_ENCRYPTION_ALGORITHM= "aes-256-cbc"
-EMAIL_ID_ENCRYPTION_IV= "EMAIL_ID_ENCRYPTION_IV"
-EMAIL_ID_ENCRYPTION_KEY= "EMAIL_ID_ENCRYPTION_KEY"
+EMAIL_ID_ENCRYPTION_IV= "9ee3144508244356ed770a30b5818364"
+EMAIL_ID_ENCRYPTION_KEY= "75a40b6af533c5ebd2a5787d8455bf09a478f0bc29421ffc1b2dbea4365b4575"
 ENABLE_EMAIL_FOR_REPORT_ISSUE= "true"
 ERROR_LOG_LEVEL= "silly"
 INTERNAL_ACCESS_TOKEN= "INTERNAL_ACCESS_TOKEN"
@@ -125,7 +125,7 @@ KAFKA_GROUP_ID= "qa.mentoring"
 KAFKA_TOPIC= "qa.topic"
 KAFKA_URL= "localhost:9092"
 KEY= "KEY"
-MEETING_END_CALLBACK_EVENTS= "https%3A%2F%2Fmentoring.HOST.org%2Fmentoring%2Fv1%2Fsessions%2Fcompleted"
+MEETING_END_CALLBACK_EVENTS= "https%3A%2F%2Fqa.mentoring.shikshalokam.org%2Fmentoring%2Fv1%2Fsessions%2Fcompleted"
 MENTEE_SESSION_CANCELLATION_EMAIL_TEMPLATE= "mentee_session_cancel"
 MENTEE_SESSION_EDITED_BY_MANAGER_EMAIL_TEMPLATE= "mentee_session_edited_by_manager_email_template"
 MENTEE_SESSION_ENROLLMENT_BY_MANAGER_EMAIL_TEMPLATE= "mentee_session_enrollment_by_manager"
@@ -174,9 +174,9 @@ USER_SERVICE_HOST= "http://localhost:3567"
 
 ```env
 ACCESS_TOKEN_EXPIRY= "30m"
-ACCESS_TOKEN_SECRET= "ACCESS_TOKEN_SECRET"
+ACCESS_TOKEN_SECRET= "46b25a59f758ffe3fb95c1c1d91bc4f391f0a3c18d2c95985d80ac53db82df3b"
 ADMIN_INVITEE_UPLOAD_EMAIL_TEMPLATE_CODE= "invitee_upload_status"
-ADMIN_SECRET_CODE= "ADMIN_SECRET_CODE"
+ADMIN_SECRET_CODE= "46b25a59f758ffe3fb95c1c1d91bc4f391f0a3c18d2c95985d80ac53db82df3b"
 ALLOWED_HOST= "https://mentoring.ALLOWED_HOST.org"
 ALLOWED_IDLE_TIME= "3600"
 API_DOC_URL= "/user/api-doc"
@@ -203,8 +203,8 @@ DEV_DATABASE_URL= "postgres://user:password@localhost:9700/elevate_user"
 DISABLE_LOG= "false"
 DOWNLOAD_URL_EXPIRATION_DURATION= "300000"
 EMAIL_ID_ENCRYPTION_ALGORITHM= "aes-256-cbc"
-EMAIL_ID_ENCRYPTION_IV= "EMAIL_ID_ENCRYPTION_IV"
-EMAIL_ID_ENCRYPTION_KEY= "EMAIL_ID_ENCRYPTION_KEY"
+EMAIL_ID_ENCRYPTION_IV= "9ee3144508244356ed770a30b5818364"
+EMAIL_ID_ENCRYPTION_KEY= "75a40b6af533c5ebd2a5787d8455bf09a478f0bc29421ffc1b2dbea4365b4575"
 ENABLE_EMAIL_OTP_VERIFICATION= "true"
 ENABLE_LOG= "true"
 ERROR_LOG_LEVEL= "silly"
@@ -266,7 +266,7 @@ API_DOC_URL= "/notification/api-doc"
 APPLICATION_BASE_URL= "/notification/"
 APPLICATION_ENV= "development"
 APPLICATION_PORT= "7201"
-DEV_DATABASE_URL= "postgres://user:password3@localhost/elevate_notification"
+DEV_DATABASE_URL= "postgres://user:password@localhost/elevate_notification"
 DISABLE_LOG= "false"
 ERROR_LOG_LEVEL= "silly"
 KAFKA_GROUP_ID= "qa-elevate-notification"
@@ -356,6 +356,69 @@ Possible fixes for BBB:
    `bbb-conf --setsecret`
    and follow the steps. Replaced BBB secret key in mentoring .env with the new one.
 
+## To create admin account:
+
+Run the below curl
+
+```curl
+curl --location 'http://localhost:3567/user/v1/admin/create' \
+--header 'internal_access_token: INTERNAL_ACCESS_TOKEN' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "name": "system",
+    "email": "system@admin.com",
+    "password": "PAssword@@@123",
+    "secret_code": "46b25a59f758ffe3fb95c1c1d91bc4f391f0a3c18d2c95985d80ac53db82df3b"
+}'
+```
+
+Log in:
+
+```curl
+curl --location 'http://localhost:3567/user/v1/admin/login' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "email": "system@admin.com",
+    "password": "PAssword@@@123"
+}'
+```
+
+Create profile:
+Replace the {{TOKEN}} with access_token value from the log in response.
+
+```curl
+curl --location 'http://localhost:3567/mentoring/v1/profile/create' \
+--header 'X-auth-token: bearer {{TOKEN}}' \
+--header 'Content-Type: application/json' \
+--data '{
+    "designation": [
+        "beo",
+        "deo"
+    ],
+    "area_of_expertise": [
+        "educational_leadership",
+        "sqaa"
+    ],
+    "education_qualification": "MBA",
+    "gender": "male"
+}'
+```
+
+## To assign an org admin
+
+Replace the {{TOKEN}} with access_token value from the log in response(admin user from previous step).
+Make sure the said email and org id exists
+
+```curl
+curl --location 'http://localhost:3567/user/v1/admin/addOrgAdmin' \
+--header 'X-auth-token: bearer {{TOKEN}}' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "email": "user@test.com",
+    "organization_id": 1
+}'
+```
+
 ## Final Notes
 
 -   Make sure all services are using the latest updates from their respective branches (`master` for `/mentoring`, `/user`, `/notification`, `/scheduler` and `main` for `/interface`).
@@ -418,3 +481,15 @@ export API_URL=<API base url for form update>
 ```bash
 npm run manage-forms
 ```
+
+## 4. Bannering/Configuring Theme, Logo, & App Name
+
+-   Changing the theme color of the application:
+    Open the 'global.scss' file. And change the value of the '--ion-color-primary' property to the new theme color you want to add.
+
+-   Changing the logo:
+    Replace the 'favicon.png' with the new logo. you can find the favicon.png file inside icon folder which is inside assets folder. Path to reach the logo will be 'assets/icon/favicon.png'.
+    Resolution for logo will be 128 × 128 pixels.
+
+-   Changing the app name:
+    Open 'index.html' file. Change the app name given inside title tag to the new name you want.
