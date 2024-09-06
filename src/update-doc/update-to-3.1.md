@@ -76,7 +76,7 @@ node viewsScript.js
 
 ## 5. .env Changes
 
-There are new environment variables added in the 3.1 release. Keep a backup of the existing `.env` files across services, as this can help reference AWS secrets, etc.
+There are new environment variables added in the 3.1 release. Keep a backup of the existing `.env` files across services, as this can help reference AWS secrets, Host name, BBB host etc.
 
 ### Sample Mentoring Service `.env`:
 
@@ -341,6 +341,10 @@ CLOUD_STORAGE_ACCOUNTNAME=AKIAIOSFODNN7EXAMPLE
 PUBLIC_ASSET_BUCKETNAME=storage-public
 CLOUD_STORAGE_BUCKET_TYPE=private
 ```
+
+## 6. Restart the service
+
+use the `pm2 restart app_name` command to restart all the services.
 
 #### BigBlueButton
 
