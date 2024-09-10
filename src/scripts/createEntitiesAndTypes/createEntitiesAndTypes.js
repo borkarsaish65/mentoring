@@ -149,8 +149,7 @@ async function processCsvFile(chosenFile) {
 	try {
 		const csvData = fs.readFileSync(`${__dirname}/${chosenFile}`, 'utf8')
 		const lines = csvData.trim().split('\n')
-		const headers = lines[0].split(',')
-
+		const headers = lines[0].trim().split(',')
 		for (let i = 1; i < lines.length; i++) {
 			const line = lines[i].split(',')
 			const identifier = line[headers.indexOf('identifier')]
