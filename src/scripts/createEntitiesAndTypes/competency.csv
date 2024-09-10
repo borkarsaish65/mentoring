@@ -42,7 +42,7 @@ identifier,entity
 55,Sound Judgement (Decision Making)
 58,Design Thinking (Citizen Centricity)
 59,Citizen Partnering and Collaboration (Citizen Centricity)
-60,"PEST (Political, Economic, Social, Technological) Consciousness (Citizen Centricity)"
+60,"PEST (Political - Economic - Social - Technological) Consciousness (Citizen Centricity)"
 62,Research and Need Analysis (Policy Architecture)
 63,Policy design or amendment (Policy Architecture)
 64,Policy implementation (Policy Architecture)
@@ -67,7 +67,7 @@ identifier,entity
 90,Expenditure Management (Financial Management)
 91,Government accounts (Financial Management)
 92,PFMS Portal Management (Financial Management)
-94,"Digital Tools ( MS office, Excel, PPT and AI tools) and Platforms (Digital Fluency)"
+94,"Digital Tools ( MS office - Excel - PPT and AI tools) and Platforms (Digital Fluency)"
 95,Digital Service Design (Digital Fluency)
 97,Data Management (Data Analytics)
 98,Data Analysis and Visualization (Data Analytics)
@@ -83,7 +83,7 @@ identifier,entity
 110,Office Procedures (Office Management)
 111,Noting and Drafting of official Communications (Office Management)
 112,Technical Proposal or Report writing (Office Management)
-114,"Submission of briefs, supply of information (Handling Parliamentary Matters)"
+114,"Submission of briefs - supply of information (Handling Parliamentary Matters)"
 115,Maintaining records of parliamentary matters (Handling Parliamentary Matters)
 117,RTI Responsiveness (Handling RTI Matters)
 118,RTI Records Management (Handling RTI Matters)
@@ -105,7 +105,7 @@ identifier,entity
 139,Change Impact Assessment (Change Management)
 141,Handling Allowances and Reimbursement (Administration Matters)
 142,Handling Leave and Travel (Administration Matters)
-143,"Handling Miscellaneous Matters (Car, Residence, Personal Staff etc.) (Administration Matters)"
+143,"Handling Miscellaneous Matters (Car - Residence - Personal Staff etc.) (Administration Matters)"
 144,Implementing Official Language (Administration Matters)
 147,Financial Statements Analysis (Financial Statements Analysis)
 149,Account Management (Account Management)
@@ -158,7 +158,7 @@ identifier,entity
 244,Engineering Contract Management (Engineering Contract Management)
 246,Engineering Safety and Security Standards (Engineering Safety and Security Standards)
 248,Environment and Social Governance (Environment and Social Governance)
-250,"Environment, Sustainability and Governance (Environment, Sustainability and Governance)"
+250,"Environment - Sustainability and Governance (Environment - Sustainability and Governance)"
 252,Environmental Audits (EA) (Environmental Audits (EA))
 254,Environmental Impact Management (Environmental Impact Management)
 256,Environmental Planning (Environmental Planning)
