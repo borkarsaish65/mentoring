@@ -148,7 +148,7 @@ const main = async () => {
 		const modelNameIndices = modelNamesAnswer.split(' ').map((num) => parseInt(num, 10) - 1)
 		const modelNames = modelNameIndices.map((index) => modelNameOptions[index]).filter((name) => name !== undefined)
 
-		const allowCustomEntitiesAnswer = await promptUser(rl, 'Allow custom entities? (y/n, default is y): ')
+		const allowCustomEntitiesAnswer = await promptUser(rl, 'Allow custom entities? (y/n, default is n): ')
 		const allowCustomEntities = allowCustomEntitiesAnswer.toLowerCase() === 'n' ? false : true
 		const requiredAnswer = await promptUser(rl, 'Is EntityType Mandatory ? (y/n, default is y): ')
 		const required = requiredAnswer.toLowerCase() === 'n' ? false : true
