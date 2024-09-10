@@ -20,7 +20,7 @@ const promptUser = (rl, question) => {
 	})
 }
 
-const insertEntityType = async (fileName, dataType, modelNames, allowCustomEntities) => {
+const insertEntityType = async (fileName, dataType, modelNames, allowCustomEntities, required) => {
 	let label = fileName.replace(/\.csv$/i, '')
 	label = label.charAt(0).toUpperCase() + label.slice(1).toLowerCase()
 	const entityType = await EntityType.create({
@@ -35,6 +35,7 @@ const insertEntityType = async (fileName, dataType, modelNames, allowCustomEntit
 		has_entities: true,
 		allow_custom_entities: allowCustomEntities,
 		model_names: modelNames,
+		required: required,
 	})
 	return entityType
 }
@@ -149,6 +150,8 @@ const main = async () => {
 
 		const allowCustomEntitiesAnswer = await promptUser(rl, 'Allow custom entities? (y/n, default is y): ')
 		const allowCustomEntities = allowCustomEntitiesAnswer.toLowerCase() === 'n' ? false : true
+		const requiredAnswer = await promptUser(rl, 'Is EntityType Mandatory ? (y/n, default is y): ')
+		const required = requiredAnswer.toLowerCase() === 'n' ? false : true
 
 		rl.close()
 
@@ -158,7 +161,7 @@ const main = async () => {
 		try {
 			await sequelize.authenticate()
 
-			const entityType = await insertEntityType(selectedFile, dataType, modelNames, allowCustomEntities)
+			const entityType = await insertEntityType(selectedFile, dataType, modelNames, allowCustomEntities, required)
 			const entities = await insertEntitiesFromCSV(filePath, entityType.id)
 
 			console.log('Data has been inserted successfully.')
