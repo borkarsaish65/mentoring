@@ -18,7 +18,8 @@ let MENTORING_DOMAIN = DEFAULT_MENTORING_DOMAIN
 async function main() {
 	try {
 		await promptForDomain()
-		await promptForAccessToken()
+		await promptForAuthenticatedUserToken()
+		await promptForAuthorization()
 		await promptForAdminAuthToken()
 		await promptForOrganizationId()
 
@@ -52,16 +53,16 @@ async function promptForDomain() {
 	console.log(`Using domain: ${MENTORING_DOMAIN}`)
 }
 
-async function promptForAccessToken() {
-	accessToken = await promptQuestion('Enter access token: ')
+async function promptForAuthenticatedUserToken() {
+	authenticatedUserToken = await promptQuestion('Enter authenticated user token: ')
+}
+
+async function promptForAuthorization() {
+	authorization = await promptQuestion('Enter authorization token: ')
 }
 
 async function promptForAdminAuthToken() {
 	adminAuthToken = await promptQuestion('Enter admin Auth Token: ')
-}
-
-async function promptForOrganizationId() {
-	organizationId = await promptQuestion('Enter organization Id: ')
 }
 
 async function promptForOrganizationId() {
@@ -130,7 +131,8 @@ async function createEntityType(entityTypeData) {
 			JSON.stringify(entityTypeData),
 			{
 				headers: {
-					'x-auth-token': `bearer ${accessToken}`,
+					'x-authenticated-user-token': `${authenticatedUserToken}`,
+					Authorization: `bearer ${authorization}`,
 					'Content-Type': 'application/json',
 					'admin-auth-token': `${adminAuthToken}`,
 					'organization-id': `${organizationId}`,
@@ -177,7 +179,8 @@ async function createEntity(identifier, entity, retries = 3) {
 			}),
 			{
 				headers: {
-					'x-auth-token': `bearer ${accessToken}`,
+					'x-authenticated-user-token': `${authenticatedUserToken}`,
+					Authorization: `bearer ${authorization}`,
 					'Content-Type': 'application/json',
 					'admin-auth-token': `${adminAuthToken}`,
 					'organization-id': `${organizationId}`,
