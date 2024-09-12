@@ -128,4 +128,42 @@ module.exports = class NotificationTemplateHelper {
 			return error
 		}
 	}
+
+	static async updateAllTemplates(emailTemplates, tokenInformation) {
+		try {
+			// Map over the emailTemplates and create an array of promises
+			const updatePromises = emailTemplates.map(async (template) => {
+				let filter = {
+					organization_id: tokenInformation.organization_id,
+				}
+
+				if (template.id) {
+					filter.id = template.id
+				} else if (template.code) {
+					filter.code = template.code
+				}
+
+				template['organization_id'] = tokenInformation.organization_id
+				template['updated_by'] = tokenInformation.id
+
+				const affectedRows = await notificationTemplateQueries.updateTemplate(filter, template)
+
+				if (affectedRows === 0) {
+					console.error(`Template with ID ${template.id || template.code} not found or not updated.`)
+				} else {
+					console.log(`Template with ID ${template.id || template.code} updated successfully.`)
+				}
+			})
+
+			// Wait for all the update operations to complete
+			await Promise.all(updatePromises)
+
+			return responses.successResponse({
+				statusCode: httpStatusCode.accepted,
+				message: 'ALL_TEMPLATES_UPDATED_SUCCESSFULLY',
+			})
+		} catch (error) {
+			throw new Error(`Error updating templates: ${error.message}`)
+		}
+	}
 }
