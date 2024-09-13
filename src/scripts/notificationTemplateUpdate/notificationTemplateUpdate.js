@@ -13,7 +13,6 @@ let organizationId = ''
 let authorization = ''
 let searchValue = ''
 let replaceValue = ''
-let accessToken = ''
 let updateOption = ''
 
 const DEFAULT_MENTORING_DOMAIN = 'http://localhost:3567'
@@ -33,7 +32,11 @@ async function main() {
 			await promptForSearch()
 			await promptForReplace()
 			const updatedTemplates = await searchAndReplaceInTemplates(allTemplates, searchValue, replaceValue)
-			await updateAllTemplates(updatedTemplates)
+			for (let i = 1; i < updatedTemplates.length; i++) {
+				const id = updatedTemplates[i].id
+				const updateBody = await buildNotificationUpdateData(updatedTemplates[i])
+				await updateTemplate(updateBody, id)
+			}
 		} else {
 			const chosenFile = await selectJsonFile()
 			await processJsonFile(chosenFile)
@@ -189,6 +192,15 @@ async function buildNotificationTemplateData(readTemplateData, newbody) {
 	}
 }
 
+async function buildNotificationUpdateData(updateDataBody) {
+	return {
+		type: updateDataBody.type,
+		code: updateDataBody.code,
+		subject: updateDataBody.subject,
+		body: updateDataBody.body,
+	}
+}
+
 async function readAllTemplates() {
 	try {
 		const readAllTemplates = await axios.get(`${MENTORING_DOMAIN}/mentoring/v1/notification/template`, {
@@ -200,30 +212,8 @@ async function readAllTemplates() {
 				'organization-id': `${organizationId}`,
 			},
 		})
-		console.log(readAllTemplates.data.result)
+		console.log(readAllTemplates.data.message)
 		return readAllTemplates.data.result
-	} catch (error) {
-		console.error('Entity type deletion failed:', error)
-		throw error
-	}
-}
-
-async function updateAllTemplates(updatedTemplate) {
-	try {
-		const updateAllTemplates = await axios.patch(
-			`${MENTORING_DOMAIN}/mentoring/v1/notification/template`,
-			JSON.stringify(updatedTemplate),
-			{
-				headers: {
-					'x-authenticated-user-token': `${authenticatedUserToken}`,
-					Authorization: `bearer ${authorization}`,
-					'Content-Type': 'application/json',
-					'admin-auth-token': `${adminAuthToken}`,
-					'organization-id': `${organizationId}`,
-				},
-			}
-		)
-		console.log(updateAllTemplates.data.message)
 	} catch (error) {
 		console.error('Entity type deletion failed:', error)
 		throw error

@@ -38,13 +38,8 @@ module.exports = class NotificationTemplate {
 			}
 
 			if (req.method === common.PATCH_METHOD) {
-				if (!req.params.id) {
-					const updatedTemplate = await notificationService.updateAllTemplates(req.body, req.decodedToken)
-					return updatedTemplate
-				} else {
-					const updatedTemplate = await notificationService.update(req.params.id, req.body, req.decodedToken)
-					return updatedTemplate
-				}
+				const updatedTemplate = await notificationService.update(req.params.id, req.body, req.decodedToken)
+				return updatedTemplate
 			} else if (req.method === common.GET_METHOD) {
 				if (!req.params.id && !req.query.code) {
 					const templatesData = await notificationService.readAllNotificationTemplates(
