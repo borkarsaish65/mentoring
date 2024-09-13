@@ -7,7 +7,6 @@ const rl = readline.createInterface({
 	output: process.stdout,
 })
 
-let accessToken = ''
 let adminAuthToken = ''
 let organizationId = ''
 
@@ -17,7 +16,8 @@ let MENTORING_DOMAIN = DEFAULT_MENTORING_DOMAIN
 async function main() {
 	try {
 		await promptForDomain()
-		await promptForAccessToken()
+		await promptForAuthenticatedUserToken()
+		await promptForAuthorization()
 		await promptForAdminAuthToken()
 		await promptForOrganizationId()
 		return await triggerViewRebuild()
@@ -36,8 +36,12 @@ async function promptForDomain() {
 	console.log(`Using domain: ${MENTORING_DOMAIN}`)
 }
 
-async function promptForAccessToken() {
-	accessToken = await promptQuestion('Enter access token: ')
+async function promptForAuthorization() {
+	authorization = await promptQuestion('Enter authorization token: ')
+}
+
+async function promptForAdminAuthToken() {
+	adminAuthToken = await promptQuestion('Enter admin Auth Token: ')
 }
 
 async function promptForAdminAuthToken() {
@@ -52,7 +56,8 @@ async function triggerViewRebuild() {
 	try {
 		const response = await axios.get(`${MENTORING_DOMAIN}/mentoring/v1/admin/triggerViewRebuild`, {
 			headers: {
-				'x-auth-token': `bearer ${accessToken}`,
+				'x-authenticated-user-token': `${authenticatedUserToken}`,
+				Authorization: `bearer ${authorization}`,
 				'Content-Type': 'application/json',
 				'admin-auth-token': `${adminAuthToken}`,
 				'organization-id': `${organizationId}`,
