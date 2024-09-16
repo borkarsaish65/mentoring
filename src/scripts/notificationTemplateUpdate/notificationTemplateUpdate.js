@@ -169,18 +169,21 @@ async function promptForReplace() {
 }
 
 async function searchAndReplaceInTemplates(templates, searchValue, replaceValue) {
-	templates.forEach((template) => {
-		// Apply search and replace to the subject and body fields
-		if (template.subject && template.subject.includes(searchValue)) {
-			template.subject = template.subject.replace(new RegExp(searchValue, 'g'), replaceValue)
-		}
+	if (templates.length > 0) {
+		templates.forEach((template) => {
+			// Apply search and replace to the subject and body fields
+			if (template.subject && template.subject.includes(searchValue)) {
+				template.subject = template.subject.replace(new RegExp(searchValue, 'g'), replaceValue)
+			}
 
-		if (template.body && template.body.includes(searchValue)) {
-			template.body = template.body.replace(new RegExp(searchValue, 'g'), replaceValue)
-		}
-	})
-
-	return templates // Return the modified templates
+			if (template.body && template.body.includes(searchValue)) {
+				template.body = template.body.replace(new RegExp(searchValue, 'g'), replaceValue)
+			}
+		})
+		return templates // Return the modified templates
+	} else {
+		return console.log('search value not found')
+	}
 }
 
 async function buildNotificationTemplateData(readTemplateData, newbody) {
