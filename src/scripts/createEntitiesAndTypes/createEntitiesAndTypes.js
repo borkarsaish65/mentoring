@@ -150,13 +150,14 @@ async function createEntityType(entityTypeData) {
 async function processCsvFile(chosenFile) {
 	try {
 		const csvData = fs.readFileSync(`${__dirname}/${chosenFile}`, 'utf8')
-		const lines = csvData.trim().split('\n')
+		const lines = csvData.split('\n')
 		const headers = lines[0].trim().split(',')
 		for (let i = 1; i < lines.length; i++) {
 			const line = lines[i].split(',')
-			const identifier = line[headers.indexOf('identifier')]
-			const entity = line[headers.indexOf('entity')]
-
+			let identifier = line[headers.indexOf('identifier')]
+			identifier = identifier.replace(/[^a-zA-Z0-9_]/g, '_')
+			let entity = line[headers.indexOf('entity')]
+			entity = entity.replace(/\r/g, '')
 			await createEntity(identifier, entity)
 		}
 
@@ -171,8 +172,8 @@ async function createEntity(identifier, entity, retries = 3) {
 		const response = await axios.post(
 			`${MENTORING_DOMAIN}/mentoring/v1/entity/create`,
 			JSON.stringify({
-				value: identifier.trim(),
-				label: entity.trim(),
+				value: identifier,
+				label: entity,
 				status: 'ACTIVE',
 				type: 'SYSTEM',
 				entity_type_id: entityTypeId,
