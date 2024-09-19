@@ -12,7 +12,7 @@ let entityTypeId = ''
 let adminAuthToken = ''
 let organizationId = ''
 
-const DEFAULT_MENTORING_DOMAIN = 'http://localhost:3569'
+const DEFAULT_MENTORING_DOMAIN = 'http://localhost:3567'
 let MENTORING_DOMAIN = DEFAULT_MENTORING_DOMAIN
 
 async function main() {
@@ -29,7 +29,8 @@ async function main() {
 
 			const required = await promptForRequired()
 			const modelNames = await promptForModelNames()
-			const entityTypeData = buildEntityTypeData(chosenFile, modelNames, required)
+			const dataType = await selectDataType()
+			const entityTypeData = buildEntityTypeData(chosenFile, modelNames, required, dataType)
 			await createEntityType(entityTypeData)
 
 			await processCsvFile(chosenFile)
@@ -73,6 +74,26 @@ async function promptForRequired() {
 	const requiredAnswer = await promptQuestion('Is EntityType Mandatory ? (y/n, default is y): ')
 	const requiredValue = requiredAnswer.toLowerCase() === 'n' ? false : true
 	return requiredValue
+}
+
+async function selectDataType() {
+	const dataTypeOptions = ['STRING', 'ARRAY[STRING]']
+
+	console.log('Data type options:')
+	dataTypeOptions.forEach((option, index) => {
+		console.log(`${index + 1}. ${option}`)
+	})
+
+	const dataTypeIndex = parseInt(await promptQuestion('Select data type (number): '), 10) - 1
+
+	if (dataTypeIndex < 0 || dataTypeIndex >= dataTypeOptions.length) {
+		console.log('Invalid data type. Try again.')
+		return null
+	}
+
+	const dataType = dataTypeOptions[dataTypeIndex]
+	console.log(`Chosen data type: ${dataType}`)
+	return dataType
 }
 
 function selectCsvFile() {
@@ -147,6 +168,10 @@ async function createEntityType(entityTypeData) {
 	}
 }
 
+function sleep(ms) {
+	return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 async function processCsvFile(chosenFile) {
 	try {
 		const csvData = fs.readFileSync(`${__dirname}/${chosenFile}`, 'utf8')
@@ -190,22 +215,27 @@ async function createEntity(identifier, entity, retries = 3) {
 		)
 		console.log(`Entity created successfully: ${identifier} - ${entity}`)
 	} catch (error) {
-		if (error.response) {
-			console.error(`Failed to create entity (${identifier} - ${entity}):`, error.response.data)
+		if (error.response.status === 429) {
+			console.log('Too many requests. Wait for 1 minute.')
+			await sleep(60000)
 		} else {
-			console.error(`Failed to create entity (${identifier} - ${entity}):`, error.message)
-		}
+			if (error.response) {
+				console.error(`Failed to create entity (${identifier} - ${entity}):`, error.response.data)
+			} else {
+				console.error(`Failed to create entity (${identifier} - ${entity}):`, error.message)
+			}
 
-		if (retries > 0) {
-			console.log(`Retrying (${retries} retries left)...`)
-			await createEntity(identifier, entity, retries - 1)
-		} else {
-			console.log(`Max retries reached for (${identifier} - ${entity}). Skipping.`)
+			if (retries > 0) {
+				console.log(`Retrying (${retries} retries left)...`)
+				await createEntity(identifier, entity, retries - 1)
+			} else {
+				console.log(`Max retries reached for (${identifier} - ${entity}). Skipping.`)
+			}
 		}
 	}
 }
 
-function buildEntityTypeData(chosenFile, modelNames, required) {
+function buildEntityTypeData(chosenFile, modelNames, required, dataType) {
 	return {
 		value: chosenFile.replace('.csv', '').toLowerCase(),
 		label: chosenFile
@@ -215,7 +245,7 @@ function buildEntityTypeData(chosenFile, modelNames, required) {
 			.replace(/\b\w/g, (l) => l.toUpperCase()),
 		status: 'ACTIVE',
 		allow_filtering: false,
-		data_type: 'STRING',
+		data_type: dataType,
 		allow_custom_entities: true,
 		model_names: modelNames,
 		required: required,
