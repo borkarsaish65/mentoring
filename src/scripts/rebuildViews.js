@@ -9,8 +9,10 @@ const rl = readline.createInterface({
 
 let adminAuthToken = ''
 let organizationId = ''
+let authenticatedUserToken = ''
+let authorization = ''
 
-const DEFAULT_MENTORING_DOMAIN = 'http://localhost:3569'
+const DEFAULT_MENTORING_DOMAIN = 'https://portal.qa.karmayogibharat.net/api'
 let MENTORING_DOMAIN = DEFAULT_MENTORING_DOMAIN
 
 async function main() {
@@ -36,12 +38,12 @@ async function promptForDomain() {
 	console.log(`Using domain: ${MENTORING_DOMAIN}`)
 }
 
-async function promptForAuthorization() {
-	authorization = await promptQuestion('Enter authorization token: ')
+async function promptForAuthenticatedUserToken() {
+	authenticatedUserToken = await promptQuestion('Enter authenticated user token: ')
 }
 
-async function promptForAdminAuthToken() {
-	adminAuthToken = await promptQuestion('Enter admin Auth Token: ')
+async function promptForAuthorization() {
+	authorization = await promptQuestion('Enter authorization token: ')
 }
 
 async function promptForAdminAuthToken() {
