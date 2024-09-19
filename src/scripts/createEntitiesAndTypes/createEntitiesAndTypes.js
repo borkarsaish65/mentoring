@@ -215,22 +215,21 @@ async function createEntity(identifier, entity, retries = 3) {
 		)
 		console.log(`Entity created successfully: ${identifier} - ${entity}`)
 	} catch (error) {
-		if (error.response.status === 429) {
-			console.log('Too many requests. Wait for 1 minute.')
-			await sleep(60000)
+		if (error.response) {
+			console.error(`Failed to create entity (${identifier} - ${entity}):`, error.response.data)
 		} else {
-			if (error.response) {
-				console.error(`Failed to create entity (${identifier} - ${entity}):`, error.response.data)
-			} else {
-				console.error(`Failed to create entity (${identifier} - ${entity}):`, error.message)
-			}
+			console.error(`Failed to create entity (${identifier} - ${entity}):`, error.message)
+		}
 
-			if (retries > 0) {
-				console.log(`Retrying (${retries} retries left)...`)
+		if (retries > 0) {
+			console.log(`Retrying (${retries} retries left)...`)
+			if (error.response.status === 429) {
+				console.log('Too many requests. Wait for 1 minute.')
+				await sleep(60000)
 				await createEntity(identifier, entity, retries - 1)
-			} else {
-				console.log(`Max retries reached for (${identifier} - ${entity}). Skipping.`)
 			}
+		} else {
+			console.log(`Max retries reached for (${identifier} - ${entity}). Skipping.`)
 		}
 	}
 }
