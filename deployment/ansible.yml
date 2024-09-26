@@ -69,7 +69,9 @@
     - debug: msg=" Api-doc {{ apiDocResponse }} "
 
     - name: Delete release folder
-      shell: rm -rf  {{ release_path }}
+      file:
+        path: "{{ release_path }}"
+        state: absent
 
     - name: Run Migrations
       command: "chdir={{current_path}}/src npx sequelize-cli db:migrate"
