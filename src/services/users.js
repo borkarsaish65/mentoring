@@ -92,6 +92,12 @@ module.exports = class UserHelper {
 	static async #createOrUpdateUserAndOrg(userId, updateData = null) {
 		const isNew = await this.#checkUserExistence(userId)
 		const userDetails = await userRequests.fetchUserDetails({ userId })
+
+		console.log('createOrUpdateUserAndOrg userDetails', userDetails)
+		console.log('createOrUpdateUserAndOrg isNew', isNew)
+
+		console.log('createOrUpdateUserAndOrg userDetails stringify', JSON.stringify(userDetails))
+
 		if (!userDetails?.data?.result) {
 			return responses.failureResponse({
 				message: 'SOMETHING_WENT_WRONG',
@@ -99,6 +105,9 @@ module.exports = class UserHelper {
 				responseCode: 'UNAUTHORIZED',
 			})
 		}
+
+		console.log('createOrUpdateUserAndOrg userDetails stringify', userDetails.data.result.organization_id)
+
 		const orgExtension = await this.#createOrUpdateOrg({ id: userDetails.data.result.organization_id })
 		const userExtensionData = this.#getExtensionData(userDetails.data.result, orgExtension)
 		const createOrUpdateResult = isNew
@@ -131,6 +140,7 @@ module.exports = class UserHelper {
 	}
 
 	static async #createOrUpdateOrg(orgData) {
+		console.log('orgData.id ========', orgData.id)
 		let orgExtension = await organisationExtensionQueries.getById(orgData.id)
 		if (orgExtension) return orgExtension
 
@@ -140,6 +150,7 @@ module.exports = class UserHelper {
 			created_by: 1,
 			updated_by: 1,
 		}
+		console.log('orgExtensionData upsert', orgExtensionData)
 		orgExtension = await organisationExtensionQueries.upsert(orgExtensionData)
 		return orgExtension.toJSON()
 	}

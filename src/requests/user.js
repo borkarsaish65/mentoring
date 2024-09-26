@@ -61,11 +61,17 @@ const fetchUserDetails = async ({ token, userId }) => {
 
 		if (userId) profileUrl += `/${userId}`
 
+		console.log('fetchUserDetails  profileUrl', profileUrl)
+
 		const isInternalTokenRequired = true
 		const userDetails = await requests.get(profileUrl, token, isInternalTokenRequired)
 		userDetails.data = userDetails.data || {}
 		userDetails.data.result = userDetails.data.result || {}
 		userDetails.data.result.user_roles = userDetails.data.result.user_roles || [{ title: common.MENTEE_ROLE }]
+
+		console.log('fetchUserDetails  token ', token)
+		console.log('fetchUserDetails  userDetails.data.result ', userDetails.data.result)
+		console.log('fetchUserDetails  userDetails.data.result stringify ', JSON.stringify(userDetails.data.result))
 
 		if (
 			userDetails.data.result.user_roles.length === 1 &&
