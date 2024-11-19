@@ -50,7 +50,9 @@ Once these prerequisites are in place, you're all set to get started with settin
         ```
 **Keep the current terminal session active, and kindly open a new terminal window within the mentoring directory.**
 
-**After successfully completing this, please move to the next section: [Enable Citus Extension](#enable-citus-extension-optional)**
+**After successfully completing this, please move to the next section: [Add Forms](#add-required-forms)**
+
+**After successfully completing this, please move to the next section: [Enable Citus Extension (Optional)](#enable-citus-extension-optional)**
 
 
 ## Operating Systems: Windows
@@ -145,7 +147,7 @@ Once these prerequisites are in place, you're all set to get started with settin
 
     > **Caution**: As per the default configuration in the `docker-compose-mentoring.yml` file, using the `down` command will lead to data loss since the database container does not persist data. To persist data across `down` commands and subsequent container removals, refer to the "Persistence of Database Data in Docker Containers" section of this documentation.
 
-## Enable Citus Extension
+## Enable Citus Extension (Optional)
 
 The application relies on PostgreSQL as its core database system. To boost performance and scalability, users can opt to enable the Citus extension. This transforms PostgreSQL into a distributed database, spreading data across multiple nodes to handle large datasets more efficiently as demand grows.
 
@@ -245,7 +247,7 @@ To ensure the persistence of database data when running `docker compose down`, i
 
 By implementing these adjustments, the configuration ensures that when the `docker-compose down` command is executed, the database data is securely stored within the specified volumes. Consequently, this data will be retained and remain accessible, even after the containers are terminated and subsequently reinstated using the `docker-compose up` command.
 
-## Add Required forms
+## Add Required Forms
 There ar few forms required for mentoting application to run, to add those fallow the below steps
 
  1. **Download The `create_default_form_sql` and `insert_sample_forms.sh`  Script File:**
