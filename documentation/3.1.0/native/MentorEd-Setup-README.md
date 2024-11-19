@@ -598,11 +598,14 @@ There ar few forms required for mentoting application to run, to add those fallo
 
     2. **Run The `insert_sample_forms` Script File:**
 
-    - **Ubuntu/Linux/Mac**
+    - **Ubuntu/Linux**
+        ```
+        ./sample-data/mentoring/insert_sample_forms.sh mentoring postgres://postgres:postgres@localhost:9700/mentoring
+        ```
+    - **Mac**
         ```
         ./sample-data/mentoring/insert_sample_forms.sh mentoring postgres://postgres:postgres@localhost:5432/mentoring
         ```
-
     - **Windows**
 
         ```
