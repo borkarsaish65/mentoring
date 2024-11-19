@@ -80,7 +80,7 @@ DEFAULT_FORM_FOLDER_LOCATION=$FOLDER_NAME
 
 chmod +x sample-data/mentoring/create_default_form_sql.sh
 
-.sample-data/mentoring/create_default_form_sql.sh $FOLDER_NAME
+sample-data/mentoring/create_default_form_sql.sh $FOLDER_NAME
 
 FORMS_SQL_FILE="forms.sql"
 if [ ! -f "$FORMS_SQL_FILE" ]; then
