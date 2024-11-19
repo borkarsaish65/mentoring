@@ -326,5 +326,5 @@ In such cases, you can generate sample user accounts using the steps below. This
     | ------------------------ | ---------- | ------------------ |
     | aaravpatel@example.com   | Password1@ | Mentee             |
     | arunimareddy@example.com | Password1@ | Mentor             |
-    | aaravpatel@example.com   | Password1@ | Organization Admin |
+    | devikasingh@example.com   | Password1@ | Organization Admin |
 
