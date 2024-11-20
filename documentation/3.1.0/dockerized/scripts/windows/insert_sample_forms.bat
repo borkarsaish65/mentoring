@@ -84,19 +84,19 @@ if errorlevel 1 (
 echo Database '%DB_NAME%' exists, proceeding with script.
 
 :: Retrieve and prepare SQL file operations
-set "SAMPLE_COLUMNS_FILE=%FOLDER_NAME%\sampleData.sql"
+set "SAMPLE_COLUMNS_FILE=%FOLDER_NAME%\forms.sql"
 if not exist "%SAMPLE_COLUMNS_FILE%" (
-    echo Error: sampleData.sql not found in folder '%FOLDER_NAME%'.
+    echo Error: forms.sql not found in folder '%FOLDER_NAME%'.
     exit /b 1
 )
 
 :: Copy the SQL file into the Docker container
-echo Copying sampleData.sql to container '%CONTAINER_NAME%'...
-docker cp "%SAMPLE_COLUMNS_FILE%" "%CONTAINER_NAME%:/sampleData.sql"
+echo Copying forms.sql to container '%CONTAINER_NAME%'...
+docker cp "%SAMPLE_COLUMNS_FILE%" "%CONTAINER_NAME%:/forms.sql"
 
 :: Execute the SQL file inside the container
-echo Executing sampleData.sql in the database...
-docker exec "%CONTAINER_NAME%" bash -c "PGPASSWORD='%DB_PASSWORD%' psql -h localhost -U %DB_USER% -d %DB_NAME% -p %DB_PORT% -f /sampleData.sql"
+echo Executing forms.sql in the database...
+docker exec "%CONTAINER_NAME%" bash -c "PGPASSWORD='%DB_PASSWORD%' psql -h localhost -U %DB_USER% -d %DB_NAME% -p %DB_PORT% -f /forms.sql"
 if errorlevel 1 (
     echo Error executing SQL script.
     exit /b 1
