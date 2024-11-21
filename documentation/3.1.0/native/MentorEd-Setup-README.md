@@ -185,22 +185,22 @@ Before setting up the application, the dependencies should be installed and veri
     - **Ubuntu/Linux/MacOS**
 
         ```
-        git clone -b release-3.1.0 https://github.com/ELEVATE-Project/mentoring.git && \
-        git clone -b release-3.1.0 https://github.com/ELEVATE-Project/user.git && \
-        git clone -b release-3.1.0 https://github.com/ELEVATE-Project/notification.git && \
-        git clone -b release-3.1.0 https://github.com/ELEVATE-Project/interface-service.git && \
-        git clone -b release-3.1.0 https://github.com/ELEVATE-Project/scheduler.git && \
+        git clone -b master https://github.com/ELEVATE-Project/mentoring.git && \
+        git clone -b master https://github.com/ELEVATE-Project/user.git && \
+        git clone -b master https://github.com/ELEVATE-Project/notification.git && \
+        git clone -b master https://github.com/ELEVATE-Project/interface-service.git && \
+        git clone -b master https://github.com/ELEVATE-Project/scheduler.git && \
         git clone -b release-3.1.1 https://github.com/ELEVATE-Project/mentoring-mobile-app.git
         ```
 
     - **Windows**
 
         ```
-        git clone -b release-3.1.0 https://github.com/ELEVATE-Project/mentoring.git & ^
-        git clone -b release-3.1.0 https://github.com/ELEVATE-Project/user.git & ^
-        git clone -b release-3.1.0 https://github.com/ELEVATE-Project/notification.git & ^
-        git clone -b release-3.1.0 https://github.com/ELEVATE-Project/interface-service.git & ^
-        git clone -b release-3.1.0 https://github.com/ELEVATE-Project/scheduler.git & ^
+        git clone -b master https://github.com/ELEVATE-Project/mentoring.git & ^
+        git clone -b master https://github.com/ELEVATE-Project/user.git & ^
+        git clone -b master https://github.com/ELEVATE-Project/notification.git & ^
+        git clone -b master https://github.com/ELEVATE-Project/interface-service.git & ^
+        git clone -b master https://github.com/ELEVATE-Project/scheduler.git & ^
         git clone -b release-3.1.1 https://github.com/ELEVATE-Project/mentoring-mobile-app.git
         ```
 
