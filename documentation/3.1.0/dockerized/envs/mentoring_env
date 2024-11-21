@@ -89,3 +89,5 @@ SCHEDULER_SERVICE_ERROR_REPORTING_EMAIL_ID="sample@sample.com"
 # New IV for encryption
 IV="LHYOA5YnTonqcgrm15k3/Q=="  
 ZEST_ENV="ZEST_ENV"
+MENTEE_SESSION_CANCELLATION_EMAIL_TEMPLATE="mentee_session_cancel"
+MENTOR_SESSION_DELETE_BY_MANAGER_EMAIL_TEMPLATE="session_deleted_by_manager"
