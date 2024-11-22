@@ -80,7 +80,7 @@ module.exports = {
 				if (invalidUserIds.length > 0) {
 					console.warn('Invalid userIds detected and filtered out:', invalidUserIds)
 				}
-				
+				console.log("=====================",userIds);
 				await updateUsers('user_extensions', userIds)
 			}
 		} catch (error) {
