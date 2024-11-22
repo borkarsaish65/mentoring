@@ -20,8 +20,10 @@ module.exports = {
 				const updateBatch = async (batch) => {  
 
 					
-					const userDetails = (await userRequests.getListOfUserDetails(batch)).result
-					
+					const userDetailsResp = (await userRequests.getListOfUserDetails(batch));
+
+					console.log("userDetails repos ",userDetailsResp);
+					const userDetails = userDetailsResp.result;
 					const userDetailsMap = Object.fromEntries(userDetails.map((user) => [user.id, user]))
 
 					const updates = batch.map(async (userId) => {
@@ -91,20 +93,7 @@ module.exports = {
 				// 	.filter((userId) => userId && !isNaN(userId)) // Filter out empty or invalid user_ids
 
 				// Log any invalid userIds for debugging
-				const invalidUserIds = userIds.filter((userId) => isNaN(userId));
-				if (invalidUserIds.length > 0) {
-					console.warn('Invalid userIds detected and filtered out:', invalidUserIds)
-				}
-
-				const hasNewline = (str) => {
-				  return str.includes('\n');  // Check if the string contains a newline
-				};
-
-				// Using .map() to check for newline characters in the userIds array
-				const userIdsWithNewline = userIds.filter(userId => hasNewline(userId));
 				
-				console.log("Items with newline characters:", userIdsWithNewline);
-								
 				await updateUsers('user_extensions', userIds)
 			}
 		} catch (error) {
