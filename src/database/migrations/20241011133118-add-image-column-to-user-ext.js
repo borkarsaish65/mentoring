@@ -67,9 +67,20 @@ module.exports = {
 				)
 
 				let userIds = [] 
-                                 await Promise.all(users.map(function(user) {  if(user.user_id && Number(user.user_id)) { userIds.push(Number(user.user_id)) } }));
+                                 // Use Array.prototype.forEach() for better clarity and control
+				await Promise.all(users.map((user) => {
+				    // Ensure user_id is valid and clean (removes extra whitespace)
+				    const userId = user.user_id ? Number(user.user_id.toString().trim()) : null;
+				    
+				    if (userId && !isNaN(userId)) {
+				        userIds.push(userId);  // Only push if user_id is a valid number
+				    }
+				}));
+				console.log(" before userIds  ",userIds);
+				// Clean up any potential invalid entries in case of unexpected data
+				userIds = userIds.filter(userId => userId && !isNaN(userId));
 				
-				console.log("userIds  ",userIds);
+				console.log(" after filtering userIds  ",userIds);
 				// Clean up userIds
 				// userIds = userIds
 				// 	.map((userId) => {
