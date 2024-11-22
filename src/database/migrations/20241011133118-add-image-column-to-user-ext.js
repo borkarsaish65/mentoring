@@ -66,7 +66,7 @@ module.exports = {
 				userIds = userIds
 					.map((userId) => {
 						// Remove any extra spaces, quotes, or commas from the userId
-						const cleanedUserId = (userId || '').replace(/[\s',"]/g, '').trim();
+						const cleanedUserId = (userId || '').replace(/[\s',\n\r"]/g, '') .trim();
 						return cleanedUserId;
 					})
 					.filter((userId) => userId && !isNaN(userId)) // Filter out empty or invalid user_ids
