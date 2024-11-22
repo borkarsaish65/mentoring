@@ -53,10 +53,12 @@ module.exports = {
 					await Promise.all(updates)
 				}
 
-				// for (let i = 0; i < userIds.length; i += batchSize) {
-					//const batch = userIds.slice(i, i + batchSize)
-					await updateBatch(userIds)
-				// }
+				 for (let i = 0; i < userIds.length; i += batchSize) {
+					const batch = userIds.slice(i, i + batchSize)
+
+					 console.log("batch",batch);
+					await updateBatch(batch)
+				 }
 			}
 
 			if (userCount[0].count > 0) {
@@ -66,6 +68,8 @@ module.exports = {
 
 				let userIds = [] 
                                  users.map(function(user) {  if(user.user_id && Number(user.user_id)) { userIds.push(Number(user.user_id)) } });
+				
+				console.log("userIds  ",userIds);
 				// Clean up userIds
 				// userIds = userIds
 				// 	.map((userId) => {
