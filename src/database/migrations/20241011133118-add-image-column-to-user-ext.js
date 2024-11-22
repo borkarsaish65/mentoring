@@ -95,7 +95,16 @@ module.exports = {
 				if (invalidUserIds.length > 0) {
 					console.warn('Invalid userIds detected and filtered out:', invalidUserIds)
 				}
+
+				const hasNewline = (str) => {
+				  return str.includes('\n');  // Check if the string contains a newline
+				};
+
+				// Using .map() to check for newline characters in the userIds array
+				const userIdsWithNewline = userIds.filter(userId => hasNewline(userId));
 				
+				console.log("Items with newline characters:", userIdsWithNewline);
+								
 				await updateUsers('user_extensions', userIds)
 			}
 		} catch (error) {
