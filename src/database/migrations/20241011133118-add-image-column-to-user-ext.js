@@ -55,7 +55,7 @@ module.exports = {
 
 				 for (let i = 0; i < userIds.length; i += batchSize) {
 					const batch = userIds.slice(i, i + batchSize)
-
+					
 					 console.log("batch",batch);
 					await updateBatch(batch)
 				 }
@@ -63,11 +63,11 @@ module.exports = {
 
 			if (userCount[0].count > 0) {
 				const [users] = await queryInterface.sequelize.query(
-					'SELECT user_id FROM user_extensions WHERE image IS NULL AND deleted_at IS NULL limit 200;'
+					'SELECT user_id FROM user_extensions WHERE image IS NULL AND deleted_at IS NULL;'
 				)
 
 				let userIds = [] 
-                                 users.map(function(user) {  if(user.user_id && Number(user.user_id)) { userIds.push(Number(user.user_id)) } });
+                                 await Promise.all(users.map(function(user) {  if(user.user_id && Number(user.user_id)) { userIds.push(Number(user.user_id)) } }));
 				
 				console.log("userIds  ",userIds);
 				// Clean up userIds
