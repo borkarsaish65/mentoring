@@ -65,7 +65,7 @@ module.exports = {
 				)
 
 				let userIds = [] 
-                                 users.map(function(user) {  if(item.user_id && Number(item.user_id)) { userIds.push(Number(item.user_id)) } });
+                                 users.map(function(user) {  if(user.user_id && Number(user.user_id)) { userIds.push(Number(user.user_id)) } });
 				// Clean up userIds
 				// userIds = userIds
 				// 	.map((userId) => {
