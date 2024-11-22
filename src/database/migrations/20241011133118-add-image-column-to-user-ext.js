@@ -16,7 +16,7 @@ module.exports = {
 
 			console.log(`Number of users to update: ${userCount[0].count}`)
 
-			const updateUsers = async (table, userIds, batchSize = 200) => {
+			const updateUsers = async (table, userIds, batchSize = 800) => {
 				const updateBatch = async (batch) => {  
 
 					
