@@ -53,10 +53,10 @@ module.exports = {
 					await Promise.all(updates)
 				}
 
-				for (let i = 0; i < userIds.length; i += batchSize) {
-					const batch = userIds.slice(i, i + batchSize)
-					await updateBatch(batch)
-				}
+				// for (let i = 0; i < userIds.length; i += batchSize) {
+					//const batch = userIds.slice(i, i + batchSize)
+					await updateBatch(userIds)
+				// }
 			}
 
 			if (userCount[0].count > 0) {
