@@ -19,9 +19,9 @@ module.exports = {
 			const updateUsers = async (table, userIds, batchSize = 200) => {
 				const updateBatch = async (batch) => {  
 
-					console.log("--------------------------------",batch);
+					
 					const userDetails = (await userRequests.getListOfUserDetails(batch)).result
-					console.log('userDetails', userDetails)
+					
 					const userDetailsMap = Object.fromEntries(userDetails.map((user) => [user.id, user]))
 
 					const updates = batch.map(async (userId) => {
