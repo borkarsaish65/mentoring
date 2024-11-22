@@ -34,12 +34,14 @@ module.exports = {
 								} else {
 									imagePath = matchingUser.image
 								}
-								await queryInterface.sequelize.query(
-									`UPDATE ${table} SET image = ? WHERE user_id = ?`,
-									{
-										replacements: [imagePath, userId],
-									}
-								)
+								if(imagePath){
+									await queryInterface.sequelize.query(
+										`UPDATE ${table} SET image = ? WHERE user_id = ?`,
+										{
+											replacements: [imagePath, userId],
+										}
+									)
+								}
 							} catch (error) {
 								console.error(`Error updating userId ${userId} in ${table}:`, error)
 							}
