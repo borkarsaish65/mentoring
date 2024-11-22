@@ -61,8 +61,10 @@ module.exports = {
 				const [users] = await queryInterface.sequelize.query(
 					'SELECT user_id FROM user_extensions WHERE image IS NULL AND deleted_at IS NULL;'
 				)
-				let userIds = users.map((item) => item.user_id)
-				userIds = userIds.filter(userId => userId && !isNaN(userId))
+				let userIds = users
+				  .map((item) => item.user_id)           
+				  .map((userId) => userId ? userId.trim() : '')  // Trim any leading/trailing whitespace or newline characters
+				  .filter((userId) => userId && !isNaN(userId));
 
 				console.log("=========================userIds ================================================",userIds);
 				await updateUsers('user_extensions', userIds)
