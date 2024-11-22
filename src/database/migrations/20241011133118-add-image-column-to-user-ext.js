@@ -61,12 +61,22 @@ module.exports = {
 				const [users] = await queryInterface.sequelize.query(
 					'SELECT user_id FROM user_extensions WHERE image IS NULL AND deleted_at IS NULL;'
 				)
-				let userIds = users
-				  .map((item) => item.user_id)           
-				  .map((userId) => userId ? userId.trim() : '')  // Trim any leading/trailing whitespace or newline characters
-				  .filter((userId) => userId && !isNaN(userId));
+				let userIds = users.map((item) => item.user_id)
+				// Clean up userIds
+				userIds = userIds
+					.map((userId) => {
+						// Remove any extra spaces, quotes, or commas from the userId
+						const cleanedUserId = (userId || '').replace(/[\s',"]/g, '').trim();
+						return cleanedUserId;
+					})
+					.filter((userId) => userId && !isNaN(userId)) // Filter out empty or invalid user_ids
 
-				console.log("=========================userIds ================================================",userIds);
+				// Log any invalid userIds for debugging
+				const invalidUserIds = userIds.filter((userId) => isNaN(userId));
+				if (invalidUserIds.length > 0) {
+					console.warn('Invalid userIds detected and filtered out:', invalidUserIds)
+				}
+				
 				await updateUsers('user_extensions', userIds)
 			}
 		} catch (error) {
