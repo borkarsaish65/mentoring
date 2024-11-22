@@ -188,7 +188,7 @@ Before setting up the application, the dependencies should be installed and veri
         git clone -b master https://github.com/ELEVATE-Project/mentoring.git && \
         git clone -b master https://github.com/ELEVATE-Project/user.git && \
         git clone -b master https://github.com/ELEVATE-Project/notification.git && \
-        git clone -b master https://github.com/ELEVATE-Project/interface-service.git && \
+        git clone -b main https://github.com/ELEVATE-Project/interface-service.git && \
         git clone -b master https://github.com/ELEVATE-Project/scheduler.git && \
         git clone -b release-3.1.1 https://github.com/ELEVATE-Project/mentoring-mobile-app.git
         ```
@@ -433,6 +433,8 @@ Before setting up the application, the dependencies should be installed and veri
 
 10. **Run Service Scripts**
 
+    Please make sure that all services are up and running before proceeding.
+
     - **Ubuntu/Linux/MacOS**
 
         ```
@@ -652,4 +654,4 @@ After successfully running the script mentioned above, the following user accoun
 | ------------------------ | ---------- | ------------------ |
 | aaravpatel@example.com   | Password1@ | Mentee             |
 | arunimareddy@example.com | Password1@ | Mentor             |
-| devikasingh@example.com  | Password1@ | Organization Admin |
+| devikasingh@example.com  | Password1@ | Organization Admin, Session Manager |
