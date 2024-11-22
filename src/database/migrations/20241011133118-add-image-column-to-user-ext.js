@@ -38,7 +38,7 @@ module.exports = {
 									await queryInterface.sequelize.query(
 										`UPDATE ${table} SET image = ? WHERE user_id = ?`,
 										{
-											replacements: [imagePath, userId],
+											replacements: [imagePath, userId.toString()],
 										}
 									)
 								}
