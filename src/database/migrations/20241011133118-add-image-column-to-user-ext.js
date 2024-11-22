@@ -63,7 +63,7 @@ module.exports = {
 
 			if (userCount[0].count > 0) {
 				const [users] = await queryInterface.sequelize.query(
-					'SELECT user_id FROM user_extensions WHERE image IS NULL AND deleted_at IS NULL;'
+					'SELECT user_id FROM user_extensions WHERE image IS NULL AND deleted_at IS NULL limit 200;'
 				)
 
 				let userIds = [] 
@@ -84,7 +84,7 @@ module.exports = {
 				if (invalidUserIds.length > 0) {
 					console.warn('Invalid userIds detected and filtered out:', invalidUserIds)
 				}
-				console.log("=====================",userIds);
+				
 				await updateUsers('user_extensions', userIds)
 			}
 		} catch (error) {
