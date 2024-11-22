@@ -243,11 +243,14 @@ const getListOfUserDetails = function (userIds, excludeDeletedRecords = false) {
 		let apiUrl = userBaseUrl + endpoints.LIST_ACCOUNTS
 		if (excludeDeletedRecords) apiUrl = userBaseUrl + endpoints.LIST_ACCOUNTS + '?exclude_deleted_records=true'
 		try {
+
+			console.log("list of user detials",apiUrl,options);
 			request.get(apiUrl, options, callback)
 			function callback(err, data) {
 				if (err) {
+                                       
 					reject({
-						message: 'USER_SERVICE_DOWN',
+						message: 'USER_SERVICE_DOWN',error:err,
 					})
 				} else {
 					data.body = JSON.parse(data.body)
