@@ -63,7 +63,9 @@ module.exports = {
 				const [users] = await queryInterface.sequelize.query(
 					'SELECT user_id FROM user_extensions WHERE image IS NULL AND deleted_at IS NULL;'
 				)
-				let userIds = users.map((item) => Number(item.user_id))
+
+				let userIds = [] 
+                                 users.map(function(user) {  if(item.user_id && Number(item.user_id)) { userIds.push(Number(item.user_id)) } });
 				// Clean up userIds
 				// userIds = userIds
 				// 	.map((userId) => {
