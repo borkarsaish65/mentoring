@@ -1,34 +1,33 @@
 @echo off
 setlocal
 
+:: Get the directory where this batch script is located
+set "SCRIPT_DIR=%~dp0"
+
 :: Define the GitHub raw URL for the JSON file
 set "GITHUB_REPO=https://raw.githubusercontent.com/ELEVATE-Project/mentoring-mobile-app/refs/heads/release-3.1.1/forms.json"
-set "JSON_FILE=forms.json"
+set "JSON_FILE=%SCRIPT_DIR%forms.json"
 
 :: Set organization_id
 set "organization_id=1"
 
-:: Check if output directory is provided as an argument
-if "%~2"=="" (
-    set "OUTPUT_DIR=."
-) else (
-    set "OUTPUT_DIR=%~2"
-)
+:: Define the output directory relative to the script's directory
+set "OUTPUT_DIR=%SCRIPT_DIR%"
 
 :: Ensure the output directory exists
 if not exist "%OUTPUT_DIR%" (
-    echo Error: Directory '%OUTPUT_DIR%' does not exist.
-    exit /b 1
+    echo Creating directory '%OUTPUT_DIR%'...
+    mkdir "%OUTPUT_DIR%"
 )
 
-:: Define output file path for the SQL file
-set "SQL_OUTPUT_FILE=%OUTPUT_DIR%\forms.sql"
+:: Define the output file path for the SQL file
+set "SQL_OUTPUT_FILE=%OUTPUT_DIR%forms.sql"
 
 :: Fetch JSON file from GitHub repository
 echo Fetching JSON file from GitHub...
 curl -o "%JSON_FILE%" "%GITHUB_REPO%"
 
-:: Check if download was successful
+:: Check if the download was successful
 if errorlevel 1 (
     echo Failed to download JSON file from GitHub.
     exit /b 1
@@ -41,7 +40,7 @@ echo Generating SQL insert statements...
 :: Initialize ID counter
 set /a id_counter=1
 
-:: Use PowerShell to parse JSON and generate a separate SQL insert statement for each object
+:: Use PowerShell to parse JSON and generate SQL insert statements
 powershell -Command ^
     "$jsonData = Get-Content '%JSON_FILE%' | ConvertFrom-Json; " ^
     "$id_counter = 1; " ^
