@@ -16,23 +16,23 @@ Once these prerequisites are in place, you're all set to get started with settin
 
 1.  **Create mentoring Directory:** Create a directory named **mentoring**.
 
-    > Example Command: `mkdir mentoring && cd mentoring/`
+    > Example Command: `mkdir mentorEd && cd mentorEd/`
 
     > **Caution:** Before proceeding, please ensure that the ports given here are available and open. It is essential to verify their availability prior to moving forward. You can run below command in your teminal to check this
 
-    ```
-    for port in 3000 3001 3002 6000 5001 4000 9092 5432 7007 2181 2707 3569; do
-    if lsof -iTCP:$port -sTCP:LISTEN &>/dev/null; then
-        echo "Port $port is in use"
-    else
-        echo "Port $port is available"
-    fi
+    > **Note:** This command works natively on Linux (e.g., Ubuntu) and macOS.
+
+    ```bash
+    for port in 2181 9092 6379 3000 3001 3002 4000 3569 5432 5500 8100; do
+    nc -z 127.0.0.1 $port >/dev/null 2>&1 &&
+    echo -e "\e[31mPort $port is currently in use.\e[0m" ||
+    echo -e "\e[32mPort $port is available for use.\e[0m";
     done
     ```
 
 2.  **Download and execute main setup script:** Execute the following command in your terminal from the mentoring directory.
 
-    ```
+    ```bash
     curl -OJL https://github.com/ELEVATE-Project/mentoring/raw/master/documentation/3.1.0/dockerized/scripts/mac-linux/setup_mentoring.sh && chmod +x setup_mentoring.sh && ./setup_mentoring.sh
     ```
 
@@ -43,11 +43,11 @@ Once these prerequisites are in place, you're all set to get started with settin
     1. All containers which are part of the docker-compose can be gracefully stopped by pressing Ctrl + c in the same terminal where the services are running.
 
     2. All docker containers can be stopped and removed by using below command.
-       ```
+       ```bash
        ./docker-compose-down.sh
        ```
     3. All services and dependencies can be started using below command.
-       ```
+       ```bash
        ./docker-compose-up.sh
        ```
 
@@ -157,13 +157,13 @@ To enable the Citus extension for Mentor and User services, follow these steps.
 
 1. Create a sub-directory named `mentoring` and download `distributionColumns.sql` into it.
 
-   ```
+   ```bash
    mkdir mentoring && curl -o ./mentoring/distributionColumns.sql -JL https://github.com/ELEVATE-Project/mentoring/raw/master/documentation/3.1.0/distribution-columns/mentoring/distributionColumns.sql
    ```
 
 2. Create a sub-directory named `user` and download `distributionColumns.sql` into it.
 
-   ```
+   ```bash
    mkdir user && curl -o ./user/distributionColumns.sql -JL https://github.com/ELEVATE-Project/mentoring/raw/master/documentation/3.1.0/distribution-columns/user/distributionColumns.sql
    ```
 
@@ -173,25 +173,25 @@ To enable the Citus extension for Mentor and User services, follow these steps.
 
      1. Download the `citus_setup.sh` file.
 
-        ```
+        ```bash
         curl -OJL https://github.com/ELEVATE-Project/mentoring/raw/master/documentation/3.1.0/dockerized/scripts/mac-linux/citus_setup.sh
         ```
 
      2. Make the setup file executable by running the following command.
 
-        ```
+        ```bash
         chmod +x citus_setup.sh
         ```
 
      3. Enable Citus and set distribution columns for `mentoring` database by running the `citus_setup.sh`with the following arguments.
 
-        ```
+        ```bash
         ./citus_setup.sh mentoring postgres://postgres:postgres@citus_master:5432/mentoring
         ```
 
      4. Enable Citus and set distribution columns for `user` database by running the `citus_setup.sh`with the following arguments.
 
-        ```
+        ```bash
         ./citus_setup.sh user postgres://postgres:postgres@citus_master:5432/user
         ```
 
@@ -275,7 +275,7 @@ There are few forms required for mentoring application to run, to add those fall
 
    - **Ubuntu/Linux/Mac**
 
-     ```
+     ```bash
      ./sample-data/mentoring/insert_sample_forms.sh mentoring postgres://postgres:postgres@citus_master:5432/mentoring
      ```
 
@@ -325,7 +325,7 @@ In such cases, you can generate sample user accounts using the steps below. This
 
    - **Ubuntu/Linux/Mac**
 
-     ```
+     ```bash
      ./insert_sample_data.sh user postgres://postgres:postgres@citus_master:5432/user && \
      ./insert_sample_data.sh mentoring postgres://postgres:postgres@citus_master:5432/mentoring
      ```
