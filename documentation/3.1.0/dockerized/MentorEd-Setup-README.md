@@ -287,6 +287,12 @@ There are few forms required for mentoring application to run, to add those fall
 
    After successfully running the script, forms will be added to database.
 
+3. **Access the Portal:**
+
+   Once the above steps are completed, you can access the portal in your browser at:
+
+   [http://localhost:8100/](http://localhost:8100/)
+
 ## Sample User Accounts Generation
 
 During the initial setup of Mentor services with the default configuration, you may encounter issues creating new accounts through the regular Sign-up flow on the Mentor portal. This typically occurs because the default SignUp process includes OTP verification to prevent abuse. Until the notification service is configured correctly to send actual emails, you will not be able to create new accounts.
