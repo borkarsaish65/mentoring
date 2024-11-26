@@ -260,7 +260,6 @@ module.exports = class MentorsHelper {
 				const userIds = _.uniqBy(session, 'mentor_id').map((item) => item.mentor_id)
 
 				let mentorDetails = await userRequests.getListOfUserDetails(userIds)
-				console.log("----------  response details =========== ",mentorDetails)
 				mentorDetails = mentorDetails.result
 
 				for (let i = 0; i < session.length; i++) {
