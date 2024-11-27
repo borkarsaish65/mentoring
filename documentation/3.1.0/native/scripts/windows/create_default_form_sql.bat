@@ -3,14 +3,14 @@ setlocal
 
 :: Define the GitHub raw URL for the JSON file
 set "GITHUB_REPO=https://raw.githubusercontent.com/ELEVATE-Project/mentoring-mobile-app/refs/heads/release-3.1.1/forms.json"
-set "JSON_FILE=forms.json"
+set "JSON_FILE=sample-data\mentoring\forms.json"  
 
 :: Set organization_id
 set "organization_id=1"
 
 :: Check if output directory is provided as an argument
 if "%~2"=="" (
-    set "OUTPUT_DIR=."
+    set "OUTPUT_DIR=sample-data\mentoring"
 ) else (
     set "OUTPUT_DIR=%~2"
 )
@@ -24,7 +24,7 @@ if not exist "%OUTPUT_DIR%" (
 :: Define output file path for the SQL file
 set "SQL_OUTPUT_FILE=%OUTPUT_DIR%\forms.sql"
 
-:: Fetch JSON file from GitHub repository
+:: Fetch JSON file from GitHub and save it in the correct location
 echo Fetching JSON file from GitHub...
 curl -o "%JSON_FILE%" "%GITHUB_REPO%"
 
