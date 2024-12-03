@@ -162,6 +162,30 @@ module.exports = class Mentees {
 			return error
 		}
 	}
+	/**
+	 * mentors profile
+	 * @method
+	 * @name profile
+	 * @param {Object} req 							- request data.
+	 * @param {String} req.params.id 				- mentor Id.
+	 * @param {Number}  req.decodedToken.id			- userId.
+	 * @param {Boolean} isAMentor 					- user mentor or not.
+	 * @returns {JSON} 								- mentors profile details
+	 */
+
+	async details(req) {
+		try {
+			return await menteesService.details(
+				req.params.id,
+				req.decodedToken.organization_id,
+				req.decodedToken.id,
+				isAMentor(req.decodedToken.roles),
+				req.decodedToken.roles
+			)
+		} catch (error) {
+			return error
+		}
+	}
 
 	//To be enabled when delete flow is needed.
 	// /**
