@@ -57,7 +57,6 @@ exports.logout = async (userId) => {
 exports.updateAvatar = async (userId, imageUrl) => {
 	try {
 		await communicationRequests.updateAvatar(userId, imageUrl)
-		console.log(`Avatar updated successfully for user: ${userId}`)
 	} catch (error) {
 		console.error(`Error updating avatar for user ${userId}:`, error.message)
 		throw error
@@ -75,7 +74,6 @@ exports.updateAvatar = async (userId, imageUrl) => {
 exports.updateUser = async (userId, name) => {
 	try {
 		await communicationRequests.updateUser(userId, name)
-		console.log(`User updated successfully for user: ${userId}`)
 	} catch (error) {
 		console.error(`Error updating user ${userId}:`, error.message)
 		throw error

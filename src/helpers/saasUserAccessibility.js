@@ -17,7 +17,6 @@ async function checkIfUserIsAccessible(userId, userData) {
 		const users = Array.isArray(userData) ? userData : [userData]
 
 		// Fetch policy details
-		console.log('userId::::::', userId)
 		const userPolicyDetails = await menteeQueries.getMenteeExtension(userId, [
 			'external_mentor_visibility',
 			'external_mentee_visibility',

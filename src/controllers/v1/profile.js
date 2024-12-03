@@ -163,16 +163,19 @@ module.exports = class Mentees {
 		}
 	}
 	/**
-	 * mentors profile
+	 * Fetches user profile details.
 	 * @method
-	 * @name profile
-	 * @param {Object} req 							- request data.
-	 * @param {String} req.params.id 				- mentor Id.
-	 * @param {Number}  req.decodedToken.id			- userId.
-	 * @param {Boolean} isAMentor 					- user mentor or not.
-	 * @returns {JSON} 								- mentors profile details
+	 * @name details
+	 * @param {Object} req - Request object.
+	 * @param {Object} req.params - Route parameters.
+	 * @param {String} req.params.id - The mentor's ID.
+	 * @param {Object} req.decodedToken - Decoded token from authentication.
+	 * @param {String} req.decodedToken.id - The user's ID.
+	 * @param {String} req.decodedToken.organization_id - The user's organization ID.
+	 * @param {Array} req.decodedToken.roles - The user's roles.
+	 * @param {Boolean} isAMentor - Indicates whether the user is a mentor.
+	 * @returns {Promise<Object>} - The mentor's profile details.
 	 */
-
 	async details(req) {
 		try {
 			return await menteesService.details(
