@@ -236,7 +236,10 @@ module.exports = class ConnectionHelper {
 			})
 
 			connectionsWithDetails.forEach(async (detail) => {
-				detail.user_details.image = await utils.getDownloadableUrl(detail.user_details.image)
+				if (detail.user_details.image) {
+					// Check if the image is not null or empty
+					detail.user_details.image = await utils.getDownloadableUrl(detail.user_details.image)
+				}
 			})
 
 			return responses.successResponse({
