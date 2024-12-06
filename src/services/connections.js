@@ -11,6 +11,7 @@ const { getDefaultOrgId } = require('@helpers/getDefaultOrgId')
 const { removeDefaultOrgEntityTypes } = require('@generics/utils')
 const utils = require('@generics/utils')
 const communicationHelper = require('@helpers/communications')
+const userRequests = require('@requests/user')
 
 module.exports = class ConnectionHelper {
 	/**
@@ -138,7 +139,7 @@ module.exports = class ConnectionHelper {
 					message: 'USER_NOT_FOUND',
 				})
 			}
-			userDetails.image = await utils.getDownloadableUrl(userDetails.image)
+			userDetails.image = (await userRequests.getDownloadableUrl(userDetails.image))?.result
 
 			// Fetch entity types associated with the user
 			let entityTypes = await entityTypeQueries.findUserEntityTypesAndEntities({
@@ -235,11 +236,18 @@ module.exports = class ConnectionHelper {
 				}
 			})
 
-			connectionsWithDetails.forEach(async (detail) => {
-				if (detail.user_details.image) {
-					// Check if the image is not null or empty
-					detail.user_details.image = await utils.getDownloadableUrl(detail.user_details.image)
+			const userIds = connectionsWithDetails.map((item) => item.friend_id)
+			const userDetails = await userRequests.getListOfUserDetails(userIds, true)
+			const userDetailsMap = new Map(userDetails.result.map((userDetail) => [String(userDetail.id), userDetail]))
+			connectionsWithDetails = connectionsWithDetails.filter((connectionsWithDetail) => {
+				const user_id = String(connectionsWithDetail.friend_id)
+
+				if (userDetailsMap.has(user_id)) {
+					const userDetail = userDetailsMap.get(user_id)
+					connectionsWithDetail.user_details.image = userDetail.image
+					return true
 				}
+				return false
 			})
 
 			return responses.successResponse({
@@ -415,10 +423,17 @@ module.exports = class ConnectionHelper {
 					'organization_id'
 				)
 			}
-			//To be removed later
-
-			extensionDetails.data.forEach(async (detail) => {
-				detail.image = await utils.getDownloadableUrl(detail.image)
+			const userIds = extensionDetails.data.map((item) => item.user_id)
+			const userDetails = await userRequests.getListOfUserDetails(userIds, true)
+			const userDetailsMap = new Map(userDetails.result.map((userDetail) => [String(userDetail.id), userDetail]))
+			extensionDetails.data = extensionDetails.data.filter((extensionDetail) => {
+				const user_id = String(extensionDetail.user_id)
+				if (userDetailsMap.has(user_id)) {
+					const userDetail = userDetailsMap.get(user_id)
+					extensionDetail.image = userDetail.image
+					return true
+				}
+				return false
 			})
 
 			return responses.successResponse({

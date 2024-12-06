@@ -4,6 +4,7 @@ const userExtensionQueries = require('@database/queries/userExtension')
 const emailEncryption = require('@utils/emailEncryption')
 const common = require('@constants/common')
 const utils = require('@generics/utils')
+const userRequests = require('@requests/user')
 
 /**
  * Logs in a user and retrieves authentication token and user ID.
@@ -177,7 +178,7 @@ exports.createChatRoom = async (recipientUserId, initiatorUserId, initialMessage
 				user.email = await emailEncryption.decrypt(user.email)
 				let userImage
 				if (user?.image) {
-					userImage = await utils.getDownloadableUrl(user.image)
+					userImage = (await userRequests.getDownloadableUrl(user.image))?.result
 				}
 				await this.create(user.user_id, user.name, user.email, userImage)
 			}

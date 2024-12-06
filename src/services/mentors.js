@@ -526,7 +526,7 @@ module.exports = class MentorsHelper {
 				}
 
 				if (data.image && data.image !== currentUser.image) {
-					const downloadableUrl = await utils.getDownloadableUrl(data.image)
+					const downloadableUrl = (await userRequests.getDownloadableUrl(data.image))?.result
 					promises.push(communicationHelper.updateAvatar(userId, downloadableUrl))
 				}
 
