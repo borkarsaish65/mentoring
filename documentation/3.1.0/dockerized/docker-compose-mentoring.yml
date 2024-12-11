@@ -51,7 +51,7 @@ services:
     logging:
       driver: none
   mentoring:
-    image: shikshalokamqa/elevate-mentoring:3.1.2
+    image: shikshalokamqa/elevate-mentoring:3.1.3
     ports:
       - "3000:3000"
     command: >
@@ -94,7 +94,7 @@ services:
       - ${mentoring_env}
 
   user:
-    image: shikshalokamqa/elevate-user:3.1.4
+    image: shikshalokamqa/elevate-user:3.1.5
     container_name: "user"
     ports:
       - "3001:3001"
@@ -133,7 +133,7 @@ services:
       - ${users_env}
 
   notification:
-    image: shikshalokamqa/elevate-notification:3.1
+    image: shikshalokamqa/elevate-notification:3.1.1
     ports:
       - "3002:3002"
     command: >
