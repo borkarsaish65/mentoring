@@ -137,7 +137,7 @@ let enviromentVariables = {
 		optional: process.env.ENABLE_EMAIL_FOR_REPORT_ISSUE === 'true' ? false : true,
 		default: 'user_issue_reported',
 	},
-	BIB_BLUE_BUTTON_BASE_URL: {
+	BIG_BLUE_BUTTON_BASE_URL: {
 		message: 'Big blue button base url',
 		optional: true,
 		default: '/bigbluebutton/',
