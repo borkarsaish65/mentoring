@@ -70,7 +70,7 @@ services:
       (while ! curl -sSf http://mentoring:3000 > /dev/null; do
         sleep 1;
       done && echo 'Service is up' &&
-      /bin/bash -c 'cd scripts && echo Running script && node viewsScript.js');
+      /bin/bash -c 'cd scripts && echo Running script && node viewsScript.js && node -r module-alias/register sessionUploadScript.js');
       tail -f /dev/null"
     depends_on:
       kafka:
