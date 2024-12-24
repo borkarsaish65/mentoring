@@ -1,5 +1,5 @@
 const Form = require('../models/index').Form
-
+const { Op } = require('sequelize')
 module.exports = class FormsData {
 	static async createForm(data) {
 		try {
@@ -40,10 +40,15 @@ module.exports = class FormsData {
 		}
 	}
 
-	static async findAllTypeFormVersion() {
+	static async findAllTypeFormVersion(organizationIds = []) {
 		try {
 			const formData = await Form.findAll({
 				attributes: ['id', 'type', 'version'],
+				where: {
+					organization_id: {
+						[Op.or]: organizationIds, // Use `Op.or` to match any of the IDs
+					},
+				},
 			})
 			return formData
 		} catch (error) {

@@ -57,7 +57,7 @@ module.exports = class Form {
 		const params = req.body
 		try {
 			if (!req.params.id && Object.keys(req.body).length === 0) {
-				const form = await formsService.readAllFormsVersion()
+				const form = await formsService.readAllFormsVersion(req.decodedToken.organization_id)
 				return form
 			} else {
 				const form = await formsService.read(req.params.id, params, req.decodedToken.organization_id)

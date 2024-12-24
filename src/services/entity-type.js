@@ -100,8 +100,6 @@ module.exports = class EntityHelper {
 
 	static async readAllSystemEntityTypes(orgId) {
 		try {
-			const attributes = ['value', 'label', 'id']
-
 			const defaultOrgId = await getDefaultOrgId()
 			if (!defaultOrgId)
 				return responses.failureResponse({
@@ -110,7 +108,7 @@ module.exports = class EntityHelper {
 					responseCode: 'CLIENT_ERROR',
 				})
 
-			const entities = await entityTypeQueries.findAllEntityTypes([orgId, defaultOrgId], attributes)
+			const entities = await entityTypeQueries.findAllEntityTypes([orgId, defaultOrgId])
 
 			if (!entities.length) {
 				return responses.failureResponse({

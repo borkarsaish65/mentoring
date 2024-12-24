@@ -7,6 +7,7 @@ const rolePermissionMappingQueries = require('@database/queries/role-permission-
 const responses = require('@helpers/responses')
 const { Op } = require('sequelize')
 const fs = require('fs')
+const crypto = require('crypto')
 const MenteeExtensionQueries = require('@database/queries/userExtension')
 
 module.exports = async function (req, res, next) {
@@ -31,26 +32,39 @@ module.exports = async function (req, res, next) {
 		}
 
 		const [decodedToken, skipFurtherChecks] = await authenticateUser(authHeader, req)
+		const isAdmin = decodedToken.data.roles.some((role) => role.title === common.ADMIN_ROLE)
 
-		if (adminHeader) {
-			if (adminHeader != process.env.ADMIN_ACCESS_TOKEN) throw createUnauthorizedResponse()
-			const organizationId = req.get(process.env.ORG_ID_HEADER_NAME)
+		if (adminHeader || isAdmin) {
+			const isAuthorizedAdmin =
+				isAdmin ||
+				(adminHeader &&
+					crypto.timingSafeEqual(Buffer.from(adminHeader), Buffer.from(process.env.ADMIN_ACCESS_TOKEN)))
 
-			if (!organizationId) {
+			if (!isAuthorizedAdmin) {
+				throw createUnauthorizedResponse()
+			}
+
+			const organizationId = req.get(process.env.ORG_ID_HEADER_NAME || 'X-Org-Id')
+
+			if (!organizationId && !isAdmin) {
 				throw responses.failureResponse({
 					message: {
 						key: 'ADD_ORG_HEADER',
 						interpolation: {
-							orgIdHeader: process.env.ORG_ID_HEADER_NAME,
-							adminHeader: process.env.ADMIN_TOKEN_HEADER_NAME,
+							orgIdHeader: process.env.ORG_ID_HEADER_NAME || 'X-Org-Id',
+							adminHeader: process.env.ADMIN_TOKEN_HEADER_NAME || 'X-Admin-Token',
 						},
 					},
 					statusCode: httpStatusCode.bad_request,
 					responseCode: 'CLIENT_ERROR',
 				})
 			}
-			decodedToken.data.organization_id = organizationId.toString()
-			decodedToken.data.roles.push({ title: common.ADMIN_ROLE })
+
+			decodedToken.data.organization_id = organizationId?.toString() || decodedToken.data.organization_id
+			// Ensure admin role is added to roles if not already present
+			if (!isAdmin) {
+				decodedToken.data.roles.push({ title: common.ADMIN_ROLE })
+			}
 		}
 
 		if (!skipFurtherChecks) {

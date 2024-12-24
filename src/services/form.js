@@ -150,12 +150,20 @@ module.exports = class FormsHelper {
 			throw error
 		}
 	}
-	static async readAllFormsVersion() {
+	static async readAllFormsVersion(orgId) {
 		try {
+			const defaultOrgId = await getDefaultOrgId()
+			if (!defaultOrgId)
+				return responses.failureResponse({
+					message: 'DEFAULT_ORG_ID_NOT_SET',
+					statusCode: httpStatusCode.bad_request,
+					responseCode: 'CLIENT_ERROR',
+				})
+			const orgIds = [defaultOrgId, orgId]
 			return responses.successResponse({
 				statusCode: httpStatusCode.ok,
 				message: 'FORM_VERSION_FETCHED_SUCCESSFULLY',
-				result: (await form.getAllFormsVersion()) || {},
+				result: (await form.getAllFormsVersion(orgIds)) || {},
 			})
 		} catch (error) {
 			return error
