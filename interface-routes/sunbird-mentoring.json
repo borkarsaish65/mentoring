@@ -2832,29 +2832,6 @@
                     "responseBody": []
                 }
             ]
-        },
-		
-				{
-					"service": "mentoring",
-					"basePackageName": "mentoring",
-                    "packageName": "elevate-mentoring",
-                    "targetBody": [],
-					"responseBody": [
-						{
-							"sourceField": "permissions",
-							"targetField": "permissions[]"
-						},
-						{
-							"sourceField": "user_roles",
-							"targetField": "mentoring.user_roles[]"
-						},
-						{
-							"sourceField": "user_id",
-							"targetField": "id"
-						}
-					]
-                }
-            ]
         }
 	]
 }
