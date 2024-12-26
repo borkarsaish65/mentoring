@@ -49,6 +49,13 @@ module.exports = class MenteesHelper {
 		delete mentee.visible_to_organizations
 		delete mentee.image
 
+		console.log(
+			'----------------- mentee read api menteeDetails ---------',
+			JSON.stringify(menteeDetails.data.result)
+		)
+
+		console.log('----------------- mentee read api mentee ---------', JSON.stringify(mentee))
+
 		const defaultOrgId = await getDefaultOrgId()
 		if (!defaultOrgId)
 			return responses.failureResponse({
