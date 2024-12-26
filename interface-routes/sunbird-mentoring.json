@@ -2833,31 +2833,7 @@
                 }
             ]
         },
-		{
-            "sourceRoute": "/interface/v1/profile/read",
-            "type": "GET",
-            "priority": "MUST_HAVE",
-            "inSequence": true,
-            "orchestrated": true,
-            "responseMessage": "Profile fetched successfully.",
-            "targetPackages": [
-                {
-                    "service": "user",
-					"basePackageName": "mentoring",
-                    "packageName": "sunbird-mentoring",
-                    "targetBody": [],
-					"responseBody": [
-						{
-							"sourceField": "permissions",
-							"targetField": "permissions[]"
-						},
-						{
-							"sourceField": "user_roles",
-							"targetField": "user_roles[]"
-						}
-						
-					]
-                },
+		
 				{
 					"service": "mentoring",
 					"basePackageName": "mentoring",
