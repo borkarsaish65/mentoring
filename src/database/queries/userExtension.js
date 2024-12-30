@@ -172,7 +172,7 @@ module.exports = class MenteeExtensionQueries {
 			} else {
 				mentee = await MenteeExtension.findOne(queryOptions)
 			}
-			if (mentee?.email) {
+			if (mentee && mentee.email) {
 				mentee.email = await emailEncryption.decrypt(mentee.email.toLowerCase())
 			}
 			return mentee

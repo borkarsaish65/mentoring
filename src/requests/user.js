@@ -645,17 +645,19 @@ const organizationList = function (organizationIds = []) {
 				attributes: ['name', 'organization_id'],
 			})
 
-			let result = {
-				success: true,
-				data: {
-					result: organizationDetails,
-				},
+			if (organizationDetails && organizationDetails.length > 0) {
+				organizationDetails.map((orgInfo) => {
+					orgInfo.id = orgInfo.organization_id
+				})
 			}
 
 			return resolve({
 				responseCode: httpStatusCode.ok,
 				message: 'ORGANIZATION_FETCHED_SUCCESSFULLY',
-				result: result,
+				success: true,
+				data: {
+					result: organizationDetails,
+				},
 			})
 		} catch (error) {
 			return reject(error)
@@ -786,7 +788,6 @@ const getUserDetailedList = function (userIds) {
 					return user
 				})
 			)
-			console.log('userDetails--------------------', userDetails)
 
 			const response = {
 				result: userDetails,

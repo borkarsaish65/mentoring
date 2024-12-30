@@ -191,7 +191,11 @@ module.exports = class SessionsHelper {
 			}
 
 			// Fetch mentor name from user service to store it in sessions data {for listing purpose}
-			const userDetails = await mentorExtensionQueries.getMentorExtension(mentorIdToCheck, ['name'], true)
+			const userDetails = await mentorExtensionQueries.getMentorExtension(
+				mentorIdToCheck,
+				['name', 'email'],
+				true
+			)
 			if (userDetails && userDetails.name) {
 				bodyData.mentor_name = userDetails.name
 			}
@@ -680,7 +684,7 @@ module.exports = class SessionsHelper {
 				sessionAttendees.map((attendee) => {
 					for (let index = 0; index < attendeesAccounts.result.length; index++) {
 						const element = attendeesAccounts.result[index]
-						if (element.id == attendee.mentee_id) {
+						if (element.user_id == attendee.mentee_id) {
 							attendee.attendeeEmail = element.email
 							attendee.attendeeName = element.name
 							break
@@ -995,7 +999,10 @@ module.exports = class SessionsHelper {
 			)
 
 			if (isInvited || sessionDetails.is_assigned) {
-				sessionDetails.manager_name = mentorExtension.name
+				const managerDetails = await menteeExtensionQueries.getMenteeExtension(sessionDetails.created_by, [
+					'name',
+				])
+				sessionDetails.manager_name = managerDetails.name
 			}
 
 			const orgDetails = await organisationExtensionQueries.findOne(
@@ -2515,7 +2522,7 @@ module.exports = class SessionsHelper {
 				})
 			}
 			const menteeDetails = menteeAccounts.result.map((element) => ({
-				id: element.id,
+				id: element.user_id,
 				email: element.email,
 				name: element.name,
 			}))
