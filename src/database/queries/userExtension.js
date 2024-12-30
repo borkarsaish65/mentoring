@@ -37,22 +37,6 @@ module.exports = class MenteeExtensionQueries {
 				delete data['user_id']
 			}
 			const whereClause = _.isEmpty(customFilter) ? { user_id: userId } : customFilter
-
-			// If `meta` is included in `data`, use `jsonb_set` to merge changes safely
-			if (data.meta) {
-				for (const [key, value] of Object.entries(data.meta)) {
-					data.meta = Sequelize.fn(
-						'jsonb_set',
-						Sequelize.fn('COALESCE', Sequelize.col('meta'), '{}'), // Initializes `meta` if null
-						`{${key}}`,
-						JSON.stringify(value),
-						true
-					)
-				}
-			} else {
-				delete data.meta
-			}
-
 			return await MenteeExtension.update(data, {
 				where: whereClause,
 				...options,
@@ -172,7 +156,7 @@ module.exports = class MenteeExtensionQueries {
 			} else {
 				mentee = await MenteeExtension.findOne(queryOptions)
 			}
-			if (mentee?.email) {
+			if (mentee.email) {
 				mentee.email = await emailEncryption.decrypt(mentee.email.toLowerCase())
 			}
 			return mentee
