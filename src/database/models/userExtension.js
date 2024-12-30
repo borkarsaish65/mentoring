@@ -90,6 +90,9 @@ module.exports = (sequelize, DataTypes) => {
 			image: {
 				type: DataTypes.STRING,
 			},
+			gender: {
+				type: DataTypes.STRING,
+			},
 		},
 		{
 			sequelize,
