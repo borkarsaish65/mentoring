@@ -285,26 +285,29 @@ exports.getConnectionsDetails = async (
 			rolesFilter = `AND is_mentor = false`
 		}
 
-		const userFilterClause = `user_id IN (SELECT friend_id FROM ${Connection.tableName} WHERE user_id = :userId)`
+		const userFilterClause = `mv.user_id IN (SELECT friend_id FROM ${Connection.tableName} WHERE user_id = :userId)`
 
 		const projectionClause = `
-		name,
-		user_id,
-		mentee_visibility,
-		organization_id,
-		designation,
-		experience,
-		is_mentor,
-		area_of_expertise,
-		education_qualification,
-		image,
-		custom_entity_text::JSONB AS custom_entity_text,
-		meta::JSONB AS meta
+		mv.name,
+		mv.user_id,
+		mv.mentee_visibility,
+		mv.organization_id,
+		mv.designation,
+		mv.experience,
+		mv.is_mentor,
+		mv.area_of_expertise,
+		mv.education_qualification,
+		mv.image,
+		mv.custom_entity_text::JSONB AS custom_entity_text,
+		mv.meta::JSONB AS user_meta,
+		c.meta::JSONB AS connection_meta
 		`
 
 		let query = `
             SELECT ${projectionClause}
-            FROM ${common.materializedViewsPrefix + MenteeExtension.tableName}
+            FROM ${common.materializedViewsPrefix + MenteeExtension.tableName} mv
+            LEFT JOIN ${Connection.tableName} c 
+            ON c.friend_id = mv.user_id AND c.user_id = :userId
             WHERE ${userFilterClause}
             ${orgFilter}
             ${filterClause}
@@ -335,7 +338,9 @@ exports.getConnectionsDetails = async (
 
 		const countQuery = `
 		    SELECT count(*) AS "count"
-		    FROM ${common.materializedViewsPrefix + MenteeExtension.tableName}
+		    FROM ${common.materializedViewsPrefix + MenteeExtension.tableName} mv
+		    LEFT JOIN ${Connection.tableName} c 
+		    ON c.friend_id = mv.user_id AND c.user_id = :userId
 		    WHERE ${userFilterClause}
 		    ${filterClause}
 		    ${rolesFilter}
