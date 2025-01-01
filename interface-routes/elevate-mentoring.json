@@ -1213,6 +1213,7 @@
 					]
 				},
 				{
+					"service": "mentoring",
 					"basePackageName": "mentoring",
 					"packageName": "elevate-mentoring",
 					"targetBody": [],
@@ -1262,6 +1263,7 @@
 					]
 				},
 				{
+					"service": "mentoring",
 					"basePackageName": "mentoring",
 					"packageName": "elevate-mentoring",
 					"targetBody": [],
@@ -1307,6 +1309,7 @@
 					]
 				},
 				{
+					"service": "mentoring",
 					"basePackageName": "mentoring",
 					"packageName": "elevate-mentoring",
 					"targetBody": [],
@@ -1328,6 +1331,7 @@
 			"responseMessage": "User logged in successfully.",
 			"targetPackages": [
 				{
+					"service": "mentoring",
 					"basePackageName": "mentoring",
 					"packageName": "elevate-mentoring",
 					"targetBody": [],
@@ -3478,6 +3482,7 @@
 					]
 				},
 				{
+					"service": "mentoring",
 					"basePackageName": "mentoring",
 					"packageName": "elevate-mentoring",
 					"targetBody": [],
@@ -3523,6 +3528,7 @@
 					]
 				},
 				{
+					"service": "mentoring",
 					"basePackageName": "mentoring",
 					"packageName": "elevate-mentoring",
 					"targetBody": [],
@@ -3544,6 +3550,7 @@
 			"responseMessage": "User logged in successfully.",
 			"targetPackages": [
 				{
+					"service": "mentoring",
 					"basePackageName": "mentoring",
 					"packageName": "elevate-mentoring",
 					"targetBody": [],
@@ -3731,6 +3738,7 @@
 			"responseMessage": "Profile fetched successfully.",
 			"targetPackages": [
 				{
+					"service": "mentoring",
 					"basePackageName": "mentoring",
 					"packageName": "elevate-mentoring",
 					"targetBody": [],
@@ -3775,6 +3783,7 @@
 					]
 				},
 				{
+					"service": "mentoring",
 					"basePackageName": "mentoring",
 					"packageName": "elevate-mentoring",
 					"targetBody": [],
@@ -3816,6 +3825,7 @@
 					]
 				},
 				{
+					"service": "mentoring",
 					"basePackageName": "mentoring",
 					"packageName": "elevate-mentoring",
 					"targetBody": [],
