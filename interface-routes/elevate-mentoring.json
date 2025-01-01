@@ -1330,13 +1330,7 @@
 			"orchestrated": true,
 			"responseMessage": "User logged in successfully.",
 			"targetPackages": [
-				{
-					"service": "mentoring",
-					"basePackageName": "mentoring",
-					"packageName": "elevate-mentoring",
-					"targetBody": [],
-					"responseBody": []
-				},
+				
 				{
 					"service": "user",
 					"basePackageName": "mentoring",
@@ -1348,6 +1342,12 @@
 							"targetField": "user.permissions[]"
 						}
 					]
+				},{
+					"service": "mentoring",
+					"basePackageName": "mentoring",
+					"packageName": "elevate-mentoring",
+					"targetBody": [],
+					"responseBody": []
 				}
 			],
 			"rateLimit": {
