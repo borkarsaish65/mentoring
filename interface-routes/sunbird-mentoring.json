@@ -757,7 +757,7 @@
 			"requiresCustomHandling": true,
 			"targetPackages": [
 				{
-					"service":"mentoring"
+					"service":"mentoring",
 					"basePackageName": "mentoring",
 					"packageName": "sunbird-mentoring",
 					"targetBody": [],
