@@ -91,14 +91,14 @@ module.exports = (sequelize, DataTypes) => {
 			freezeTableName: true,
 			paranoid: true,
 			defaultScope: {
-				attributes: { exclude: ['name', 'email'] },
+				attributes: { exclude: [] },
 			},
 			scopes: {
 				mentors: {
 					where: {
 						is_mentor: true,
 					},
-					attributes: { exclude: ['name', 'email'] },
+					attributes: { exclude: [] },
 				},
 			},
 		}
