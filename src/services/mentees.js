@@ -33,6 +33,7 @@ const emailEncryption = require('@utils/emailEncryption')
 const communicationHelper = require('@helpers/communications')
 const menteeExtensionQueries = require('@database/queries/userExtension')
 const { checkIfUserIsAccessible } = require('@helpers/saasUserAccessibility')
+const connectionQueries = require('@database/queries/connection')
 
 module.exports = class MenteesHelper {
 	/**
@@ -1743,7 +1744,10 @@ module.exports = class MenteesHelper {
 			const processDbResponse = utils.processDbResponse(mentorExtension, validationData)
 
 			const profileMandatoryFields = await utils.validateProfileData(processDbResponse, validationData)
+
 			processDbResponse.profile_mandatory_fields = profileMandatoryFields
+
+			processDbResponse.is_connected = Boolean(await connectionQueries.getConnection(userId, id))
 
 			return responses.successResponse({
 				statusCode: httpStatusCode.ok,
