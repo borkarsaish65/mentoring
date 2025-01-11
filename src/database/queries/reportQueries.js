@@ -46,7 +46,6 @@ module.exports = class ReportQueryServiceQueries {
 		try {
 			const deletedRows = await ReportQuery.destroy({
 				where: { id },
-				force: true,
 			})
 			return deletedRows
 		} catch (error) {

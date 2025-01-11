@@ -314,19 +314,17 @@ module.exports = class ReportsHelper {
 							responseCode: 'CLIENT_ERROR',
 						})
 					const sessionModelName = await sessionQueries.getModelName()
-					const generateFilters = (data) => {
-						const filters = {}
-						for (const key in data[0]) {
-							const uniqueValues = [...new Set(data.map((item) => item[key]))]
-							filters[key] = uniqueValues
-						}
-						return filters
-					}
 
-					const entityTypeValues = 'categories,recommended_for'
+					const ExtractFilterAndEntityTypesKeys = await utils.extractFiltersAndEntityType(
+						columnConfig.columns
+					)
+					console.log('ExtractFilterAndEntityTypesKeys', ExtractFilterAndEntityTypesKeys.defaultValues)
+					console.log('ExtractFilterAndEntityTypesKeys', ExtractFilterAndEntityTypesKeys.entityType)
+					console.log('ExtractFilterAndEntityTypesKeys', ExtractFilterAndEntityTypesKeys.filters)
+
 					let entityTypeFilters = await getOrgIdAndEntityTypes.getEntityTypeWithEntitiesBasedOnOrg(
 						orgId,
-						entityTypeValues,
+						ExtractFilterAndEntityTypesKeys.entityType,
 						defaultOrgId ? defaultOrgId : '',
 						sessionModelName
 					)
@@ -336,12 +334,19 @@ module.exports = class ReportsHelper {
 						return acc
 					}, {})
 
-					reportDataResult.filters = generateFilters(resultWithoutPagination)
-					delete reportDataResult.filters.categories
-					delete reportDataResult.filters.recommended_for
+					reportDataResult.filters = await utils.generateFilters(
+						resultWithoutPagination,
+						ExtractFilterAndEntityTypesKeys.entityType,
+						ExtractFilterAndEntityTypesKeys.defaultValues,
+						columnConfig.columns
+					)
+					console.log('---------------------------', ExtractFilterAndEntityTypesKeys.filters)
 
-					reportDataResult.filters.categories = filtersEntity.categories
-					reportDataResult.filters.recommended_for = filtersEntity.recommended_for
+					if (ExtractFilterAndEntityTypesKeys.entityType) {
+						ExtractFilterAndEntityTypesKeys.entityType.split(',').forEach((key) => {
+							reportDataResult.filters[key] = filtersEntity[key]
+						})
+					}
 
 					if (downloadCsv === 'true') {
 						let entityTypesData = await getOrgIdAndEntityTypes.getEntityTypeWithEntitiesBasedOnOrg(

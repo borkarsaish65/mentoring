@@ -850,12 +850,46 @@ function getAllEpochDates(startDateEpoch, endDateEpoch, option) {
 	return dateArray
 }
 
-const generateFilters = (data) => {
+const generateFilters = (data, entityTypeKeys, DefaultValueKeys, ColumnConfig) => {
 	const filters = {}
+
+	const entityTypeKeySet = entityTypeKeys
+		? new Set(entityTypeKeys.split(',')) // Convert entityTypeKeys to a Set if provided
+		: null // Set to null if not provided
+
+	const defaultValueKeySet = DefaultValueKeys
+		? new Set(DefaultValueKeys.split(',')) // Convert DefaultValueKeys to a Set if provided
+		: null // Set to null if not provided
+
+	// Loop through keys in the first item of data
 	for (const key in data[0]) {
-		const uniqueValues = [...new Set(data.map((item) => item[key]))]
-		filters[key] = uniqueValues
+		if (!entityTypeKeySet || !entityTypeKeySet.has(key)) {
+			if (defaultValueKeySet && defaultValueKeySet.has(key)) {
+				const columnConfig = ColumnConfig.find((col) => col.key === key)
+				if (columnConfig && columnConfig.defaultValues) {
+					filters[key] = columnConfig.defaultValues.map((value) => ({
+						value: value, // Use value from defaultValues
+						label: value, // Set label as value from defaultValues
+					}))
+				} else {
+					// If no defaultValues found, use unique values from data
+					const uniqueValues = [...new Set(data.map((item) => item[key]))]
+					filters[key] = uniqueValues.map((value) => ({
+						value: value,
+						label: value,
+					}))
+				}
+			} else {
+				// If not in DefaultValueKeys, use unique values from data
+				const uniqueValues = [...new Set(data.map((item) => item[key]))]
+				filters[key] = uniqueValues.map((value) => ({
+					value: value,
+					label: value,
+				}))
+			}
+		}
 	}
+
 	return filters
 }
 
@@ -936,7 +970,9 @@ function getDynamicFilterCondition(filters, columnMappings, baseQuery, columnCon
 		console.log('Filters is not an object or is empty')
 		return '' // Early exit if filters are not valid
 	}
-
+	if (filters.session_type && filters.session_type.includes('ALL')) {
+		filters.session_type = ['PUBLIC', 'PRIVATE']
+	}
 	const conditions = Object.entries(filters)
 		.map(([column, value]) => {
 			const mappedColumn = columnMappings[column]
@@ -1032,6 +1068,10 @@ function getDynamicSearchCondition(search, columnMappings, baseQuery) {
 		return '' // Early exit if search is not valid
 	}
 
+	if (search.session_type && search.session_type.includes('ALL')) {
+		search.session_type = ['PUBLIC', 'PRIVATE']
+	}
+
 	const conditions = Object.entries(search)
 		.map(([column, value]) => {
 			const mappedColumn = columnMappings[column]
@@ -1099,6 +1139,34 @@ function getDynamicSearchCondition(search, columnMappings, baseQuery) {
 	return ''
 }
 
+function extractFiltersAndEntityType(data) {
+	let filters = []
+	let entityType = []
+	let defaultValues = []
+
+	data.forEach((item) => {
+		if (item.filter) {
+			if (item.isEntityType) {
+				// Add to entityType if filter is true and isEntityType is true
+				entityType.push(item.key)
+			} else if (item.defaultValues && Array.isArray(item.defaultValues)) {
+				// Check if defaultValues is present and an array
+				defaultValues.push(item.key)
+			} else {
+				// Add to filters if filter is true and not an entityType
+				filters.push(item.key)
+			}
+		}
+	})
+
+	// Join arrays into comma-separated strings
+	filters = filters.join(',')
+	entityType = entityType.join(',')
+	defaultValues = defaultValues.join(',')
+
+	return { filters, entityType, defaultValues }
+}
+
 module.exports = {
 	hash: hash,
 	getCurrentMonthRange,
@@ -1156,4 +1224,5 @@ module.exports = {
 	extractColumnMappings,
 	getDynamicFilterCondition,
 	getDynamicSearchCondition,
+	extractFiltersAndEntityType,
 }

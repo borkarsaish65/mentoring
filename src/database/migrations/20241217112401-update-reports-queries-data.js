@@ -379,13 +379,13 @@ module.exports = {
                     ELSE 'No'
                 END AS "session_conducted",
                 ROUND(EXTRACT(EPOCH FROM(TO_TIMESTAMP(s.end_date)-TO_TIMESTAMP(s.start_date)))/60) AS "duration_of_sessions_attended_in_minutes",
-                f.response AS "mentor_rating"
-            FROM public.session_attendees AS sa
+COALESCE(CAST(ue.rating ->>'average'AS NUMERIC),0) AS "mentor_rating"
+            FROM public.session_ownerships AS sa
             JOIN public.sessions AS s ON sa.session_id = s.id
             LEFT JOIN public.user_extensions AS ue ON s.created_by = ue.user_id
-            LEFT JOIN public.feedbacks AS f ON s.id = f.session_id
             WHERE 
-                (CASE WHEN :userId IS NOT NULL THEN sa.mentee_id = :userId ELSE TRUE END)
+                (CASE WHEN :userId IS NOT NULL THEN sa.user_id = :userId ELSE TRUE END)
+                AND (sa.type = 'MENTOR' )
                 AND (CASE WHEN :start_date IS NOT NULL THEN s.start_date > :start_date ELSE TRUE END)
                 AND (CASE WHEN :end_date IS NOT NULL THEN s.end_date < :end_date ELSE TRUE END)
                 AND (CASE WHEN :entities_value IS NOT NULL THEN s.categories = :entities_value ELSE TRUE END)
