@@ -305,7 +305,7 @@ module.exports = class ReportsHelper {
 				}
 
 				// Handle CSV download
-				if (resultWithoutPagination?.length && downloadCsv === 'true') {
+				if (resultWithoutPagination?.length) {
 					const defaultOrgId = await getDefaultOrgId()
 					if (!defaultOrgId)
 						return responses.failureResponse({
@@ -314,19 +314,14 @@ module.exports = class ReportsHelper {
 							responseCode: 'CLIENT_ERROR',
 						})
 					const sessionModelName = await sessionQueries.getModelName()
-					const generateFilters = (data) => {
-						const filters = {}
-						for (const key in data[0]) {
-							const uniqueValues = [...new Set(data.map((item) => item[key]))]
-							filters[key] = uniqueValues
-						}
-						return filters
-					}
 
-					const entityTypeValues = 'categories,recommended_for'
+					const ExtractFilterAndEntityTypesKeys = await utils.extractFiltersAndEntityType(
+						columnConfig.columns
+					)
+
 					let entityTypeFilters = await getOrgIdAndEntityTypes.getEntityTypeWithEntitiesBasedOnOrg(
 						orgId,
-						entityTypeValues,
+						ExtractFilterAndEntityTypesKeys.entityType,
 						defaultOrgId ? defaultOrgId : '',
 						sessionModelName
 					)
@@ -336,67 +331,77 @@ module.exports = class ReportsHelper {
 						return acc
 					}, {})
 
-					reportDataResult.filters = generateFilters(resultWithoutPagination)
-					delete reportDataResult.filters.categories
-					delete reportDataResult.filters.recommended_for
-
-					reportDataResult.filters.categories = filtersEntity.categories
-					reportDataResult.filters.recommended_for = filtersEntity.recommended_for
-
-					let entityTypesData = await getOrgIdAndEntityTypes.getEntityTypeWithEntitiesBasedOnOrg(
-						orgId,
-						'',
-						defaultOrgId ? defaultOrgId : '',
-						sessionModelName
+					reportDataResult.filters = await utils.generateFilters(
+						resultWithoutPagination,
+						ExtractFilterAndEntityTypesKeys.entityType,
+						ExtractFilterAndEntityTypesKeys.defaultValues,
+						columnConfig.columns
 					)
 
-					// Function to map EntityTypes to data
-					const mapEntityTypesToData = (data, entityTypes) => {
-						return data.map((item) => {
-							const newItem = { ...item }
-
-							// Loop through EntityTypes to check for matching keys
-							entityTypes.forEach((entityType) => {
-								const key = entityType.value
-
-								// If the key exists in the data item
-								if (newItem[key]) {
-									const values = newItem[key].split(',').map((val) => val.trim())
-
-									// Map values to corresponding entity labels
-									const mappedValues = values
-										.map((value) => {
-											const entity = entityType.entities.find((e) => e.value === value)
-											return entity ? entity.label : value
-										})
-										.join(', ')
-
-									newItem[key] = mappedValues
-								}
-							})
-
-							return newItem
+					if (ExtractFilterAndEntityTypesKeys.entityType) {
+						ExtractFilterAndEntityTypesKeys.entityType.split(',').forEach((key) => {
+							reportDataResult.filters[key] = filtersEntity[key]
 						})
 					}
 
-					// Process the data
-					const transformedData = mapEntityTypesToData(resultWithoutPagination, entityTypesData.result)
-
-					const keyToLabelMap = Object.fromEntries(columnConfig.columns.map(({ key, label }) => [key, label]))
-
-					// Transform objects in the array
-					const transformedResult = transformedData.map((item) =>
-						Object.fromEntries(
-							Object.entries(item).map(([key, value]) => [
-								keyToLabelMap[key] || key, // Use label if key exists, otherwise retain original key
-								value,
-							])
+					if (downloadCsv === 'true') {
+						let entityTypesData = await getOrgIdAndEntityTypes.getEntityTypeWithEntitiesBasedOnOrg(
+							orgId,
+							'',
+							defaultOrgId ? defaultOrgId : '',
+							sessionModelName
 						)
-					)
 
-					const outputFilePath = await this.generateAndUploadCSV(transformedResult, userId, orgId)
-					reportDataResult.reportsDownloadUrl = await utils.getDownloadableUrl(outputFilePath)
-					utils.clearFile(outputFilePath)
+						// Function to map EntityTypes to data
+						const mapEntityTypesToData = (data, entityTypes) => {
+							return data.map((item) => {
+								const newItem = { ...item }
+
+								// Loop through EntityTypes to check for matching keys
+								entityTypes.forEach((entityType) => {
+									const key = entityType.value
+
+									// If the key exists in the data item
+									if (newItem[key]) {
+										const values = newItem[key].split(',').map((val) => val.trim())
+
+										// Map values to corresponding entity labels
+										const mappedValues = values
+											.map((value) => {
+												const entity = entityType.entities.find((e) => e.value === value)
+												return entity ? entity.label : value
+											})
+											.join(', ')
+
+										newItem[key] = mappedValues
+									}
+								})
+
+								return newItem
+							})
+						}
+
+						// Process the data
+						const transformedData = mapEntityTypesToData(resultWithoutPagination, entityTypesData.result)
+
+						const keyToLabelMap = Object.fromEntries(
+							columnConfig.columns.map(({ key, label }) => [key, label])
+						)
+
+						// Transform objects in the array
+						const transformedResult = transformedData.map((item) =>
+							Object.fromEntries(
+								Object.entries(item).map(([key, value]) => [
+									keyToLabelMap[key] || key, // Use label if key exists, otherwise retain original key
+									value,
+								])
+							)
+						)
+
+						const outputFilePath = await this.generateAndUploadCSV(transformedResult, userId, orgId)
+						reportDataResult.reportsDownloadUrl = await utils.getDownloadableUrl(outputFilePath)
+						utils.clearFile(outputFilePath)
+					}
 				}
 			}
 

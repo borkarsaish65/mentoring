@@ -124,14 +124,12 @@ module.exports = {
 
 		req.checkBody('code')
 			.optional()
-			.notEmpty()
 			.withMessage('code field is empty')
 			.matches(/^[a-z_]+$/)
 			.withMessage('code should not contain any spaces')
 
 		req.checkBody('title')
 			.optional()
-			.notEmpty()
 			.withMessage('title field is empty')
 			.matches(/^[a-z_]+$/)
 			.withMessage('title should not contain any spaces')
@@ -140,7 +138,6 @@ module.exports = {
 
 		req.checkBody('report_type_title')
 			.optional()
-			.notEmpty()
 			.withMessage('report_type_title field is empty')
 			.matches(/^[a-z_]+$/)
 			.withMessage('report_type_title should not contain any spaces')

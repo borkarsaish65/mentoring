@@ -4507,6 +4507,733 @@
 					]
 				}
 			]
+		},
+		{
+			"name": "Role Extensions",
+			"item": [
+				{
+					"name": "Create Role Extension",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-auth-token",
+								"value": "bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"user\",\n\t\"label\": \"User\",\n\t\"scope\": \"SELF\",\n\t\"organization_id\": \"1\"\n}"
+						},
+						"url": "{{MentoringBaseUrl}}mentoring/v1/role-extension/create"
+					},
+					"response": []
+				},
+				{
+					"name": "Read Role Extension",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-auth-token",
+								"value": "bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{MentoringBaseUrl}}mentoring/v1/role-extension/getReportMapping?title=mentee",
+							"host": ["{{MentoringBaseUrl}}mentoring"],
+							"path": ["v1", "role-extension", "getReportMapping"],
+							"query": [
+								{
+									"key": "title",
+									"value": "mentee"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Role Extension",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-auth-token",
+								"value": "bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"lable\": \"dummy_title\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{MentoringBaseUrl}}mentoring/v1/role-extension/update?title=mentee",
+							"host": ["{{MentoringBaseUrl}}mentoring"],
+							"path": ["v1", "role-extension", "update"],
+							"query": [
+								{
+									"key": "title",
+									"value": "mentee"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Role Extension",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "x-auth-token",
+								"value": "bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{MentoringBaseUrl}}mentoring/v1/role-extension/delete?title=mentee",
+							"host": ["{{MentoringBaseUrl}}mentoring"],
+							"path": ["v1", "role-extension", "delete"],
+							"query": [
+								{
+									"key": "title",
+									"value": "mentee"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Reports",
+			"item": [
+				{
+					"name": "Create Report",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-auth-token",
+								"value": "bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\t\t\t\"code\": \"total_number_of_sessions_attended_dumy\",\n\t\t\t\t\"title\": \"total_number_of_sessions_attended_dummy\",\n\t\t\t\t\"description\": \"Total sessions attended by user in big number\",\n\t\t\t\t\"report_type_title\": \"big_number\",\n\t\t\t\t\"config\": {},\n\t\t\t\t\"organization_id\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{MentoringBaseUrl}}mentoring/v1/reports/create"
+					},
+					"response": []
+				},
+				{
+					"name": "Read Report",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-auth-token",
+								"value": "bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{MentoringBaseUrl}}mentoring/v1/reports/getReportById?id=1",
+							"host": ["{{MentoringBaseUrl}}mentoring"],
+							"path": ["v1", "reports", "getReportById"],
+							"query": [
+								{
+									"key": "id",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Reports",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-auth-token",
+								"value": "bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"code\": \"dummy\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{MentoringBaseUrl}}mentoring/v1/reports/update/:id\n",
+							"host": ["{{MentoringBaseUrl}}mentoring"],
+							"path": ["v1", "reports", "update", ":id\n"],
+							"variable": [
+								{
+									"key": "id\n",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Reports",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "x-auth-token",
+								"value": "bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{MentoringBaseUrl}}mentoring/v1/reports/delete?id=15",
+							"host": ["{{MentoringBaseUrl}}mentoring"],
+							"path": ["v1", "reports", "delete"],
+							"query": [
+								{
+									"key": "id",
+									"value": "15"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Report Data",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-auth-token",
+								"value": "bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"filters\" : {\n        \"mentor_name\" : [\"user1\",\"user2\"]\n    },\n    \"search\" : {\n        \"mentor_name\" : [\"user1\",\"user2\"]\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{MentoringBaseUrl}}mentoring/v1/reports/reportData?report_code=session_manger_session_details&report_role=session_manager&start_date=1735756200&end_date=1738348199&session_type=All",
+							"host": ["{{MentoringBaseUrl}}mentoring"],
+							"path": ["v1", "reports", "reportData"],
+							"query": [
+								{
+									"key": "report_code",
+									"value": "session_manger_session_details"
+								},
+								{
+									"key": "report_role",
+									"value": "session_manager"
+								},
+								{
+									"key": "start_date",
+									"value": "1735756200"
+								},
+								{
+									"key": "end_date",
+									"value": "1738348199"
+								},
+								{
+									"key": "session_type",
+									"value": "All"
+								},
+								{
+									"key": "pageNo",
+									"value": "1",
+									"description": "use when report type is table",
+									"disabled": true
+								},
+								{
+									"key": "Limit",
+									"value": "100",
+									"description": "use when report type is table",
+									"disabled": true
+								},
+								{
+									"key": "download_csv",
+									"value": "false",
+									"description": "use when report type is table",
+									"disabled": true
+								},
+								{
+									"key": "organization",
+									"value": "1",
+									"description": "use when report type is table",
+									"disabled": true
+								},
+								{
+									"key": "entities_value",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "group_by",
+									"value": "month",
+									"disabled": true
+								},
+								{
+									"key": "sort_column",
+									"value": "",
+									"description": "use when report type is table",
+									"disabled": true
+								},
+								{
+									"key": "sort_type",
+									"value": "",
+									"description": "use when report type is table",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Filter List",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-auth-token",
+								"value": "bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{MentoringBaseUrl}}mentoring/v1/reports/filterList?filter_type=session&report_filter=true",
+							"host": ["{{MentoringBaseUrl}}mentoring"],
+							"path": ["v1", "reports", "filterList"],
+							"query": [
+								{
+									"key": "filter_type",
+									"value": "session",
+									"description": "Enter filter_type value and only 'session'"
+								},
+								{
+									"key": "report_filter",
+									"value": "true",
+									"description": "It can be true or false"
+								},
+								{
+									"key": "entity_types",
+									"value": "",
+									"description": "Enter the entityType values",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Report Type",
+			"item": [
+				{
+					"name": "Create Report Type",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-auth-token",
+								"value": "bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\":\"random_title\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{MentoringBaseUrl}}mentoring/v1/report-type/create"
+					},
+					"response": []
+				},
+				{
+					"name": "Read Report Type",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-auth-token",
+								"value": "bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{MentoringBaseUrl}}mentoring/v1/report-type/getReportType?title=random_title",
+							"host": ["{{MentoringBaseUrl}}mentoring"],
+							"path": ["v1", "report-type", "getReportType"],
+							"query": [
+								{
+									"key": "title",
+									"value": "random_title"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Report Type",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-auth-token",
+								"value": "bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"dummy_title\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{MentoringBaseUrl}}mentoring/v1/report-type/update?id=1",
+							"host": ["{{MentoringBaseUrl}}mentoring"],
+							"path": ["v1", "report-type", "update"],
+							"query": [
+								{
+									"key": "id",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Report Type",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "x-auth-token",
+								"value": "bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{MentoringBaseUrl}}mentoring/v1/reports/getReportById?id=1",
+							"host": ["{{MentoringBaseUrl}}mentoring"],
+							"path": ["v1", "reports", "getReportById"],
+							"query": [
+								{
+									"key": "id",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Report Role Mapping",
+			"item": [
+				{
+					"name": "Create Report Mapping",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-auth-token",
+								"value": "bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"report_code\": \"dumy\",\n  \"role_title\": \"mentor\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{MentoringBaseUrl}}mentoring/v1/report-mapping/create"
+					},
+					"response": []
+				},
+				{
+					"name": "Read Report Mapping",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-auth-token",
+								"value": "bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{MentoringBaseUrl}}mentoring/v1/report-mapping/getReportMapping?code=report_code",
+							"host": ["{{MentoringBaseUrl}}mentoring"],
+							"path": ["v1", "report-mapping", "getReportMapping"],
+							"query": [
+								{
+									"key": "code",
+									"value": "report_code"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Report Mapping",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-auth-token",
+								"value": "bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"report_code\": \"dummy_title\",\n    \"role_title\": \"mentee\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{MentoringBaseUrl}}mentoring/v1/report-mapping/update?id=1",
+							"host": ["{{MentoringBaseUrl}}mentoring"],
+							"path": ["v1", "report-mapping", "update"],
+							"query": [
+								{
+									"key": "id",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Report Mapping",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "x-auth-token",
+								"value": "bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{MentoringBaseUrl}}mentoring/v1/report-mapping/delete?id=1",
+							"host": ["{{MentoringBaseUrl}}mentoring"],
+							"path": ["v1", "report-mapping", "delete"],
+							"query": [
+								{
+									"key": "id",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Report Queries",
+			"item": [
+				{
+					"name": "Create Report Queries",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-auth-token",
+								"value": "bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "report_code",
+									"value": "dumyq",
+									"type": "text"
+								},
+								{
+									"key": "query",
+									"value": "SELECT \n                s.title AS \"Session Title\",\n                ue.name AS \"Sessions Created By\",\n                s.mentor_name AS \"Mentor Name\",\n                TO_TIMESTAMP(s.start_date)::DATE AS \"Date of Session\", \n                s.type AS \"Session Type\",\n                ARRAY_TO_STRING(s.categories, ', ') AS \"Categories\", -- Converts array to a comma-separated string\n                ARRAY_TO_STRING(s.recommended_for, ', ') AS \"Recommended for\",\n                CASE \n                    WHEN sa.joined_at IS NOT NULL THEN 'Yes'\n                    ELSE 'No'\n                END AS \"Session Attended\",\n                ROUND(EXTRACT(EPOCH FROM (TO_TIMESTAMP(s.end_date) - TO_TIMESTAMP(s.start_date))) / 60) AS \"Duration of Sessions Attended - min (at setup time)\"\n            FROM public.session_attendees AS sa\n            JOIN public.sessions AS s ON sa.session_id = s.id\n            LEFT JOIN public.user_extensions AS ue ON s.created_by = ue.user_id \n            WHERE \n                (CASE WHEN :userId IS NOT NULL THEN sa.mentee_id = :userId ELSE TRUE END)\n                AND (CASE WHEN :start_date IS NOT NULL THEN s.start_date > :start_date ELSE TRUE END)\n                AND (CASE WHEN :end_date IS NOT NULL THEN s.end_date < :end_date ELSE TRUE END)\n                AND (CASE WHEN :entities_value IS NOT NULL THEN s.categories = :entities_value ELSE TRUE END)\n                AND (\n                    CASE \n                        WHEN :session_type = 'All' THEN s.type IN ('PUBLIC', 'PRIVATE')\n                        WHEN :session_type = 'PUBLIC' THEN s.type = 'PUBLIC'\n                        WHEN :session_type = 'PRIVATE' THEN s.type = 'PRIVATE'\n                        ELSE TRUE\n                    END\n                )\n                AND (\n                :search_column IS NULL OR (\n                    LENGTH(:search_value) >= 1 AND \n                    CAST(\n                        CASE \n                            WHEN :search_column = 'sessions_created_by' THEN ue.name\n                            WHEN :search_column = 'mentor_name' THEN s.mentor_name\n                            WHEN :search_column = 'date_of_session' THEN TO_CHAR(TO_TIMESTAMP(s.start_date)::DATE, 'YYYY-MM-DD')\n                            WHEN :search_column = 'session_type' THEN s.type\n                            WHEN :search_column = 'categories' THEN \n                                CASE \n                                    WHEN :search_value = ANY(s.categories) THEN :search_value -- Check if the search value is present in the array\n                                    ELSE NULL\n                                END\n                            WHEN :search_column = 'recommended_for' THEN \n                                CASE \n                                    WHEN :search_value = ANY(s.recommended_for) THEN :search_value -- Check if the search value is present in the array\n                                    ELSE NULL\n                                END\n                            WHEN :search_column = 'duration_of_sessions_attended' THEN ROUND(EXTRACT(EPOCH FROM (TO_TIMESTAMP(s.end_date) - TO_TIMESTAMP(s.start_date))) / 60)::TEXT\n                            WHEN :search_column = 'session_attended' THEN \n                                CASE \n                                    WHEN :search_value = 'Yes' AND sa.joined_at IS NOT NULL THEN 'Yes'\n                                    WHEN :search_value = 'No' AND sa.joined_at IS NULL THEN 'No'\n                                    ELSE NULL\n                                END\n                        END AS TEXT\n                    ) ILIKE '%' || :search_value || '%'\n                )\n            )\n            ORDER BY\n                CASE :sort_column\n                    WHEN 'sessions_created_by' THEN ue.name\n                    WHEN 'mentor_name' THEN s.mentor_name\n                    WHEN 'duration_of_sessions_attended' THEN \n                        ROUND(EXTRACT(EPOCH FROM (TO_TIMESTAMP(s.end_date) - TO_TIMESTAMP(s.start_date))) / 60)::TEXT\n                    WHEN 'session_type' THEN s.type\n                    WHEN 'session_attended' THEN \n                        CASE \n                            WHEN sa.joined_at IS NOT NULL THEN 'Yes'\n                            ELSE 'No'\n                        END\n                    WHEN 'categories' THEN ARRAY_TO_STRING(s.categories, ', ') \n                    WHEN 'recommended_for' THEN ARRAY_TO_STRING(s.recommended_for, ', ')\n                    WHEN 'date_of_session' THEN TO_CHAR(TO_TIMESTAMP(s.start_date)::DATE, 'YYYY-MM-DD')\n                    ELSE NULL\n                END :sort_type NULLS LAST\n            LIMIT :limit OFFSET :offset;",
+									"type": "text"
+								}
+							]
+						},
+						"url": "{{MentoringBaseUrl}}mentoring/v1/report-queries/create"
+					},
+					"response": []
+				},
+				{
+					"name": "Read Report Queries",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-auth-token",
+								"value": "bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{MentoringBaseUrl}}mentoring/v1/report-mapping/getReportMapping?code=total_number_of_sessions_attended",
+							"host": ["{{MentoringBaseUrl}}mentoring"],
+							"path": ["v1", "report-mapping", "getReportMapping"],
+							"query": [
+								{
+									"key": "code",
+									"value": "total_number_of_sessions_attended"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Report Queries",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-auth-token",
+								"value": "bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"report_code\": \"dummy_title\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{MentoringBaseUrl}}mentoring/v1/report-mapping/update?id=16",
+							"host": ["{{MentoringBaseUrl}}mentoring"],
+							"path": ["v1", "report-mapping", "update"],
+							"query": [
+								{
+									"key": "id",
+									"value": "16"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Report Queries",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "x-auth-token",
+								"value": "bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{MentoringBaseUrl}}mentoring/v1/report-mapping/delete?id=16",
+							"host": ["{{MentoringBaseUrl}}mentoring"],
+							"path": ["v1", "report-mapping", "delete"],
+							"query": [
+								{
+									"key": "id",
+									"value": "16"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
 		}
 	]
 }

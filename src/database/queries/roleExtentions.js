@@ -31,10 +31,10 @@ module.exports = class RoleExtensionService {
 		}
 	}
 
-	static async updateRoleExtension(title, updateData) {
+	static async updateRoleExtension(filter, updateData) {
 		try {
 			const [rowsUpdated, [updatedRoleExtension]] = await RoleExtension.update(updateData, {
-				where: { title },
+				where: filter,
 				returning: true,
 			})
 			return updatedRoleExtension
@@ -43,23 +43,12 @@ module.exports = class RoleExtensionService {
 		}
 	}
 
-	static async softDeleteRoleExtension(title) {
+	static async DeleteRoleExtension(title) {
 		try {
 			const deletedRows = await RoleExtension.destroy({
 				where: { title },
 			})
 			return deletedRows // Soft delete (paranoid enabled)
-		} catch (error) {
-			throw error
-		}
-	}
-
-	static async restoreRoleExtension(title) {
-		try {
-			const restoredRows = await RoleExtension.restore({
-				where: { title },
-			})
-			return restoredRows // Restore soft-deleted entry
 		} catch (error) {
 			throw error
 		}
