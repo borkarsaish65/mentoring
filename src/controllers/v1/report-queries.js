@@ -22,8 +22,7 @@ module.exports = class ReportQuery {
 
 	async update(req) {
 		try {
-			const filter = { id: req.query.id }
-			const updatedReportQuery = await reportQueryService.updateQuery(filter, req.body)
+			const updatedReportQuery = await reportQueryService.updateQuery(req.query.code, req.body)
 			return updatedReportQuery
 		} catch (error) {
 			return error

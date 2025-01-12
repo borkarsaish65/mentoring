@@ -57,6 +57,7 @@ module.exports = {
 							search: true,
 							filterType: '=',
 							isEntityType: false,
+							isMultipleFilter: false,
 						},
 						{
 							key: 'sessions_created_by',
@@ -66,6 +67,7 @@ module.exports = {
 							search: true,
 							filterType: '=',
 							isEntityType: false,
+							isMultipleFilter: false,
 						},
 						{
 							key: 'mentor_name',
@@ -75,6 +77,7 @@ module.exports = {
 							search: true,
 							filterType: '=',
 							isEntityType: false,
+							isMultipleFilter: false,
 						},
 						{
 							key: 'date_of_session',
@@ -85,6 +88,7 @@ module.exports = {
 							filterType: '=',
 							dataType: 'Date',
 							isEntityType: false,
+							isMultipleFilter: true,
 						},
 						{
 							key: 'session_type',
@@ -95,6 +99,7 @@ module.exports = {
 							filterType: '=',
 							isEntityType: false,
 							defaultValues: ['ALL', 'PUBLIC', 'PRIVATE'],
+							isMultipleFilter: false,
 						},
 						{
 							key: 'categories',
@@ -104,6 +109,7 @@ module.exports = {
 							search: false,
 							filterType: '=',
 							isEntityType: true,
+							isMultipleFilter: true,
 						},
 						{
 							key: 'recommended_for',
@@ -113,6 +119,7 @@ module.exports = {
 							search: false,
 							filterType: '=',
 							isEntityType: true,
+							isMultipleFilter: true,
 						},
 						{
 							key: 'session_attended',
@@ -123,6 +130,7 @@ module.exports = {
 							filterType: '=',
 							isEntityType: false,
 							defaultValues: ['Yes', 'No'],
+							isMultipleFilter: true,
 						},
 						{
 							key: 'duration_of_sessions_attended_in_minutes',
@@ -182,6 +190,7 @@ module.exports = {
 								'1410',
 								'1440',
 							],
+							isMultipleFilter: false,
 						},
 					],
 				}),
@@ -234,6 +243,7 @@ module.exports = {
 							search: true,
 							filterType: '=',
 							isEntityType: false,
+							isMultipleFilter: false,
 						},
 						{
 							key: 'sessions_title',
@@ -243,6 +253,7 @@ module.exports = {
 							search: true,
 							filterType: '=',
 							isEntityType: false,
+							isMultipleFilter: false,
 						},
 						{
 							key: 'date_of_session',
@@ -253,6 +264,7 @@ module.exports = {
 							filterType: '=',
 							dataType: 'Date',
 							isEntityType: false,
+							isMultipleFilter: true,
 						},
 						{
 							key: 'session_type',
@@ -263,6 +275,7 @@ module.exports = {
 							filterType: '=',
 							isEntityType: false,
 							defaultValues: ['ALL', 'PUBLIC', 'PRIVATE'],
+							isMultipleFilter: false,
 						},
 						{
 							key: 'number_of_mentees',
@@ -273,6 +286,7 @@ module.exports = {
 							filterType: '<=',
 							isEntityType: false,
 							defaultValues: ['5', '10', '15', '20', '25'],
+							isMultipleFilter: false,
 						},
 						{
 							key: 'session_conducted',
@@ -283,6 +297,7 @@ module.exports = {
 							filterType: '=',
 							isEntityType: false,
 							defaultValues: ['Yes', 'No'],
+							isMultipleFilter: true,
 						},
 						{
 							key: 'duration_of_sessions_attended_in_minutes',
@@ -342,6 +357,7 @@ module.exports = {
 								'1410',
 								'1440',
 							],
+							isMultipleFilter: false,
 						},
 						{
 							key: 'mentor_rating',
@@ -352,6 +368,7 @@ module.exports = {
 							filterType: '=',
 							isEntityType: false,
 							defaultValues: ['1', '2', '3', '4', '5'],
+							isMultipleFilter: false,
 						},
 					],
 				}),
@@ -406,6 +423,7 @@ module.exports = {
 							search: true,
 							filterType: '=',
 							isEntityType: false,
+							isMultipleFilter: false,
 						},
 						{
 							key: 'number_of_mentoring_sessions',
@@ -416,6 +434,7 @@ module.exports = {
 							filterType: '<=',
 							isEntityType: false,
 							defaultValues: ['5', '10', '50', '100', '200', '400', '600', '800', '1000', '1200', '1460'],
+							isMultipleFilter: false,
 						},
 						{
 							key: 'hours_of_mentoring_sessions',
@@ -426,6 +445,7 @@ module.exports = {
 							filterType: '<=',
 							isEntityType: false,
 							defaultValues: ['5', '10', '50', '100', '200', '300', '400', '500', '600', '720'],
+							isMultipleFilter: false,
 						},
 						{
 							key: 'avg_mentor_rating',
@@ -436,6 +456,7 @@ module.exports = {
 							filterType: '=',
 							isEntityType: false,
 							defaultValues: ['1', '2', '3', '4', '5'],
+							isMultipleFilter: false,
 						},
 					],
 				}),

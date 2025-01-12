@@ -49,8 +49,9 @@ module.exports = class ReportsHelper {
 		}
 	}
 
-	static async updateQuery(filter, updateData) {
+	static async updateQuery(code, updateData) {
 		try {
+			const filter = { report_code: code }
 			const updateMapping = await ReportQueries.updateReportQueries(filter, updateData)
 			if (!updateMapping) {
 				return responses.failureResponse({
