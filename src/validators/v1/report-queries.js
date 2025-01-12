@@ -21,7 +21,7 @@ module.exports = {
 	},
 
 	update: (req) => {
-		req.checkQuery('id').notEmpty().withMessage('id is required')
+		req.checkQuery('code').notEmpty().withMessage('code is required')
 
 		req.checkBody('query')
 			.optional()
