@@ -131,8 +131,8 @@ module.exports = {
 		req.checkBody('title')
 			.notEmpty()
 			.withMessage('title field is empty')
-			.matches(/^[a-z_]+$/)
-			.withMessage('title should not contain any spaces')
+			.matches(/^[A-Za-z ]+$/)
+			.withMessage('title can only contain alphabetic characters and spaces')
 
 		req.checkBody('description').notEmpty().withMessage('description field is empty')
 
@@ -142,22 +142,12 @@ module.exports = {
 			.matches(/^[a-z_]+$/)
 			.withMessage('report_type_title should not contain any spaces')
 
-		req.checkBody('config')
-			.notEmpty('config field is required')
-			.withMessage()
-			.custom((value) => {
-				try {
-					JSON.parse(value)
-					return true
-				} catch (e) {
-					throw new Error('config should be a valid JSON object')
-				}
-			})
+		req.checkBody('config').notEmpty('config field is required').withMessage('')
 
 		req.checkBody('organization_id').optional().notEmpty().isInt().withMessage('organization_id field is empty')
 	},
 
-	getReportById: (req) => {
+	read: (req) => {
 		req.checkQuery('id').notEmpty().withMessage('id is required')
 	},
 
@@ -173,8 +163,8 @@ module.exports = {
 		req.checkBody('title')
 			.optional()
 			.withMessage('title field is empty')
-			.matches(/^[a-z_]+$/)
-			.withMessage('title should not contain any spaces')
+			.matches(/^[A-Za-z ]+$/)
+			.withMessage('title can only contain alphabetic characters and spaces')
 
 		req.checkBody('description').optional().notEmpty().withMessage('description field is empty')
 

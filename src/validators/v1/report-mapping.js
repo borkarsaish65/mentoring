@@ -12,7 +12,7 @@ module.exports = {
 			.withMessage('role_title should not contain any spaces')
 	},
 
-	getReportById: (req) => {
+	read: (req) => {
 		req.checkQuery('code')
 			.notEmpty()
 			.withMessage('code is required')

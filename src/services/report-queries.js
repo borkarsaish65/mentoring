@@ -45,7 +45,7 @@ module.exports = class ReportsHelper {
 				result: readQuery,
 			})
 		} catch (error) {
-			return error
+			throw error
 		}
 	}
 
@@ -66,7 +66,7 @@ module.exports = class ReportsHelper {
 				result: updateMapping.dataValues,
 			})
 		} catch (error) {
-			return error
+			throw error
 		}
 	}
 
@@ -85,7 +85,7 @@ module.exports = class ReportsHelper {
 				message: 'REPORT_QUERY_DELETED_SUCCESSFULLY',
 			})
 		} catch (error) {
-			return error
+			throw error
 		}
 	}
 }

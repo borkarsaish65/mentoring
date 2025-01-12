@@ -7,8 +7,8 @@ module.exports = {
 			.withMessage('title should not contain any spaces')
 	},
 
-	getReportById: (req) => {
-		req.checkQuery('id').notEmpty().withMessage('id is required')
+	read: (req) => {
+		req.checkQuery('title').notEmpty().withMessage('title is required')
 	},
 
 	update: (req) => {

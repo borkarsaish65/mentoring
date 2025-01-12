@@ -127,7 +127,7 @@ module.exports = class Reports {
 		}
 	}
 
-	async getReportById(req) {
+	async read(req) {
 		try {
 			const getReportById = await reportService.getReportById(req.query.id)
 			return getReportById
@@ -138,8 +138,7 @@ module.exports = class Reports {
 
 	async update(req) {
 		try {
-			const filter = { id: req.params.id }
-			const updatedReport = await reportService.updateReport(filter, req.body)
+			const updatedReport = await reportService.updateReport(req.query.id, req.body)
 			return updatedReport
 		} catch (error) {
 			return error

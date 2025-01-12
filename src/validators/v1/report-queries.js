@@ -12,7 +12,7 @@ module.exports = {
 			.withMessage('query must be in string')
 	},
 
-	getReportById: (req) => {
+	read: (req) => {
 		req.checkQuery('code')
 			.notEmpty()
 			.withMessage('code is required')

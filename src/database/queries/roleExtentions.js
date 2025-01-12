@@ -43,7 +43,7 @@ module.exports = class RoleExtensionService {
 		}
 	}
 
-	static async DeleteRoleExtension(title) {
+	static async deleteRoleExtension(title) {
 		try {
 			const deletedRows = await RoleExtension.destroy({
 				where: { title },

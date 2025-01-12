@@ -11,7 +11,7 @@ module.exports = class ReportType {
 		}
 	}
 
-	async getReportType(req) {
+	async read(req) {
 		try {
 			const getReportById = await reportTypeService.getReportType(req.query.title)
 			return getReportById

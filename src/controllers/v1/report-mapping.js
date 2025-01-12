@@ -11,7 +11,7 @@ module.exports = class ReportMapping {
 		}
 	}
 
-	async getReportMapping(req) {
+	async read(req) {
 		try {
 			const getReportMapping = await reportmappingService.getMapping(req.query.code)
 			return getReportMapping

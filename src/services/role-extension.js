@@ -29,7 +29,7 @@ module.exports = class ReportsHelper {
 		}
 	}
 
-	static async getRoleExtension(title) {
+	static async roleExtensionDetails(title) {
 		try {
 			const readRoleExtension = await roleExtensionQueries.findRoleExtensionByTitle(title)
 			if (!readRoleExtension) {
@@ -45,7 +45,7 @@ module.exports = class ReportsHelper {
 				result: readRoleExtension.dataValues,
 			})
 		} catch (error) {
-			return error
+			throw error
 		}
 	}
 
@@ -66,13 +66,13 @@ module.exports = class ReportsHelper {
 				result: updatedRole.dataValues,
 			})
 		} catch (error) {
-			return error
+			throw error
 		}
 	}
 
 	static async deleteRoleExtension(title) {
 		try {
-			const deletedRows = await roleExtensionQueries.DeleteRoleExtension(title)
+			const deletedRows = await roleExtensionQueries.deleteRoleExtension(title)
 			if (deletedRows === 0) {
 				return responses.failureResponse({
 					message: 'ROLE_EXTENSION_DELETION_FAILED',
@@ -85,7 +85,7 @@ module.exports = class ReportsHelper {
 				message: 'ROLE_EXTENSION_DELETED_SUCCESSFULLY',
 			})
 		} catch (error) {
-			return error
+			throw error
 		}
 	}
 }

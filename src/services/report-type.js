@@ -31,8 +31,7 @@ module.exports = class ReportsHelper {
 
 	static async getReportType(title) {
 		try {
-			const readReportType = await reportTypeQueries.findReportTypeById(title)
-			console.log('readReportType', readReportType)
+			const readReportType = await reportTypeQueries.findReportTypeByTitle(title)
 			if (!readReportType) {
 				return responses.failureResponse({
 					message: 'REPORT_TYPE_NOT_FOUND',
@@ -46,7 +45,7 @@ module.exports = class ReportsHelper {
 				result: readReportType.dataValues,
 			})
 		} catch (error) {
-			return error
+			throw error
 		}
 	}
 
@@ -66,13 +65,13 @@ module.exports = class ReportsHelper {
 				result: updatedReport.dataValues,
 			})
 		} catch (error) {
-			return error
+			throw error
 		}
 	}
 
 	static async deleteReportType(id) {
 		try {
-			const deletedRows = await reportTypeQueries.DeleteReportType(id)
+			const deletedRows = await reportTypeQueries.deleteReportType(id)
 			if (deletedRows === 0) {
 				return responses.failureResponse({
 					message: 'REPORT_TYPE_DELETION_FAILED',
@@ -85,7 +84,7 @@ module.exports = class ReportsHelper {
 				message: 'REPORT_TYPE_DELETED_SUCCESSFULLY',
 			})
 		} catch (error) {
-			return error
+			throw error
 		}
 	}
 }
