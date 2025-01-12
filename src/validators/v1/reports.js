@@ -1,5 +1,3 @@
-const { filterRequestBody } = require('../common')
-
 module.exports = {
 	filterList: (req) => {
 		req.checkQuery('filter_type')
@@ -64,14 +62,58 @@ module.exports = {
 			.matches(/^[A-Za-z]*$/)
 			.withMessage('sort_column is invalid, must be')
 
-		req.checkQuery('search_column')
+		req.checkBody('filters')
 			.optional()
-			.isString()
-			.withMessage('search_column must be a string')
-			.matches(/^[a-z_]*$/)
-			.withMessage('search_column is invalid, must not contain spaces')
+			.custom((value) => {
+				let filters
+				try {
+					filters = typeof value === 'string' ? JSON.parse(value) : value
+				} catch (err) {
+					throw new Error('filters must be a valid JSON string or object')
+				}
 
-		req.checkQuery('search_value').optional().isString().withMessage('search_value must be a string')
+				if (typeof filters !== 'object' || Array.isArray(filters)) {
+					throw new Error('filters must be an object')
+				}
+
+				for (const key in filters) {
+					if (!Array.isArray(filters[key])) {
+						throw new Error(`filters.${key} must be an array`)
+					}
+					if (filters[key].length === 0) {
+						throw new Error(`filters.${key} cannot be an empty array`)
+					}
+					if (!filters[key].every((item) => typeof item === 'string')) {
+						throw new Error(`filters.${key} must contain only strings`)
+					}
+				}
+				return true
+			})
+
+		req.checkBody('search')
+			.optional()
+			.custom((value) => {
+				let search
+				try {
+					search = typeof value === 'string' ? JSON.parse(value) : value
+				} catch (err) {
+					throw new Error('search must be a valid JSON string or object')
+				}
+
+				if (typeof search !== 'object' || Array.isArray(search)) {
+					throw new Error('search must be an object')
+				}
+
+				for (const key in search) {
+					if (!Array.isArray(search[key])) {
+						throw new Error(`search.${key} must be an array`)
+					}
+					if (search[key].length === 0) {
+						throw new Error(`search.${key} cannot be an empty array`)
+					}
+				}
+				return true
+			})
 
 		req.checkQuery('download_csv')
 			.optional()

@@ -94,40 +94,44 @@ module.exports = {
                 :start_date AS startDate,
                 :end_date AS endDate,
                 -- Enrolled session counts
-            COUNT(CASE 
-                    WHEN sa.type = 'ENROLLED' 
-                        AND (
-                            :session_type = 'All' 
-                            OR ( :session_type = 'Public' AND s.type = 'PUBLIC' ) 
-                        )
-                    THEN 1 
-                END) AS public_session_enrolled,
-            COUNT(CASE 
-                    WHEN sa.type = 'ENROLLED' 
-                        AND (
-                            :session_type = 'All' 
-                            OR ( :session_type = 'Private' AND s.type = 'PRIVATE' ) 
-                        )
-                    THEN 1 
-                END) AS private_session_enrolled,
-        
-            -- Attended session counts
-            COUNT(CASE 
-                    WHEN sa.joined_at IS NOT NULL
-                        AND (
-                            :session_type = 'All' 
-                            OR ( :session_type = 'Public' AND s.type = 'PUBLIC' ) 
-                        )
-                    THEN 1 
-                END) AS public_session_attended,
-            COUNT(CASE 
-                    WHEN sa.joined_at IS NOT NULL
-                        AND (
-                            :session_type = 'All' 
-                            OR ( :session_type = 'Private' AND s.type = 'PRIVATE' ) 
-                        )
-                    THEN 1 
-                END) AS private_session_attended
+            COUNT(
+        CASE 
+            WHEN (sa.type = 'ENROLLED' OR sa.type = 'INVITED')
+                AND s.type = 'PUBLIC' 
+                AND (:session_type = 'All' OR :session_type = 'Public') 
+            THEN 1 
+        END
+    ) AS public_session_enrolled,
+
+    -- Private session enrolled count
+    COUNT(
+        CASE 
+            WHEN (sa.type = 'ENROLLED' OR sa.type = 'INVITED')
+                AND s.type = 'PRIVATE' 
+                AND (:session_type = 'All' OR :session_type = 'Private') 
+            THEN 1 
+        END
+    ) AS private_session_enrolled,
+
+    -- Public session attended count
+    COUNT(
+        CASE 
+            WHEN sa.joined_at IS NOT NULL 
+                AND s.type = 'PUBLIC' 
+                AND (:session_type = 'All' OR :session_type = 'Public') 
+            THEN 1 
+        END
+    ) AS public_session_attended,
+
+    -- Private session attended count
+    COUNT(
+        CASE 
+            WHEN sa.joined_at IS NOT NULL 
+                AND s.type = 'PRIVATE' 
+                AND (:session_type = 'All' OR :session_type = 'Private') 
+            THEN 1 
+        END
+    ) AS private_session_attended
             FROM public.session_attendees AS sa
             JOIN public.sessions AS s
             ON sa.session_id = s.id
@@ -374,10 +378,7 @@ module.exports = {
                 s.seats_limit-s.seats_remaining AS "number_of_mentees",
                 TO_TIMESTAMP(s.start_date)::DATE AS "date_of_session",
                 s.type AS "session_type",
-                CASE 
-                    WHEN s.started_at IS NOT NULL THEN 'Yes'
-                    ELSE 'No'
-                END AS "session_conducted",
+CASE WHEN s.started_at IS NOT NULL THEN 'Yes' ELSE 'No' END AS "session_conducted",
                 ROUND(EXTRACT(EPOCH FROM(TO_TIMESTAMP(s.end_date)-TO_TIMESTAMP(s.start_date)))/60) AS "duration_of_sessions_attended_in_minutes",
 COALESCE(CAST(ue.rating ->>'average'AS NUMERIC),0) AS "mentor_rating"
             FROM public.session_ownerships AS sa
