@@ -1046,7 +1046,7 @@ function getDynamicFilterCondition(filters, columnMappings, baseQuery, columnCon
 	if (conditionsString) {
 		if (hasGroupBy) {
 			// Append before GROUP BY clause if it exists
-			return `${hasWhereClause ? 'AND' : 'WHERE'} ${conditionsString}`
+			return `${hasWhereClause ? 'WHERE' : 'AND'} ${conditionsString}`
 		} else {
 			// Standard WHERE clause logic
 			return `${hasWhereClause ? 'AND' : 'WHERE'} ${conditionsString}`

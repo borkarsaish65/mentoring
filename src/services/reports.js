@@ -299,8 +299,12 @@ module.exports = class ReportsHelper {
 				if (result?.length) {
 					reportDataResult.data =
 						reportDataResult.report_type === common.REPORT_TABLE ? result : { ...result[0] }
+					if (reportDataResult.report_type === common.REPORT_TABLE) {
+						reportDataResult.count = result.length
+					}
 				} else {
 					reportDataResult.data = []
+					reportDataResult.count = result.length
 					reportDataResult.message = common.report_session_message
 				}
 
