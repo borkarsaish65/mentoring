@@ -869,7 +869,9 @@ const generateFilters = (data, entityTypeKeys, DefaultValueKeys, ColumnConfig) =
 				if (columnConfig && columnConfig.defaultValues) {
 					filters[key] = columnConfig.defaultValues.map((value) => ({
 						value: value, // Use value from defaultValues
-						label: value, // Set label as value from defaultValues
+						label: ['<=', '>='].includes(columnConfig.filterType)
+							? `${columnConfig.filterType} ${value}` // Add filterType to label if it's '<=' or '>='
+							: value, // Otherwise, just use the value
 					}))
 				} else {
 					// If no defaultValues found, use unique values from data

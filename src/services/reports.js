@@ -318,9 +318,6 @@ module.exports = class ReportsHelper {
 					const ExtractFilterAndEntityTypesKeys = await utils.extractFiltersAndEntityType(
 						columnConfig.columns
 					)
-					console.log('ExtractFilterAndEntityTypesKeys', ExtractFilterAndEntityTypesKeys.defaultValues)
-					console.log('ExtractFilterAndEntityTypesKeys', ExtractFilterAndEntityTypesKeys.entityType)
-					console.log('ExtractFilterAndEntityTypesKeys', ExtractFilterAndEntityTypesKeys.filters)
 
 					let entityTypeFilters = await getOrgIdAndEntityTypes.getEntityTypeWithEntitiesBasedOnOrg(
 						orgId,
@@ -340,7 +337,6 @@ module.exports = class ReportsHelper {
 						ExtractFilterAndEntityTypesKeys.defaultValues,
 						columnConfig.columns
 					)
-					console.log('---------------------------', ExtractFilterAndEntityTypesKeys.filters)
 
 					if (ExtractFilterAndEntityTypesKeys.entityType) {
 						ExtractFilterAndEntityTypesKeys.entityType.split(',').forEach((key) => {
