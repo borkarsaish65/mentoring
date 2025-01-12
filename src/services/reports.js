@@ -314,34 +314,35 @@ module.exports = class ReportsHelper {
 							responseCode: 'CLIENT_ERROR',
 						})
 					const sessionModelName = await sessionQueries.getModelName()
+					if (reportConfig.dataValues.report_type_title === common.REPORT_TABLE) {
+						const ExtractFilterAndEntityTypesKeys = await utils.extractFiltersAndEntityType(
+							columnConfig.columns
+						)
 
-					const ExtractFilterAndEntityTypesKeys = await utils.extractFiltersAndEntityType(
-						columnConfig.columns
-					)
+						let entityTypeFilters = await getOrgIdAndEntityTypes.getEntityTypeWithEntitiesBasedOnOrg(
+							orgId,
+							ExtractFilterAndEntityTypesKeys.entityType,
+							defaultOrgId ? defaultOrgId : '',
+							sessionModelName
+						)
 
-					let entityTypeFilters = await getOrgIdAndEntityTypes.getEntityTypeWithEntitiesBasedOnOrg(
-						orgId,
-						ExtractFilterAndEntityTypesKeys.entityType,
-						defaultOrgId ? defaultOrgId : '',
-						sessionModelName
-					)
+						const filtersEntity = entityTypeFilters.result.reduce((acc, item) => {
+							acc[item.value] = item.entities
+							return acc
+						}, {})
 
-					const filtersEntity = entityTypeFilters.result.reduce((acc, item) => {
-						acc[item.value] = item.entities
-						return acc
-					}, {})
+						reportDataResult.filters = await utils.generateFilters(
+							resultWithoutPagination,
+							ExtractFilterAndEntityTypesKeys.entityType,
+							ExtractFilterAndEntityTypesKeys.defaultValues,
+							columnConfig.columns
+						)
 
-					reportDataResult.filters = await utils.generateFilters(
-						resultWithoutPagination,
-						ExtractFilterAndEntityTypesKeys.entityType,
-						ExtractFilterAndEntityTypesKeys.defaultValues,
-						columnConfig.columns
-					)
-
-					if (ExtractFilterAndEntityTypesKeys.entityType) {
-						ExtractFilterAndEntityTypesKeys.entityType.split(',').forEach((key) => {
-							reportDataResult.filters[key] = filtersEntity[key]
-						})
+						if (ExtractFilterAndEntityTypesKeys.entityType) {
+							ExtractFilterAndEntityTypesKeys.entityType.split(',').forEach((key) => {
+								reportDataResult.filters[key] = filtersEntity[key]
+							})
+						}
 					}
 
 					if (downloadCsv === 'true') {
