@@ -11,7 +11,7 @@ module.exports = class ReportQuery {
 		}
 	}
 
-	async getReportQuery(req) {
+	async read(req) {
 		try {
 			const getReportQuery = await reportQueryService.getQuery(req.query.code)
 			return getReportQuery

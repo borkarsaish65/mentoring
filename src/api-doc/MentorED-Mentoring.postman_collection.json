@@ -4547,9 +4547,9 @@
 							}
 						],
 						"url": {
-							"raw": "{{MentoringBaseUrl}}mentoring/v1/role-extension/getReportMapping?title=mentee",
+							"raw": "{{MentoringBaseUrl}}mentoring/v1/role-extension/read?title=mentee",
 							"host": ["{{MentoringBaseUrl}}mentoring"],
-							"path": ["v1", "role-extension", "getReportMapping"],
+							"path": ["v1", "role-extension", "read"],
 							"query": [
 								{
 									"key": "title",
@@ -4660,9 +4660,9 @@
 							}
 						],
 						"url": {
-							"raw": "{{MentoringBaseUrl}}mentoring/v1/reports/getReportById?id=1",
+							"raw": "{{MentoringBaseUrl}}mentoring/v1/reports/read?id=1",
 							"host": ["{{MentoringBaseUrl}}mentoring"],
-							"path": ["v1", "reports", "getReportById"],
+							"path": ["v1", "reports", "read"],
 							"query": [
 								{
 									"key": "id",
@@ -4694,12 +4694,12 @@
 							}
 						},
 						"url": {
-							"raw": "{{MentoringBaseUrl}}mentoring/v1/reports/update/:id\n",
+							"raw": "{{MentoringBaseUrl}}mentoring/v1/reports/update?id=1",
 							"host": ["{{MentoringBaseUrl}}mentoring"],
-							"path": ["v1", "reports", "update", ":id\n"],
-							"variable": [
+							"path": ["v1", "reports", "update"],
+							"query": [
 								{
-									"key": "id\n",
+									"key": "id",
 									"value": "1"
 								}
 							]
@@ -4719,13 +4719,13 @@
 							}
 						],
 						"url": {
-							"raw": "{{MentoringBaseUrl}}mentoring/v1/reports/delete?id=15",
+							"raw": "{{MentoringBaseUrl}}mentoring/v1/reports/delete?id=1",
 							"host": ["{{MentoringBaseUrl}}mentoring"],
 							"path": ["v1", "reports", "delete"],
 							"query": [
 								{
 									"key": "id",
-									"value": "15"
+									"value": "1"
 								}
 							]
 						}
@@ -4759,13 +4759,14 @@
 							}
 						},
 						"url": {
-							"raw": "{{MentoringBaseUrl}}mentoring/v1/reports/reportData?report_code=session_manger_session_details&report_role=session_manager&start_date=1735756200&end_date=1738348199&session_type=All",
+							"raw": "{{MentoringBaseUrl}}mentoring/v1/reports/reportData?report_code=session_manger_session_details&report_role=session_manager&start_date=1735756200&end_date=1738348199&session_type=All&pageNo=1&Limit=100&download_csv=false",
 							"host": ["{{MentoringBaseUrl}}mentoring"],
 							"path": ["v1", "reports", "reportData"],
 							"query": [
 								{
 									"key": "report_code",
-									"value": "session_manger_session_details"
+									"value": "sample_report_code",
+									"description": "report code should be in string"
 								},
 								{
 									"key": "report_role",
@@ -4786,20 +4787,17 @@
 								{
 									"key": "pageNo",
 									"value": "1",
-									"description": "use when report type is table",
-									"disabled": true
+									"description": "use when report type is table"
 								},
 								{
 									"key": "Limit",
 									"value": "100",
-									"description": "use when report type is table",
-									"disabled": true
+									"description": "use when report type is table"
 								},
 								{
 									"key": "download_csv",
 									"value": "false",
-									"description": "use when report type is table",
-									"disabled": true
+									"description": "use when report type is table"
 								},
 								{
 									"key": "organization",
@@ -4924,9 +4922,9 @@
 							}
 						],
 						"url": {
-							"raw": "{{MentoringBaseUrl}}mentoring/v1/report-type/getReportType?title=random_title",
+							"raw": "{{MentoringBaseUrl}}mentoring/v1/report-type/read?title=random_title",
 							"host": ["{{MentoringBaseUrl}}mentoring"],
-							"path": ["v1", "report-type", "getReportType"],
+							"path": ["v1", "report-type", "read"],
 							"query": [
 								{
 									"key": "title",
@@ -4983,9 +4981,9 @@
 							}
 						],
 						"url": {
-							"raw": "{{MentoringBaseUrl}}mentoring/v1/reports/getReportById?id=1",
+							"raw": "{{MentoringBaseUrl}}mentoring/v1/reports/delete?id=1",
 							"host": ["{{MentoringBaseUrl}}mentoring"],
-							"path": ["v1", "reports", "getReportById"],
+							"path": ["v1", "reports", "delete"],
 							"query": [
 								{
 									"key": "id",
@@ -5037,9 +5035,9 @@
 							}
 						],
 						"url": {
-							"raw": "{{MentoringBaseUrl}}mentoring/v1/report-mapping/getReportMapping?code=report_code",
+							"raw": "{{MentoringBaseUrl}}mentoring/v1/report-mapping/read?code=report_code",
 							"host": ["{{MentoringBaseUrl}}mentoring"],
-							"path": ["v1", "report-mapping", "getReportMapping"],
+							"path": ["v1", "report-mapping", "read"],
 							"query": [
 								{
 									"key": "code",
@@ -5161,13 +5159,13 @@
 							}
 						],
 						"url": {
-							"raw": "{{MentoringBaseUrl}}mentoring/v1/report-mapping/getReportMapping?code=total_number_of_sessions_attended",
+							"raw": "{{MentoringBaseUrl}}mentoring/v1/report-queries/read?code=dumyq",
 							"host": ["{{MentoringBaseUrl}}mentoring"],
-							"path": ["v1", "report-mapping", "getReportMapping"],
+							"path": ["v1", "report-queries", "read"],
 							"query": [
 								{
 									"key": "code",
-									"value": "total_number_of_sessions_attended"
+									"value": "dumyq"
 								}
 							]
 						}
@@ -5186,22 +5184,23 @@
 							}
 						],
 						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"report_code\": \"dummy_title\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "query",
+									"value": "yfcutgcug",
+									"type": "text"
 								}
-							}
+							]
 						},
 						"url": {
-							"raw": "{{MentoringBaseUrl}}mentoring/v1/report-mapping/update?id=16",
+							"raw": "{{MentoringBaseUrl}}mentoring/v1/report-queries/update?code=dumyq",
 							"host": ["{{MentoringBaseUrl}}mentoring"],
-							"path": ["v1", "report-mapping", "update"],
+							"path": ["v1", "report-queries", "update"],
 							"query": [
 								{
-									"key": "id",
-									"value": "16"
+									"key": "code",
+									"value": "dumyq"
 								}
 							]
 						}
@@ -5220,9 +5219,9 @@
 							}
 						],
 						"url": {
-							"raw": "{{MentoringBaseUrl}}mentoring/v1/report-mapping/delete?id=16",
+							"raw": "{{MentoringBaseUrl}}mentoring/v1/report-queries/delete?id=16",
 							"host": ["{{MentoringBaseUrl}}mentoring"],
-							"path": ["v1", "report-mapping", "delete"],
+							"path": ["v1", "report-queries", "delete"],
 							"query": [
 								{
 									"key": "id",

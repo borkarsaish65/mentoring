@@ -11,9 +11,9 @@ module.exports = class Reports {
 		}
 	}
 
-	async getRoleExtension(req) {
+	async read(req) {
 		try {
-			const getReportById = await roleExtensionService.getRoleExtension(req.query.title)
+			const getReportById = await roleExtensionService.roleExtensionDetails(req.query.title)
 			return getReportById
 		} catch (error) {
 			return error

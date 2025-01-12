@@ -108,7 +108,7 @@ module.exports = class ReportsHelper {
 				result,
 			})
 		} catch (error) {
-			return error
+			throw error
 		}
 	}
 
@@ -183,12 +183,14 @@ module.exports = class ReportsHelper {
 
 			// Handle BAR_CHART report type with groupBy
 			if (reportConfig.dataValues.report_type_title === common.BAR_CHART && groupBy) {
-				const listOfDates = await utils.getAllEpochDates(startDate, endDate, groupBy.toLowerCase())
+				//	const listOfDates = await utils.getAllEpochDates(startDate, endDate, groupBy)
+
+				const dateRanges = await utils.generateDateRanges(startDate, endDate, groupBy)
 
 				// Initialize the array to store results
 				const dateRangeResults = []
 
-				for (let dateRange of listOfDates) {
+				for (let dateRange of dateRanges) {
 					const replacements = {
 						userId: userId || null,
 						entities_value: entitiesValue ? `{${entitiesValue}}` : null,
@@ -416,7 +418,7 @@ module.exports = class ReportsHelper {
 				result: reportDataResult,
 			})
 		} catch (error) {
-			return error
+			throw error
 		}
 	}
 
@@ -457,17 +459,18 @@ module.exports = class ReportsHelper {
 				})
 			}
 			return responses.successResponse({
-				statusCode: httpStatusCode.created,
+				statusCode: httpStatusCode.ok,
 				message: 'REPORT_FETCHED_SUCCESSFULLY',
 				result: readReport.dataValues,
 			})
 		} catch (error) {
-			return error
+			throw error
 		}
 	}
 
-	static async updateReport(filter, updateData) {
+	static async updateReport(id, updateData) {
 		try {
+			const filter = { id: id }
 			const updatedReport = await reportsQueries.updateReport(filter, updateData)
 			if (!updatedReport) {
 				return responses.failureResponse({
@@ -477,12 +480,12 @@ module.exports = class ReportsHelper {
 				})
 			}
 			return responses.successResponse({
-				statusCode: httpStatusCode.created,
+				statusCode: httpStatusCode.accepted,
 				message: 'REPORT_UPATED_SUCCESSFULLY',
 				result: updatedReport.dataValues,
 			})
 		} catch (error) {
-			return error
+			throw error
 		}
 	}
 
@@ -497,11 +500,11 @@ module.exports = class ReportsHelper {
 				})
 			}
 			return responses.successResponse({
-				statusCode: httpStatusCode.created,
+				statusCode: httpStatusCode.accepted,
 				message: 'REPORT_DELETED_SUCCESSFULLY',
 			})
 		} catch (error) {
-			return error
+			throw error
 		}
 	}
 

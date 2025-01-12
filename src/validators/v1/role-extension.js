@@ -29,7 +29,7 @@ module.exports = {
 			.withMessage('organization_id should not contain space , scope is invalid')
 	},
 
-	getReportById: (req) => {
+	read: (req) => {
 		req.checkQuery('title').notEmpty().withMessage('title is required')
 	},
 

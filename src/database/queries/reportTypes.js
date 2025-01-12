@@ -9,7 +9,7 @@ module.exports = class ReportTypeQueries {
 		}
 	}
 
-	static async findReportTypeById(title) {
+	static async findReportTypeByTitle(title) {
 		try {
 			const reportType = await ReportType.findByPk(title)
 			return reportType
@@ -30,7 +30,7 @@ module.exports = class ReportTypeQueries {
 		}
 	}
 
-	static async DeleteReportType(id) {
+	static async deleteReportType(id) {
 		try {
 			const deletedRows = await ReportType.destroy({
 				where: { id: id },
