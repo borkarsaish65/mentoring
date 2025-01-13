@@ -297,13 +297,33 @@ module.exports = class ReportsHelper {
 					}),
 				])
 
+				const defaultOrgId = await getDefaultOrgId()
+				if (!defaultOrgId)
+					return responses.failureResponse({
+						message: 'DEFAULT_ORG_ID_NOT_SET',
+						statusCode: httpStatusCode.bad_request,
+						responseCode: 'CLIENT_ERROR',
+					})
+				const sessionModelName = await sessionQueries.getModelName()
+
+				let entityTypesDataWithPagination = await getOrgIdAndEntityTypes.getEntityTypeWithEntitiesBasedOnOrg(
+					orgId,
+					'',
+					defaultOrgId ? defaultOrgId : '',
+					sessionModelName
+				)
+
 				if (reportDataResult.report_type === common.REPORT_TABLE && resultWithoutPagination) {
 					reportDataResult.count = resultWithoutPagination.length
 				}
 				// Process query results
 				if (result?.length) {
+					const transformedEntityData = await utils.mapEntityTypeToData(
+						result,
+						entityTypesDataWithPagination.result
+					)
 					reportDataResult.data =
-						reportDataResult.report_type === common.REPORT_TABLE ? result : { ...result[0] }
+						reportDataResult.report_type === common.REPORT_TABLE ? transformedEntityData : { ...result[0] }
 				} else {
 					reportDataResult.data = []
 					reportDataResult.count = resultWithoutPagination.length
@@ -359,37 +379,11 @@ module.exports = class ReportsHelper {
 							sessionModelName
 						)
 
-						// Function to map EntityTypes to data
-						const mapEntityTypesToData = (data, entityTypes) => {
-							return data.map((item) => {
-								const newItem = { ...item }
-
-								// Loop through EntityTypes to check for matching keys
-								entityTypes.forEach((entityType) => {
-									const key = entityType.value
-
-									// If the key exists in the data item
-									if (newItem[key]) {
-										const values = newItem[key].split(',').map((val) => val.trim())
-
-										// Map values to corresponding entity labels
-										const mappedValues = values
-											.map((value) => {
-												const entity = entityType.entities.find((e) => e.value === value)
-												return entity ? entity.label : value
-											})
-											.join(', ')
-
-										newItem[key] = mappedValues
-									}
-								})
-
-								return newItem
-							})
-						}
-
 						// Process the data
-						const transformedData = mapEntityTypesToData(resultWithoutPagination, entityTypesData.result)
+						const transformedData = await utils.mapEntityTypeToData(
+							resultWithoutPagination,
+							entityTypesData.result
+						)
 
 						const keyToLabelMap = Object.fromEntries(
 							columnConfig.columns.map(({ key, label }) => [key, label])

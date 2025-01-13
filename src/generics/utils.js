@@ -1168,6 +1168,34 @@ function extractFiltersAndEntityType(data) {
 	return { filters, entityType, defaultValues }
 }
 
+// Function to map EntityTypes to data
+const mapEntityTypeToData = (data, entityTypes) => {
+	return data.map((item) => {
+		const newItem = { ...item }
+
+		// Loop through EntityTypes to check for matching keys
+		entityTypes.forEach((entityType) => {
+			const key = entityType.value
+
+			// If the key exists in the data item
+			if (newItem[key]) {
+				const values = newItem[key].split(',').map((val) => val.trim())
+
+				// Map values to corresponding entity labels
+				const mappedValues = values
+					.map((value) => {
+						const entity = entityType.entities.find((e) => e.value === value)
+						return entity ? entity.label : value
+					})
+					.join(', ')
+
+				newItem[key] = mappedValues
+			}
+		})
+
+		return newItem
+	})
+}
 module.exports = {
 	hash: hash,
 	getCurrentMonthRange,
@@ -1226,4 +1254,5 @@ module.exports = {
 	getDynamicSearchCondition,
 	extractFiltersAndEntityType,
 	generateDateRanges,
+	mapEntityTypeToData,
 }
