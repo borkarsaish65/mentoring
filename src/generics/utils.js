@@ -775,11 +775,11 @@ const generateFilters = (data, entityTypeKeys, defaultValueKeys, columnConfigs) 
 			if (defaultValueKeySet && defaultValueKeySet.has(key)) {
 				const columnConfig = columnConfigs.find((col) => col.key === key)
 				if (columnConfig && columnConfig.defaultValues) {
-					filters[key] = columnConfig.defaultValues.map((value) => ({
-						value: value, // Use value from defaultValues
+					filters[key] = columnConfig.defaultValues.map(({ value, label }) => ({
+						value: value, // Use the value directly from the defaultValues object
 						label: ['<=', '>='].includes(columnConfig.filterType)
-							? `${columnConfig.filterType} ${value}` // Add filterType to label if it's '<=' or '>='
-							: value, // Otherwise, just use the value
+							? `${columnConfig.filterType} ${label}` // Add filterType to label if it's '<=' or '>='
+							: label, // Otherwise, just use the label
 					}))
 				} else {
 					// If no defaultValues found, use unique values from data
@@ -971,9 +971,7 @@ function getDynamicFilterCondition(filters, columnMappings, baseQuery, columnCon
 		console.log('Filters is not an object or is empty')
 		return '' // Early exit if filters are not valid
 	}
-	if (filters.session_type && filters.session_type.includes('ALL')) {
-		filters.session_type = ['PUBLIC', 'PRIVATE']
-	}
+
 	const conditions = Object.entries(filters)
 		.map(([column, value]) => {
 			const mappedColumn = columnMappings[column]

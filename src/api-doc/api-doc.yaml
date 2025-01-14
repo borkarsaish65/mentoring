@@ -11675,13 +11675,13 @@ paths:
                 example1:
                   value:
                     responseCode: OK
-                    message: REPORT_CREATED_SUCCESS
+                    message: REPORT_MAPPING_CREATED_SUCCESS
                     result:
-                      created_at: '2025-01-12T17:58:54.800Z'
-                      updated_at: '2025-01-12T17:58:54.801Z'
-                      report_code: dumy
+                      created_at: '2025-01-14T07:15:34.238Z'
+                      updated_at: '2025-01-14T07:15:34.239Z'
+                      report_code: dumyy
                       role_title: mentor
-                      id: 17
+                      id: 18
                       deleted_at: null
                     meta:
                       formsVersion:
@@ -11745,7 +11745,7 @@ paths:
                         - id: 21
                           type: managersSession
                           version: 119
-                      correlation: 271801e6-20f1-4fef-8fea-21444eb9bafc
+                      correlation: 8df6abfd-2ec8-445b-9131-5657178c1681
                       meetingPlatform: 'OFF'
       description: >-
         You can use this API to create report-mapping
@@ -11761,8 +11761,8 @@ paths:
   /mentoring/v1/report-mapping/read:
     get:
       tags:
-        - Report Queries
-      summary: Read Report Queries
+        - Report Role Mapping
+      summary: Read Report Mapping
       parameters:
         - name: x-auth-token
           in: header
@@ -11832,13 +11832,13 @@ paths:
                 example1:
                   value:
                     responseCode: OK
-                    message: REPORT_FETCHED_SUCCESSFULLY
+                    message: REPORT_MAPPING_FETCHED_SUCCESSFULLY
                     result:
-                      id: 17
-                      report_code: dumy
-                      role_title: mentor
-                      created_at: '2025-01-12T17:58:54.800Z'
-                      updated_at: '2025-01-12T17:58:54.801Z'
+                      id: 4
+                      report_code: mentee_session_details
+                      role_title: mentee
+                      created_at: '2025-01-12T05:19:46.678Z'
+                      updated_at: '2025-01-12T05:19:46.678Z'
                       deleted_at: null
                     meta:
                       formsVersion:
@@ -11875,12 +11875,12 @@ paths:
                         - id: 14
                           type: editProfile
                           version: 10
-                        - id: 18
-                          type: session
-                          version: 144
                         - id: 1
                           type: editProfile
                           version: 22
+                        - id: 31
+                          type: bignumberDashboard
+                          version: 12
                         - id: 10
                           type: managersSession
                           version: 8
@@ -11896,14 +11896,17 @@ paths:
                         - id: 25
                           type: dashboard
                           version: 0
+                        - id: 18
+                          type: session
+                          version: 167
                         - id: 15
                           type: editProfile
-                          version: 164
+                          version: 180
                         - id: 21
                           type: managersSession
-                          version: 119
-                      correlation: d52a05ee-b4d3-4508-9a19-10f3b4bdae23
-                      meetingPlatform: 'OFF'
+                          version: 136
+                      correlation: 5f420bb8-2487-40c0-800a-5cadf76fc43d
+                      meetingPlatform: BBB
       description: >-
         You can use this API to read report-mapping
 
@@ -11918,8 +11921,8 @@ paths:
   /mentoring/v1/report-mapping/update:
     post:
       tags:
-        - Report Queries
-      summary: Update Report Queries
+        - Report Role Mapping
+      summary: Update Report Mapping
       requestBody:
         content:
           application/json:
@@ -12002,7 +12005,80 @@ paths:
                         type: string
               examples:
                 example1:
-                  value: ''
+                  value:
+                    responseCode: OK
+                    message: REPORT_MAPPING_UPATED_SUCCESSFULLY
+                    result:
+                      id: 18
+                      report_code: dumyy
+                      role_title: org_admin
+                      created_at: '2025-01-14T07:15:34.238Z'
+                      updated_at: '2025-01-14T07:19:52.507Z'
+                      deleted_at: null
+                    meta:
+                      formsVersion:
+                        - id: 3
+                          type: termsAndConditions
+                          version: 0
+                        - id: 4
+                          type: faq
+                          version: 0
+                        - id: 5
+                          type: helpVideos
+                          version: 0
+                        - id: 6
+                          type: platformApp
+                          version: 27
+                        - id: 8
+                          type: sampleCsvDownload
+                          version: 0
+                        - id: 12
+                          type: session
+                          version: 1
+                        - id: 7
+                          type: helpApp
+                          version: 0
+                        - id: 11
+                          type: session
+                          version: 3
+                        - id: 9
+                          type: mentorQuestionnaire
+                          version: 2
+                        - id: 2
+                          type: session
+                          version: 25
+                        - id: 14
+                          type: editProfile
+                          version: 10
+                        - id: 18
+                          type: session
+                          version: 144
+                        - id: 1
+                          type: editProfile
+                          version: 22
+                        - id: 10
+                          type: managersSession
+                          version: 8
+                        - id: 23
+                          type: session
+                          version: 9
+                        - id: 24
+                          type: managersSession
+                          version: 0
+                        - id: 22
+                          type: editProfile
+                          version: 7
+                        - id: 25
+                          type: dashboard
+                          version: 0
+                        - id: 15
+                          type: editProfile
+                          version: 164
+                        - id: 21
+                          type: managersSession
+                          version: 119
+                      correlation: 6e1890ce-1a6c-4209-a1ad-d027c6c132d4
+                      meetingPlatform: 'OFF'
       description: >-
         You can use this API to update report-mapping
 
@@ -12017,7 +12093,7 @@ paths:
   /mentoring/v1/report-mapping/delete:
     delete:
       tags:
-        - Report Queries
+        - Report Role Mapping
       summary: Delete Report Queries
       parameters:
         - name: x-auth-token
@@ -12312,9 +12388,160 @@ paths:
                         type: string
                       meetingPlatform:
                         type: string
-              examples: &ref_15
+              examples:
                 example1:
-                  value: ''
+                  value:
+                    responseCode: OK
+                    message: REPORT_QUERY_CREATED_SUCCESSFULLY
+                    result:
+                      created_at: '2025-01-12T18:10:07.200Z'
+                      updated_at: '2025-01-12T18:10:07.202Z'
+                      status: ACTIVE
+                      report_code: dumyq
+                      query: |-
+                        SELECT 
+                                        s.title AS "Session Title",
+                                        ue.name AS "Sessions Created By",
+                                        s.mentor_name AS "Mentor Name",
+                                        TO_TIMESTAMP(s.start_date)::DATE AS "Date of Session", 
+                                        s.type AS "Session Type",
+                                        ARRAY_TO_STRING(s.categories, ', ') AS "Categories", -- Converts array to a comma-separated string
+                                        ARRAY_TO_STRING(s.recommended_for, ', ') AS "Recommended for",
+                                        CASE 
+                                            WHEN sa.joined_at IS NOT NULL THEN 'Yes'
+                                            ELSE 'No'
+                                        END AS "Session Attended",
+                                        ROUND(EXTRACT(EPOCH FROM (TO_TIMESTAMP(s.end_date) - TO_TIMESTAMP(s.start_date))) / 60) AS "Duration of Sessions Attended - min (at setup time)"
+                                    FROM public.session_attendees AS sa
+                                    JOIN public.sessions AS s ON sa.session_id = s.id
+                                    LEFT JOIN public.user_extensions AS ue ON s.created_by = ue.user_id 
+                                    WHERE 
+                                        (CASE WHEN :userId IS NOT NULL THEN sa.mentee_id = :userId ELSE TRUE END)
+                                        AND (CASE WHEN :start_date IS NOT NULL THEN s.start_date > :start_date ELSE TRUE END)
+                                        AND (CASE WHEN :end_date IS NOT NULL THEN s.end_date < :end_date ELSE TRUE END)
+                                        AND (CASE WHEN :entities_value IS NOT NULL THEN s.categories = :entities_value ELSE TRUE END)
+                                        AND (
+                                            CASE 
+                                                WHEN :session_type = 'All' THEN s.type IN ('PUBLIC', 'PRIVATE')
+                                                WHEN :session_type = 'PUBLIC' THEN s.type = 'PUBLIC'
+                                                WHEN :session_type = 'PRIVATE' THEN s.type = 'PRIVATE'
+                                                ELSE TRUE
+                                            END
+                                        )
+                                        AND (
+                                        :search_column IS NULL OR (
+                                            LENGTH(:search_value) >= 1 AND 
+                                            CAST(
+                                                CASE 
+                                                    WHEN :search_column = 'sessions_created_by' THEN ue.name
+                                                    WHEN :search_column = 'mentor_name' THEN s.mentor_name
+                                                    WHEN :search_column = 'date_of_session' THEN TO_CHAR(TO_TIMESTAMP(s.start_date)::DATE, 'YYYY-MM-DD')
+                                                    WHEN :search_column = 'session_type' THEN s.type
+                                                    WHEN :search_column = 'categories' THEN 
+                                                        CASE 
+                                                            WHEN :search_value = ANY(s.categories) THEN :search_value -- Check if the search value is present in the array
+                                                            ELSE NULL
+                                                        END
+                                                    WHEN :search_column = 'recommended_for' THEN 
+                                                        CASE 
+                                                            WHEN :search_value = ANY(s.recommended_for) THEN :search_value -- Check if the search value is present in the array
+                                                            ELSE NULL
+                                                        END
+                                                    WHEN :search_column = 'duration_of_sessions_attended' THEN ROUND(EXTRACT(EPOCH FROM (TO_TIMESTAMP(s.end_date) - TO_TIMESTAMP(s.start_date))) / 60)::TEXT
+                                                    WHEN :search_column = 'session_attended' THEN 
+                                                        CASE 
+                                                            WHEN :search_value = 'Yes' AND sa.joined_at IS NOT NULL THEN 'Yes'
+                                                            WHEN :search_value = 'No' AND sa.joined_at IS NULL THEN 'No'
+                                                            ELSE NULL
+                                                        END
+                                                END AS TEXT
+                                            ) ILIKE '%' || :search_value || '%'
+                                        )
+                                    )
+                                    ORDER BY
+                                        CASE :sort_column
+                                            WHEN 'sessions_created_by' THEN ue.name
+                                            WHEN 'mentor_name' THEN s.mentor_name
+                                            WHEN 'duration_of_sessions_attended' THEN 
+                                                ROUND(EXTRACT(EPOCH FROM (TO_TIMESTAMP(s.end_date) - TO_TIMESTAMP(s.start_date))) / 60)::TEXT
+                                            WHEN 'session_type' THEN s.type
+                                            WHEN 'session_attended' THEN 
+                                                CASE 
+                                                    WHEN sa.joined_at IS NOT NULL THEN 'Yes'
+                                                    ELSE 'No'
+                                                END
+                                            WHEN 'categories' THEN ARRAY_TO_STRING(s.categories, ', ') 
+                                            WHEN 'recommended_for' THEN ARRAY_TO_STRING(s.recommended_for, ', ')
+                                            WHEN 'date_of_session' THEN TO_CHAR(TO_TIMESTAMP(s.start_date)::DATE, 'YYYY-MM-DD')
+                                            ELSE NULL
+                                        END :sort_type NULLS LAST
+                                    LIMIT :limit OFFSET :offset;
+                      id: 17
+                      deleted_at: null
+                    meta:
+                      formsVersion:
+                        - id: 3
+                          type: termsAndConditions
+                          version: 0
+                        - id: 4
+                          type: faq
+                          version: 0
+                        - id: 5
+                          type: helpVideos
+                          version: 0
+                        - id: 6
+                          type: platformApp
+                          version: 27
+                        - id: 8
+                          type: sampleCsvDownload
+                          version: 0
+                        - id: 12
+                          type: session
+                          version: 1
+                        - id: 7
+                          type: helpApp
+                          version: 0
+                        - id: 11
+                          type: session
+                          version: 3
+                        - id: 9
+                          type: mentorQuestionnaire
+                          version: 2
+                        - id: 2
+                          type: session
+                          version: 25
+                        - id: 14
+                          type: editProfile
+                          version: 10
+                        - id: 18
+                          type: session
+                          version: 144
+                        - id: 1
+                          type: editProfile
+                          version: 22
+                        - id: 10
+                          type: managersSession
+                          version: 8
+                        - id: 23
+                          type: session
+                          version: 9
+                        - id: 24
+                          type: managersSession
+                          version: 0
+                        - id: 22
+                          type: editProfile
+                          version: 7
+                        - id: 25
+                          type: dashboard
+                          version: 0
+                        - id: 15
+                          type: editProfile
+                          version: 164
+                        - id: 21
+                          type: managersSession
+                          version: 119
+                      correlation: 5c705aaf-8fe0-45b0-a960-cbab1ddcaa03
+                      meetingPlatform: 'OFF'
       description: >-
         You can use this API to create report-queries
 
@@ -12352,7 +12579,83 @@ paths:
                 - organization_id
             examples:
               example1:
-                value: ''
+                value:
+                  responseCode: OK
+                  message: ROLE_EXTENSION_CREATED_SUCCESS
+                  result:
+                    created_at: '2025-01-12T18:23:42.813Z'
+                    updated_at: '2025-01-12T18:23:42.814Z'
+                    status: ACTIVE
+                    title: sample
+                    label: sample
+                    scope: SELF
+                    organization_id: '1'
+                    id: 10
+                    deleted_at: null
+                  meta:
+                    formsVersion:
+                      - id: 3
+                        type: termsAndConditions
+                        version: 0
+                      - id: 4
+                        type: faq
+                        version: 0
+                      - id: 5
+                        type: helpVideos
+                        version: 0
+                      - id: 6
+                        type: platformApp
+                        version: 27
+                      - id: 8
+                        type: sampleCsvDownload
+                        version: 0
+                      - id: 12
+                        type: session
+                        version: 1
+                      - id: 7
+                        type: helpApp
+                        version: 0
+                      - id: 11
+                        type: session
+                        version: 3
+                      - id: 9
+                        type: mentorQuestionnaire
+                        version: 2
+                      - id: 2
+                        type: session
+                        version: 25
+                      - id: 14
+                        type: editProfile
+                        version: 10
+                      - id: 18
+                        type: session
+                        version: 144
+                      - id: 1
+                        type: editProfile
+                        version: 22
+                      - id: 10
+                        type: managersSession
+                        version: 8
+                      - id: 23
+                        type: session
+                        version: 9
+                      - id: 24
+                        type: managersSession
+                        version: 0
+                      - id: 22
+                        type: editProfile
+                        version: 7
+                      - id: 25
+                        type: dashboard
+                        version: 0
+                      - id: 15
+                        type: editProfile
+                        version: 164
+                      - id: 21
+                        type: managersSession
+                        version: 119
+                    correlation: 560976f9-7c49-4c28-b1b6-fe9d36f5b86f
+                    meetingPlatform: 'OFF'
       parameters:
         - name: x-auth-token
           in: header
@@ -12588,7 +12891,86 @@ paths:
                         type: string
               examples:
                 example1:
-                  value: ''
+                  value:
+                    responseCode: OK
+                    message: ROLE_EXTENSION_FETCHED_SUCCESSFULLY
+                    result:
+                      id: 3
+                      title: mentee
+                      label: Mentee
+                      status: ACTIVE
+                      scope: SELF
+                      organization_id: '1'
+                      deleted_at: null
+                      created_at: '2025-01-12T05:19:46.576Z'
+                      updated_at: '2025-01-12T05:19:46.576Z'
+                    meta:
+                      formsVersion:
+                        - id: 3
+                          type: termsAndConditions
+                          version: 0
+                        - id: 4
+                          type: faq
+                          version: 0
+                        - id: 5
+                          type: helpVideos
+                          version: 0
+                        - id: 6
+                          type: platformApp
+                          version: 27
+                        - id: 8
+                          type: sampleCsvDownload
+                          version: 0
+                        - id: 12
+                          type: session
+                          version: 1
+                        - id: 7
+                          type: helpApp
+                          version: 0
+                        - id: 11
+                          type: session
+                          version: 3
+                        - id: 9
+                          type: mentorQuestionnaire
+                          version: 2
+                        - id: 2
+                          type: session
+                          version: 25
+                        - id: 14
+                          type: editProfile
+                          version: 10
+                        - id: 1
+                          type: editProfile
+                          version: 22
+                        - id: 31
+                          type: bignumberDashboard
+                          version: 12
+                        - id: 10
+                          type: managersSession
+                          version: 8
+                        - id: 23
+                          type: session
+                          version: 9
+                        - id: 24
+                          type: managersSession
+                          version: 0
+                        - id: 22
+                          type: editProfile
+                          version: 7
+                        - id: 25
+                          type: dashboard
+                          version: 0
+                        - id: 18
+                          type: session
+                          version: 167
+                        - id: 15
+                          type: editProfile
+                          version: 180
+                        - id: 21
+                          type: managersSession
+                          version: 136
+                      correlation: bab0ca04-795a-4c64-98ef-212de348d9bb
+                      meetingPlatform: BBB
       description: >-
         You can use this API to read role-extension
 
@@ -12979,7 +13361,7 @@ paths:
                 example1:
                   value:
                     responseCode: OK
-                    message: REPORT_DELETED_SUCCESSFULLY
+                    message: REPORT_TYPE_DELETED_SUCCESSFULLY
                     result: []
                     meta:
                       formsVersion:
@@ -13043,7 +13425,7 @@ paths:
                         - id: 21
                           type: managersSession
                           version: 119
-                      correlation: 2bb42fdb-5396-4e8c-a324-325ea366e02b
+                      correlation: f2a9dbd9-1830-4747-ad01-d0af06ccfba3
                       meetingPlatform: 'OFF'
       description: >-
         You can use this API to delete report-type
@@ -13119,7 +13501,116 @@ paths:
                         type: string
                       meetingPlatform:
                         type: string
-              examples: *ref_15
+              examples:
+                example1:
+                  value:
+                    responseCode: OK
+                    message: REPORT_QUERY_FETCHED_SUCCESSFULLY
+                    result:
+                      id: 4
+                      report_code: mentee_session_details
+                      query: |-
+                        SELECT 
+                                        s.title AS "sessions_title",
+                                        ue.name AS "sessions_created_by",
+                                        s.mentor_name AS "mentor_name",
+                                        TO_TIMESTAMP(s.start_date)::DATE AS "date_of_session", 
+                                        s.type AS "session_type",
+                                        ARRAY_TO_STRING(s.categories, ', ') AS "categories", -- Converts array to a comma-separated string
+                                        ARRAY_TO_STRING(s.recommended_for, ', ') AS "recommended_for",
+                                    CASE WHEN sa.joined_at IS NOT NULL THEN 'Yes' ELSE 'No' END AS "session_attended",
+                                    ROUND(EXTRACT(EPOCH FROM(TO_TIMESTAMP(s.end_date)-TO_TIMESTAMP(s.start_date)))/60) AS "duration_of_sessions_attended_in_minutes"
+                                    FROM public.session_attendees AS sa
+                                    JOIN public.sessions AS s ON sa.session_id = s.id
+                                    LEFT JOIN public.user_extensions AS ue ON s.created_by = ue.user_id 
+                                    WHERE 
+                                        -- Filter by mentee ID if provided
+                                        (sa.mentee_id = :userId OR :userId IS NULL) 
+                                        -- Filter by start date if provided
+                                        AND (s.start_date > :start_date OR :start_date IS NULL)
+                                        -- Filter by end date if provided
+                                        AND (s.end_date < :end_date OR :end_date IS NULL)
+                                        -- Filter by categories if provided
+                                        AND (:entities_value = ANY(s.categories) OR :entities_value IS NULL)
+                                        -- Filter by session type
+                                        AND (
+                                            :session_type = 'All' AND s.type IN ('PUBLIC', 'PRIVATE')
+                                            OR :session_type = 'Public' AND s.type = 'PUBLIC'
+                                            OR :session_type = 'Private' AND s.type = 'PRIVATE'
+                                        )
+                                    ;
+
+                      status: ACTIVE
+                      created_at: '2025-01-12T05:19:46.708Z'
+                      updated_at: '2025-01-12T05:19:46.708Z'
+                      deleted_at: null
+                    meta:
+                      formsVersion:
+                        - id: 3
+                          type: termsAndConditions
+                          version: 0
+                        - id: 4
+                          type: faq
+                          version: 0
+                        - id: 5
+                          type: helpVideos
+                          version: 0
+                        - id: 6
+                          type: platformApp
+                          version: 27
+                        - id: 8
+                          type: sampleCsvDownload
+                          version: 0
+                        - id: 12
+                          type: session
+                          version: 1
+                        - id: 7
+                          type: helpApp
+                          version: 0
+                        - id: 11
+                          type: session
+                          version: 3
+                        - id: 9
+                          type: mentorQuestionnaire
+                          version: 2
+                        - id: 2
+                          type: session
+                          version: 25
+                        - id: 14
+                          type: editProfile
+                          version: 10
+                        - id: 1
+                          type: editProfile
+                          version: 22
+                        - id: 31
+                          type: bignumberDashboard
+                          version: 12
+                        - id: 10
+                          type: managersSession
+                          version: 8
+                        - id: 23
+                          type: session
+                          version: 9
+                        - id: 24
+                          type: managersSession
+                          version: 0
+                        - id: 22
+                          type: editProfile
+                          version: 7
+                        - id: 25
+                          type: dashboard
+                          version: 0
+                        - id: 18
+                          type: session
+                          version: 167
+                        - id: 15
+                          type: editProfile
+                          version: 180
+                        - id: 21
+                          type: managersSession
+                          version: 136
+                      correlation: 0a78fe0b-c2f4-4b49-b255-08fdde255875
+                      meetingPlatform: BBB
       description: >-
         You can use this API to read report-queries
 
@@ -13282,7 +13773,83 @@ paths:
                         type: string
                       meetingPlatform:
                         type: string
-              examples: *ref_15
+              examples:
+                example1:
+                  value:
+                    responseCode: OK
+                    message: REPORT_QUERY_UPATED_SUCCESSFULLY
+                    result:
+                      id: 15
+                      report_code: dumyq
+                      query: yfcutgcug
+                      status: ACTIVE
+                      created_at: '2025-01-05T20:19:38.325Z'
+                      updated_at: '2025-01-12T07:06:36.549Z'
+                      deleted_at: null
+                    meta:
+                      formsVersion:
+                        - id: 3
+                          type: termsAndConditions
+                          version: 0
+                        - id: 4
+                          type: faq
+                          version: 0
+                        - id: 5
+                          type: helpVideos
+                          version: 0
+                        - id: 6
+                          type: platformApp
+                          version: 27
+                        - id: 8
+                          type: sampleCsvDownload
+                          version: 0
+                        - id: 12
+                          type: session
+                          version: 1
+                        - id: 7
+                          type: helpApp
+                          version: 0
+                        - id: 11
+                          type: session
+                          version: 3
+                        - id: 9
+                          type: mentorQuestionnaire
+                          version: 2
+                        - id: 2
+                          type: session
+                          version: 25
+                        - id: 14
+                          type: editProfile
+                          version: 10
+                        - id: 18
+                          type: session
+                          version: 144
+                        - id: 1
+                          type: editProfile
+                          version: 22
+                        - id: 10
+                          type: managersSession
+                          version: 8
+                        - id: 23
+                          type: session
+                          version: 9
+                        - id: 24
+                          type: managersSession
+                          version: 0
+                        - id: 22
+                          type: editProfile
+                          version: 7
+                        - id: 25
+                          type: dashboard
+                          version: 0
+                        - id: 15
+                          type: editProfile
+                          version: 164
+                        - id: 21
+                          type: managersSession
+                          version: 119
+                      correlation: a9421adf-3ec7-41f4-b472-6d71fa155ddd
+                      meetingPlatform: 'OFF'
       description: >-
         You can use this API to update report-queries
 
@@ -16096,6 +16663,11 @@ tags:
       url: ''
   - name: Issues
     description: ''
+    externalDocs:
+      description: ''
+      url: ''
+  - name: Report Role Mapping
+    description: Report Role Mapping
     externalDocs:
       description: ''
       url: ''
