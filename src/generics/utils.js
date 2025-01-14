@@ -1067,10 +1067,6 @@ function getDynamicSearchCondition(search, columnMappings, baseQuery) {
 		return '' // Early exit if search is not valid
 	}
 
-	if (search.session_type && search.session_type.includes('ALL')) {
-		search.session_type = ['PUBLIC', 'PRIVATE']
-	}
-
 	const conditions = Object.entries(search)
 		.map(([column, value]) => {
 			const mappedColumn = columnMappings[column]
