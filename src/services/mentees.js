@@ -1747,7 +1747,13 @@ module.exports = class MenteesHelper {
 
 			processDbResponse.profile_mandatory_fields = profileMandatoryFields
 
-			processDbResponse.is_connected = Boolean(await connectionQueries.getConnection(userId, id))
+			const connection = await connectionQueries.getConnection(userId, id)
+
+			processDbResponse.is_connected = Boolean(connection)
+
+			if (processDbResponse.is_connected) {
+				processDbResponse.connection_details = connection.meta
+			}
 
 			return responses.successResponse({
 				statusCode: httpStatusCode.ok,
