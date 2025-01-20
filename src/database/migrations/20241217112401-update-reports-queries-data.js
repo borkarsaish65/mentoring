@@ -46,11 +46,18 @@ module.exports = {
 				report_code: 'total_hours_of_learning',
 				query: `SELECT 
                 TO_CHAR(
-                INTERVAL '1 hour' * FLOOR(SUM(EXTRACT(EPOCH FROM (s.completed_at - s.started_at)) / 3600)) +
-                INTERVAL '1 minute' * FLOOR(SUM(EXTRACT(EPOCH FROM (s.completed_at - s.started_at)) / 60) % 60) +
-                INTERVAL '1 second' * FLOOR(SUM(EXTRACT(EPOCH FROM (s.completed_at - s.started_at)) % 60)),
-                'HH24:MI:SS'
-            ) AS total_hours, -- Total duration of all sessions
+    INTERVAL '1 hour' * FLOOR(SUM(
+        CASE WHEN s.type IN ('PUBLIC', 'PRIVATE') THEN EXTRACT(EPOCH FROM (s.completed_at - s.started_at)) ELSE 0 END
+    ) / 3600) +
+    INTERVAL '1 minute' * FLOOR(SUM(
+        CASE WHEN s.type IN ('PUBLIC', 'PRIVATE') THEN EXTRACT(EPOCH FROM (s.completed_at - s.started_at)) ELSE 0 END
+    ) / 60 % 60) +
+    INTERVAL '1 second' * FLOOR(SUM(
+        CASE WHEN s.type IN ('PUBLIC', 'PRIVATE') THEN EXTRACT(EPOCH FROM (s.completed_at - s.started_at)) ELSE 0 END
+    ) % 60),
+    'HH24:MI:SS'
+) AS total_hours
+, -- Total duration of all sessions
             TO_CHAR(
                 INTERVAL '1 hour' * FLOOR(SUM(CASE WHEN s.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (s.completed_at - s.started_at)) / 3600 ELSE 0 END)) +
                 INTERVAL '1 minute' * FLOOR(SUM(CASE WHEN s.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (s.completed_at - s.started_at)) / 60 ELSE 0 END) % 60) +
@@ -222,10 +229,16 @@ module.exports = {
 				query: `SELECT 
                 -- Total duration (sum of both public and private sessions)
                 TO_CHAR(
-                    INTERVAL '1 hour' * FLOOR(SUM(EXTRACT(EPOCH FROM (completed_at - started_at)) / 3600)) +
-                    INTERVAL '1 minute' * FLOOR(SUM(EXTRACT(EPOCH FROM (completed_at - started_at)) / 60) % 60) +
-                    INTERVAL '1 second' * FLOOR(SUM(EXTRACT(EPOCH FROM (completed_at - started_at)) % 60)),
-                    'HH24:MI:SS'
+                INTERVAL '1 hour' * FLOOR(SUM(
+                CASE WHEN s.type IN ('PUBLIC', 'PRIVATE') THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END
+                ) / 3600) +
+                INTERVAL '1 minute' * FLOOR(SUM(
+                CASE WHEN s.type IN ('PUBLIC', 'PRIVATE') THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END
+                ) / 60 % 60) +
+                INTERVAL '1 second' * FLOOR(SUM(
+                CASE WHEN s.type IN ('PUBLIC', 'PRIVATE') THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END
+                ) % 60),
+                'HH24:MI:SS'
                 ) AS total_hours,
             
                 -- Duration for public sessions
