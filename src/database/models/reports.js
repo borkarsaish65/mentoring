@@ -51,6 +51,11 @@ module.exports = (sequelize, DataTypes) => {
 			tableName: 'reports',
 			freezeTableName: true,
 			paranoid: true, // Enables soft delete handling via deleted_at
+			uniqueKeys: {
+				report_code_organization_unique: {
+					fields: ['code', 'organization_id'],
+				},
+			},
 		}
 	)
 

@@ -1054,6 +1054,42 @@ function getDynamicFilterCondition(filters, columnMappings, baseQuery, columnCon
 	return ''
 }
 
+function getDynamicEntityCondition(entityData, columnConfig) {
+	if (!entityData || Object.keys(entityData).length === 0) {
+		return ''
+	}
+
+	const conditions = []
+
+	// Iterate over entityData and generate conditions
+	for (const [column, values] of Object.entries(entityData)) {
+		if (values) {
+			const columnMapping = columnConfig.find((col) => col.key === column)
+
+			if (columnMapping) {
+				// Check if the value is an array
+				if (Array.isArray(values)) {
+					// Process array of values
+					for (const value of values) {
+						if (value !== '') {
+							const formattedValue = `{${value}}`
+							conditions.push(`${columnMapping.model}.${columnMapping.key} = '${formattedValue}'`)
+						}
+					}
+				} else {
+					// Process single value
+					conditions.push(`${columnMapping.model}.${columnMapping.key} = '${values}'`)
+				}
+			}
+		}
+	}
+
+	if (conditions.length > 0) {
+		return ` AND (${conditions.join(' AND ')})` // Semicolon not included here to be consistent
+	}
+	return ''
+}
+
 // Utility function to check strict date validity
 function isStrictValidDate(dateString) {
 	// Match dates in 'YYYY-MM-DD' format
@@ -1190,6 +1226,31 @@ const mapEntityTypeToData = (data, entityTypes) => {
 		return newItem
 	})
 }
+
+function transformEntityTypes(input) {
+	// Flatten all group arrays into a single entityTypes array
+	const entityTypes = Object.keys(input).flatMap((key) =>
+		input[key].map((group) => ({
+			id: group.id,
+			label: group.label,
+			value: group.value,
+			parent_id: group.parent_id,
+			organization_id: group.organization_id,
+			entities: group.entities.map((entity) => ({
+				id: entity.id,
+				value: entity.value,
+				label: entity.label,
+				status: entity.status,
+				type: entity.type,
+				created_at: entity.created_at,
+				updated_at: entity.updated_at,
+			})),
+		}))
+	)
+
+	return { entityTypes }
+}
+
 module.exports = {
 	hash: hash,
 	getCurrentMonthRange,
@@ -1249,4 +1310,6 @@ module.exports = {
 	extractFiltersAndEntityType,
 	generateDateRanges,
 	mapEntityTypeToData,
+	getDynamicEntityCondition,
+	transformEntityTypes,
 }

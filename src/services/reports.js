@@ -16,6 +16,7 @@ const fs = require('fs')
 const ProjectRootDir = path.join(__dirname, '../')
 const inviteeFileDir = ProjectRootDir + common.tempFolderForBulkUpload
 const fileUploadPath = require('@helpers/uploadFileToCloud')
+const { Op } = require('sequelize')
 
 module.exports = class ReportsHelper {
 	/**
@@ -86,6 +87,8 @@ module.exports = class ReportsHelper {
 				}
 			}
 
+			console.log('=========================', result.entity_types)
+
 			// search for type entityType and add 'ALL' to entities list of type
 			// added roles inside the result
 			if (result.entity_types.type) {
@@ -101,6 +104,7 @@ module.exports = class ReportsHelper {
 					}
 				})
 			}
+			result = utils.transformEntityTypes(result.entity_types)
 			result.roles = tokenInformation.roles
 			return responses.successResponse({
 				statusCode: httpStatusCode.ok,
@@ -136,7 +140,7 @@ module.exports = class ReportsHelper {
 
 	static async getReportData(
 		userId,
-		orgId,
+		orgId, //token id
 		page,
 		limit,
 		reportCode,
@@ -144,7 +148,8 @@ module.exports = class ReportsHelper {
 		startDate,
 		endDate,
 		sessionType,
-		entitiesValue,
+		entityTypesColumns,
+		entityTypesValues,
 		sortColumn,
 		sortType,
 		searchColumns,
@@ -165,8 +170,21 @@ module.exports = class ReportsHelper {
 				})
 			}
 
+			const defaultOrgId = await getDefaultOrgId()
+			if (!defaultOrgId)
+				return responses.failureResponse({
+					message: 'DEFAULT_ORG_ID_NOT_SET',
+					statusCode: httpStatusCode.bad_request,
+					responseCode: 'CLIENT_ERROR',
+				})
+
 			// Fetch report configuration
-			const reportConfig = await reportsQueries.findReportByCode(reportCode)
+			const reportConfig = await reportsQueries.findReport({
+				code: reportCode,
+				organization_id: {
+					[Op.in]: [orgId, defaultOrgId],
+				},
+			})
 			const reportQuery = await reportQueryQueries.findReportQueryByCode(reportCode)
 			if (!reportConfig || !reportQuery) {
 				return responses.failureResponse({
@@ -175,14 +193,14 @@ module.exports = class ReportsHelper {
 					responseCode: 'CLIENT_ERROR',
 				})
 			}
-			const columnConfig = reportConfig.dataValues.config
+			const columnConfig = reportConfig[0]?.config
 			const reportDataResult = {
-				report_type: reportConfig.dataValues.report_type_title,
+				report_type: reportConfig[0].report_type_title,
 				config: columnConfig,
 			}
 
 			// Handle BAR_CHART report type with groupBy
-			if (reportConfig.dataValues.report_type_title === common.BAR_CHART && groupBy) {
+			if (reportConfig[0].report_type_title === common.BAR_CHART && groupBy) {
 				//	const listOfDates = await utils.getAllEpochDates(startDate, endDate, groupBy)
 
 				const dateRanges = await utils.generateDateRanges(startDate, endDate, groupBy)
@@ -193,13 +211,22 @@ module.exports = class ReportsHelper {
 				for (let dateRange of dateRanges) {
 					const replacements = {
 						userId: userId || null,
-						entities_value: entitiesValue ? `{${entitiesValue}}` : null,
+						//	entities_value: entitiesValue ? `{${entitiesValue}}` : null,
 						session_type: sessionType ? utils.convertToTitleCase(sessionType) : null,
 						start_date: dateRange.start_date || null,
 						end_date: dateRange.end_date || null,
 					}
 
 					let query = reportQuery.query.replace(/:sort_type/g, replacements.sort_type)
+					const entityConditions = await utils.getDynamicEntityCondition(
+						Object.fromEntries(entityTypesColumns.map((col, idx) => [col, entityTypesValues[idx]])),
+						columnConfig.columns
+					)
+
+					// Add dynamic entity conditions to the query
+					if (entityConditions) {
+						query += entityConditions
+					}
 
 					// Execute query with the current date range
 					const result = await sequelize.query(query, { replacements, type: sequelize.QueryTypes.SELECT })
@@ -226,7 +253,7 @@ module.exports = class ReportsHelper {
 					userId: userId || null,
 					start_date: startDate || null,
 					end_date: endDate || null,
-					entities_value: entitiesValue ? `{${entitiesValue}}` : null,
+					//	entities_value: entitiesValue ? `{${entitiesValue}}` : null,
 					session_type: sessionType ? utils.convertToTitleCase(sessionType) : null,
 					limit: limit || defaultLimit,
 					offset: common.getPaginationOffset(page, limit),
@@ -243,8 +270,23 @@ module.exports = class ReportsHelper {
 				}
 
 				let query = reportQuery.query
-				if (reportConfig.dataValues.report_type_title === common.REPORT_TABLE) {
-					query = reportQuery.query.replace(';', '') // Base query for report table
+
+				if (entityTypesColumns && entityTypesValues) {
+					const entityConditions = await utils.getDynamicEntityCondition(
+						Object.fromEntries(entityTypesColumns.map((col, idx) => [col, entityTypesValues[idx]])),
+						columnConfig.columns
+					)
+
+					// Add dynamic entity conditions to the query
+					if (entityConditions) {
+						query = reportQuery.query.replace(';', '')
+						query += entityConditions
+					}
+				}
+
+				if (reportConfig[0].report_type_title === common.REPORT_TABLE) {
+					query = query.replace(';', '') // Base query for report table
+					console.log('------------------', query)
 					const columnMappings = await utils.extractColumnMappings(query)
 
 					// Generate dynamic WHERE conditions for filters
@@ -288,6 +330,7 @@ module.exports = class ReportsHelper {
 
 				// Replace sort type placeholder in query
 				query = query.replace(/:sort_type/g, replacements.sort_type)
+				console.log('final qury ==================', query)
 				// Execute query with pagination
 				const [result, resultWithoutPagination] = await Promise.all([
 					sequelize.query(query, { replacements, type: sequelize.QueryTypes.SELECT }),
@@ -297,13 +340,6 @@ module.exports = class ReportsHelper {
 					}),
 				])
 
-				const defaultOrgId = await getDefaultOrgId()
-				if (!defaultOrgId)
-					return responses.failureResponse({
-						message: 'DEFAULT_ORG_ID_NOT_SET',
-						statusCode: httpStatusCode.bad_request,
-						responseCode: 'CLIENT_ERROR',
-					})
 				const sessionModelName = await sessionQueries.getModelName()
 
 				let entityTypesDataWithPagination = await getOrgIdAndEntityTypes.getEntityTypeWithEntitiesBasedOnOrg(
@@ -332,15 +368,8 @@ module.exports = class ReportsHelper {
 
 				// Handle CSV download
 				if (resultWithoutPagination?.length) {
-					const defaultOrgId = await getDefaultOrgId()
-					if (!defaultOrgId)
-						return responses.failureResponse({
-							message: 'DEFAULT_ORG_ID_NOT_SET',
-							statusCode: httpStatusCode.bad_request,
-							responseCode: 'CLIENT_ERROR',
-						})
 					const sessionModelName = await sessionQueries.getModelName()
-					if (reportConfig.dataValues.report_type_title === common.REPORT_TABLE) {
+					if (reportConfig[0].report_type_title === common.REPORT_TABLE) {
 						const ExtractFilterAndEntityTypesKeys = await utils.extractFiltersAndEntityType(
 							columnConfig.columns
 						)

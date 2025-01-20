@@ -31,6 +31,7 @@ module.exports = {
 			},
 			organization_id: {
 				type: Sequelize.STRING,
+				unique: true,
 			},
 			created_at: {
 				allowNull: false,
