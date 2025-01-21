@@ -181,9 +181,7 @@ module.exports = class ReportsHelper {
 			// Fetch report configuration for the given organization ID
 			const reportConfigWithOrgId = await reportsQueries.findReport({
 				code: reportCode,
-				organization_id: {
-					[Op.in]: [orgId],
-				},
+				organization_id: orgId,
 			})
 
 			if (reportConfigWithOrgId) {
@@ -192,9 +190,7 @@ module.exports = class ReportsHelper {
 				// Fetch report configuration for the default organization ID
 				const reportConfigWithDefaultOrgId = await reportsQueries.findReport({
 					code: reportCode,
-					organization_id: {
-						[Op.in]: [defaultOrgId],
-					},
+					organization_id: defaultOrgId,
 				})
 				reportConfig = reportConfigWithDefaultOrgId
 			}
@@ -203,9 +199,7 @@ module.exports = class ReportsHelper {
 
 			const reportQueryWithOrgId = await reportQueryQueries.findReportQueries({
 				report_code: reportCode,
-				organization_id: {
-					[Op.in]: [orgId],
-				},
+				organization_id: orgId,
 			})
 
 			if (reportQueryWithOrgId) {
@@ -213,9 +207,7 @@ module.exports = class ReportsHelper {
 			} else {
 				const reportQueryWithDefaultOrgId = await reportQueryQueries.findReportQueries({
 					report_code: reportCode,
-					organization_id: {
-						[Op.in]: [orgId],
-					},
+					organization_id: defaultOrgId,
 				})
 				reportQuery = reportQueryWithDefaultOrgId
 			}
