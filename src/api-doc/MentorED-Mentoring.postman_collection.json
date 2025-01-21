@@ -4981,9 +4981,9 @@
 							}
 						],
 						"url": {
-							"raw": "{{MentoringBaseUrl}}mentoring/v1/reports/delete?id=1",
+							"raw": "{{MentoringBaseUrl}}mentoring/v1/report-type/delete?id=1",
 							"host": ["{{MentoringBaseUrl}}mentoring"],
-							"path": ["v1", "reports", "delete"],
+							"path": ["v1", "report-type", "delete"],
 							"query": [
 								{
 									"key": "id",

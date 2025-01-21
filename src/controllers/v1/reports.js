@@ -55,11 +55,12 @@ module.exports = class Reports {
 
 	async reportData(req) {
 		try {
-			// Initialize filter and search arrays
 			let filter_column = []
 			let filter_value = []
 			let search_column = []
 			let search_value = []
+			let entity_types_column = []
+			let entity_types_value = []
 
 			// Check if req.body exists and process filters
 			if (
@@ -91,6 +92,21 @@ module.exports = class Reports {
 				})
 			}
 
+			// Check if req.body exists and process entityTypes
+			if (
+				req.body &&
+				req.body.entityTypes &&
+				typeof req.body.entityTypes === 'object' &&
+				Object.keys(req.body.entityTypes).length > 0
+			) {
+				Object.entries(req.body.entityTypes).forEach(([key, value]) => {
+					if (key && Array.isArray(value)) {
+						entity_types_column.push([key]) // Add the key as a column
+						entity_types_value.push(value) // Add the value
+					}
+				})
+			}
+
 			// Call the report service with the transformed data
 			const reportData = await reportService.getReportData(
 				req.decodedToken.id,
@@ -102,7 +118,8 @@ module.exports = class Reports {
 				req.query.start_date ? req.query.start_date : '',
 				req.query.end_date ? req.query.end_date : '',
 				req.query.session_type ? req.query.session_type : common.ALL,
-				req.query.entities_value,
+				entity_types_column.length > 0 ? entity_types_column : undefined,
+				entity_types_value.length > 0 ? entity_types_value : undefined,
 				req.query.sort_column,
 				req.query.sort_type ? req.query.sort_type : '',
 				search_column.length > 0 ? search_column : undefined, // Pass search_column only if it's not empty

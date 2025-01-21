@@ -30,7 +30,6 @@ module.exports = {
                 AND sa.joined_at IS NOT NULL
                 AND (CASE WHEN :start_date IS NOT NULL THEN s.start_date > :start_date ELSE TRUE END)
                 AND (CASE WHEN :end_date IS NOT NULL THEN s.end_date < :end_date ELSE TRUE END)
-                AND (CASE WHEN :entities_value IS NOT NULL THEN s.categories = :entities_value ELSE TRUE END)
                 AND (
                     CASE 
                         WHEN :session_type = 'All' THEN s.type IN ('PUBLIC', 'PRIVATE')
@@ -47,11 +46,18 @@ module.exports = {
 				report_code: 'total_hours_of_learning',
 				query: `SELECT 
                 TO_CHAR(
-                INTERVAL '1 hour' * FLOOR(SUM(EXTRACT(EPOCH FROM (s.completed_at - s.started_at)) / 3600)) +
-                INTERVAL '1 minute' * FLOOR(SUM(EXTRACT(EPOCH FROM (s.completed_at - s.started_at)) / 60) % 60) +
-                INTERVAL '1 second' * FLOOR(SUM(EXTRACT(EPOCH FROM (s.completed_at - s.started_at)) % 60)),
-                'HH24:MI:SS'
-            ) AS total_hours, -- Total duration of all sessions
+    INTERVAL '1 hour' * FLOOR(SUM(
+        CASE WHEN s.type IN ('PUBLIC', 'PRIVATE') THEN EXTRACT(EPOCH FROM (s.completed_at - s.started_at)) ELSE 0 END
+    ) / 3600) +
+    INTERVAL '1 minute' * FLOOR(SUM(
+        CASE WHEN s.type IN ('PUBLIC', 'PRIVATE') THEN EXTRACT(EPOCH FROM (s.completed_at - s.started_at)) ELSE 0 END
+    ) / 60 % 60) +
+    INTERVAL '1 second' * FLOOR(SUM(
+        CASE WHEN s.type IN ('PUBLIC', 'PRIVATE') THEN EXTRACT(EPOCH FROM (s.completed_at - s.started_at)) ELSE 0 END
+    ) % 60),
+    'HH24:MI:SS'
+) AS total_hours
+, -- Total duration of all sessions
             TO_CHAR(
                 INTERVAL '1 hour' * FLOOR(SUM(CASE WHEN s.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (s.completed_at - s.started_at)) / 3600 ELSE 0 END)) +
                 INTERVAL '1 minute' * FLOOR(SUM(CASE WHEN s.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (s.completed_at - s.started_at)) / 60 ELSE 0 END) % 60) +
@@ -75,7 +81,6 @@ module.exports = {
                 AND sa.joined_at IS NOT NULL 
                 AND (CASE WHEN :start_date IS NOT NULL THEN s.start_date > :start_date ELSE TRUE END)
                 AND (CASE WHEN :end_date IS NOT NULL THEN s.end_date < :end_date ELSE TRUE END)
-                AND (CASE WHEN :entities_value IS NOT NULL THEN s.categories = :entities_value ELSE TRUE END)
                 AND (
                     CASE 
                         WHEN :session_type = 'All' THEN s.type IN ('PUBLIC', 'PRIVATE')
@@ -138,8 +143,7 @@ module.exports = {
             WHERE 
             (CASE WHEN :userId IS NOT NULL THEN sa.mentee_id = :userId ELSE TRUE END)
             AND (CASE WHEN :start_date IS NOT NULL THEN s.start_date > :start_date ELSE TRUE END)
-            AND (CASE WHEN :end_date IS NOT NULL THEN s.end_date < :end_date ELSE TRUE END)
-            AND (CASE WHEN :entities_value IS NOT NULL THEN s.categories = :entities_value ELSE TRUE END);`,
+            AND (CASE WHEN :end_date IS NOT NULL THEN s.end_date < :end_date ELSE TRUE END);`,
 				status: 'ACTIVE',
 				created_at: Sequelize.literal('CURRENT_TIMESTAMP'),
 				updated_at: Sequelize.literal('CURRENT_TIMESTAMP'),
@@ -166,8 +170,6 @@ module.exports = {
                 AND (s.start_date > :start_date OR :start_date IS NULL)
                 -- Filter by end date if provided
                 AND (s.end_date < :end_date OR :end_date IS NULL)
-                -- Filter by categories if provided
-                AND (:entities_value = ANY(s.categories) OR :entities_value IS NULL)
                 -- Filter by session type
                 AND (
                     :session_type = 'All' AND s.type IN ('PUBLIC', 'PRIVATE')
@@ -210,7 +212,6 @@ module.exports = {
                 AND s.status = 'COMPLETED'
                 AND (:start_date IS NOT NULL AND s.start_date > :start_date)
                 AND (:end_date IS NOT NULL AND s.end_date < :end_date)
-                AND (CASE WHEN :entities_value IS NOT NULL THEN s.categories = :entities_value ELSE TRUE END)
                 AND (
                     CASE 
                         WHEN :session_type = 'All' THEN s.type IN ('PUBLIC', 'PRIVATE') 
@@ -228,10 +229,16 @@ module.exports = {
 				query: `SELECT 
                 -- Total duration (sum of both public and private sessions)
                 TO_CHAR(
-                    INTERVAL '1 hour' * FLOOR(SUM(EXTRACT(EPOCH FROM (completed_at - started_at)) / 3600)) +
-                    INTERVAL '1 minute' * FLOOR(SUM(EXTRACT(EPOCH FROM (completed_at - started_at)) / 60) % 60) +
-                    INTERVAL '1 second' * FLOOR(SUM(EXTRACT(EPOCH FROM (completed_at - started_at)) % 60)),
-                    'HH24:MI:SS'
+                INTERVAL '1 hour' * FLOOR(SUM(
+                CASE WHEN s.type IN ('PUBLIC', 'PRIVATE') THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END
+                ) / 3600) +
+                INTERVAL '1 minute' * FLOOR(SUM(
+                CASE WHEN s.type IN ('PUBLIC', 'PRIVATE') THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END
+                ) / 60 % 60) +
+                INTERVAL '1 second' * FLOOR(SUM(
+                CASE WHEN s.type IN ('PUBLIC', 'PRIVATE') THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END
+                ) % 60),
+                'HH24:MI:SS'
                 ) AS total_hours,
             
                 -- Duration for public sessions
@@ -273,7 +280,6 @@ module.exports = {
                 AND s.status = 'COMPLETED'
                 AND (:start_date IS NOT NULL AND s.start_date > :start_date)
                 AND (:end_date IS NOT NULL AND s.end_date < :end_date)
-                AND (CASE WHEN :entities_value IS NOT NULL THEN s.categories = :entities_value ELSE TRUE END)
                 AND (
                     CASE 
                         WHEN :session_type = 'All' THEN s.type IN ('PUBLIC', 'PRIVATE') 
@@ -359,7 +365,6 @@ module.exports = {
                 (:userId IS NOT NULL AND so.user_id = :userId OR :userId IS NULL)
                 AND (s.start_date > :start_date OR :start_date IS NULL)
                 AND (s.end_date < :end_date OR :end_date IS NULL)
-                AND (CASE WHEN :entities_value IS NOT NULL THEN s.categories = :entities_value ELSE TRUE END)
                 AND (
                     :session_type = 'All' 
                     OR :session_type = 'Public' 
@@ -380,7 +385,6 @@ module.exports = {
                 s.type AS "session_type",
 CASE WHEN s.started_at IS NOT NULL THEN 'Yes' ELSE 'No' END AS "session_conducted",
                 ROUND(EXTRACT(EPOCH FROM(TO_TIMESTAMP(s.end_date)-TO_TIMESTAMP(s.start_date)))/60) AS "duration_of_sessions_attended_in_minutes",
-COALESCE(CAST(ue.rating ->>'average'AS NUMERIC),0) AS "mentor_rating"
             FROM public.session_ownerships AS sa
             JOIN public.sessions AS s ON sa.session_id = s.id
             LEFT JOIN public.user_extensions AS ue ON s.created_by = ue.user_id
@@ -389,7 +393,6 @@ COALESCE(CAST(ue.rating ->>'average'AS NUMERIC),0) AS "mentor_rating"
                 AND (sa.type = 'MENTOR' )
                 AND (CASE WHEN :start_date IS NOT NULL THEN s.start_date > :start_date ELSE TRUE END)
                 AND (CASE WHEN :end_date IS NOT NULL THEN s.end_date < :end_date ELSE TRUE END)
-                AND (CASE WHEN :entities_value IS NOT NULL THEN s.categories = :entities_value ELSE TRUE END)
                 AND (
                     CASE 
                         WHEN :session_type = 'All' THEN s.type IN ('PUBLIC', 'PRIVATE')
@@ -440,7 +443,6 @@ COALESCE(CAST(ue.rating ->>'average'AS NUMERIC),0) AS "mentor_rating"
                                 AND ('CREATOR' IS NULL OR so.type = 'CREATOR') 
                                 AND (:start_date IS NOT NULL AND s.start_date > :start_date) 
                                 AND (:end_date IS NOT NULL AND s.end_date < :end_date) 
-                                AND (CASE WHEN :entities_value IS NOT NULL THEN s.categories = :entities_value ELSE TRUE END)
                                 AND (
                                     CASE 
                                         WHEN :session_type = 'All' THEN s.type IN ('PUBLIC', 'PRIVATE') 
@@ -490,7 +492,6 @@ COALESCE(CAST(ue.rating ->>'average'AS NUMERIC),0) AS "mentor_rating"
                             AND s.status = 'COMPLETED'
                             AND (:start_date IS NOT NULL AND s.start_date > :start_date)
                             AND (:end_date IS NOT NULL AND s.end_date < :end_date)
-                            AND (CASE WHEN :entities_value IS NOT NULL THEN s.categories = :entities_value ELSE TRUE END)
                             AND (
                                 CASE 
                                     WHEN :session_type = 'All' THEN s.type IN ('PUBLIC', 'PRIVATE') 
@@ -578,7 +579,6 @@ COALESCE(CAST(ue.rating ->>'average'AS NUMERIC),0) AS "mentor_rating"
                 (:userId IS NOT NULL AND so.user_id = :userId OR :userId IS NULL)
                 AND (:start_date IS NOT NULL AND s.start_date > :start_date OR :start_date IS NULL)
                 AND (:end_date IS NOT NULL AND s.end_date < :end_date OR :end_date IS NULL)
-                AND (CASE WHEN :entities_value IS NOT NULL THEN s.categories = :entities_value ELSE TRUE END)
                 AND (so.type IN ('CREATOR', 'MENTOR'))
                 AND (
                     :session_type = 'All' 
@@ -624,7 +624,6 @@ COALESCE(CAST(ue.rating ->>'average'AS NUMERIC),0) AS "mentor_rating"
                     AND s.completed_at IS NOT NULL
                     AND s.start_date > :start_date -- Optional: Replace with dynamic start date in epoch format
                     AND s.end_date < :end_date -- Optional: Replace with dynamic end date in epoch format
-                    AND (:entities_value IS NULL OR s.categories = :entities_value)
                     AND (
                     CASE 
                         WHEN :session_type = 'All' THEN s.type IN ('PUBLIC', 'PRIVATE')

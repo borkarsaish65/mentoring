@@ -775,11 +775,11 @@ const generateFilters = (data, entityTypeKeys, defaultValueKeys, columnConfigs) 
 			if (defaultValueKeySet && defaultValueKeySet.has(key)) {
 				const columnConfig = columnConfigs.find((col) => col.key === key)
 				if (columnConfig && columnConfig.defaultValues) {
-					filters[key] = columnConfig.defaultValues.map((value) => ({
-						value: value, // Use value from defaultValues
+					filters[key] = columnConfig.defaultValues.map(({ value, label }) => ({
+						value: value, // Use the value directly from the defaultValues object
 						label: ['<=', '>='].includes(columnConfig.filterType)
-							? `${columnConfig.filterType} ${value}` // Add filterType to label if it's '<=' or '>='
-							: value, // Otherwise, just use the value
+							? `${columnConfig.filterType} ${label}` // Add filterType to label if it's '<=' or '>='
+							: label, // Otherwise, just use the label
 					}))
 				} else {
 					// If no defaultValues found, use unique values from data
@@ -971,9 +971,7 @@ function getDynamicFilterCondition(filters, columnMappings, baseQuery, columnCon
 		console.log('Filters is not an object or is empty')
 		return '' // Early exit if filters are not valid
 	}
-	if (filters.session_type && filters.session_type.includes('ALL')) {
-		filters.session_type = ['PUBLIC', 'PRIVATE']
-	}
+
 	const conditions = Object.entries(filters)
 		.map(([column, value]) => {
 			const mappedColumn = columnMappings[column]
@@ -1056,6 +1054,42 @@ function getDynamicFilterCondition(filters, columnMappings, baseQuery, columnCon
 	return ''
 }
 
+function getDynamicEntityCondition(entityData, columnConfig) {
+	if (!entityData || Object.keys(entityData).length === 0) {
+		return ''
+	}
+
+	const conditions = []
+
+	// Iterate over entityData and generate conditions
+	for (const [column, values] of Object.entries(entityData)) {
+		if (values) {
+			const columnMapping = columnConfig.find((col) => col.key === column)
+
+			if (columnMapping) {
+				// Check if the value is an array
+				if (Array.isArray(values)) {
+					// Process array of values
+					for (const value of values) {
+						if (value !== '') {
+							const formattedValue = `{${value}}`
+							conditions.push(`${columnMapping.model}.${columnMapping.key} = '${formattedValue}'`)
+						}
+					}
+				} else {
+					// Process single value
+					conditions.push(`${columnMapping.model}.${columnMapping.key} = '${values}'`)
+				}
+			}
+		}
+	}
+
+	if (conditions.length > 0) {
+		return ` AND (${conditions.join(' AND ')})` // Semicolon not included here to be consistent
+	}
+	return ''
+}
+
 // Utility function to check strict date validity
 function isStrictValidDate(dateString) {
 	// Match dates in 'YYYY-MM-DD' format
@@ -1067,10 +1101,6 @@ function getDynamicSearchCondition(search, columnMappings, baseQuery) {
 	if (!search || typeof search !== 'object') {
 		console.log('Search is not an object or is empty')
 		return '' // Early exit if search is not valid
-	}
-
-	if (search.session_type && search.session_type.includes('ALL')) {
-		search.session_type = ['PUBLIC', 'PRIVATE']
 	}
 
 	const conditions = Object.entries(search)
@@ -1196,6 +1226,31 @@ const mapEntityTypeToData = (data, entityTypes) => {
 		return newItem
 	})
 }
+
+function transformEntityTypes(input) {
+	// Flatten all group arrays into a single entityTypes array
+	const entityTypes = Object.keys(input).flatMap((key) =>
+		input[key].map((group) => ({
+			id: group.id,
+			label: group.label,
+			value: group.value,
+			parent_id: group.parent_id,
+			organization_id: group.organization_id,
+			entities: group.entities.map((entity) => ({
+				id: entity.id,
+				value: entity.value,
+				label: entity.label,
+				status: entity.status,
+				type: entity.type,
+				created_at: entity.created_at,
+				updated_at: entity.updated_at,
+			})),
+		}))
+	)
+
+	return { entityTypes }
+}
+
 module.exports = {
 	hash: hash,
 	getCurrentMonthRange,
@@ -1255,4 +1310,6 @@ module.exports = {
 	extractFiltersAndEntityType,
 	generateDateRanges,
 	mapEntityTypeToData,
+	getDynamicEntityCondition,
+	transformEntityTypes,
 }
