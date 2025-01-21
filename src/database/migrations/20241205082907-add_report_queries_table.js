@@ -7,11 +7,11 @@ module.exports = {
 			id: {
 				allowNull: false,
 				autoIncrement: true,
+				primaryKey: true,
 				type: Sequelize.INTEGER,
 			},
 			report_code: {
 				type: Sequelize.STRING,
-				primaryKey: true,
 				allowNull: false,
 			},
 			query: {
