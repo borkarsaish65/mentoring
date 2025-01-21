@@ -46,7 +46,6 @@ module.exports = class ReportQueryServiceQueries {
 		try {
 			const deletedRows = await ReportQuery.destroy({
 				where: { id },
-				force: true,
 			})
 			return deletedRows
 		} catch (error) {
@@ -58,6 +57,17 @@ module.exports = class ReportQueryServiceQueries {
 		try {
 			return await ReportQuery.findOne({
 				where: { report_code: code },
+				raw: true,
+			})
+		} catch (error) {
+			throw error
+		}
+	}
+
+	static async findReportQueries(filter) {
+		try {
+			return await ReportQuery.findAll({
+				where: filter,
 				raw: true,
 			})
 		} catch (error) {

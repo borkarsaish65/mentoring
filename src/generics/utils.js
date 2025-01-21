@@ -758,105 +758,123 @@ function removeLimitAndOffset(sql) {
 	return sql.replace(/\s*LIMIT\s+\S+\s+OFFSET\s+\S+/, '')
 }
 
-function calculateStartOfWeek(startDate) {
-	const dayOfWeek = startDate.getDay()
-	const startOfWeek = new Date(startDate * 1000) // Convert epoch seconds to milliseconds for Date object
-	startOfWeek.setDate(startDate.getDate() - dayOfWeek)
-	startOfWeek.setHours(0, 0, 1, 0) // Set time to 00:00:01
-	return startOfWeek
-}
-
-function calculateEndOfWeek(startOfWeek) {
-	const endOfWeek = new Date(startOfWeek)
-	endOfWeek.setDate(startOfWeek.getDate() + 6) // Saturday
-	endOfWeek.setHours(23, 59, 59, 999) // Set time to 23:59:59
-	return endOfWeek
-}
-
-function calculateStartOfMonth(startDate) {
-	const startOfMonth = new Date(startDate * 1000) // Convert epoch seconds to milliseconds for Date object
-	startOfMonth.setFullYear(startDate.getFullYear(), startDate.getMonth(), 1) // First day of the month
-	startOfMonth.setHours(0, 0, 1, 0) // Set time to 00:00:01
-	return startOfMonth
-}
-
-function calculateEndOfMonth(startOfMonth) {
-	const endOfMonth = new Date(startOfMonth)
-	endOfMonth.setMonth(startOfMonth.getMonth() + 1)
-	endOfMonth.setDate(0) // Last day of the current month
-	endOfMonth.setHours(23, 59, 59, 999) // Set time to 23:59:59
-	return endOfMonth
-}
-
-function calculateStartOfDay(startDate) {
-	const startOfDay = new Date(startDate * 1000) // Convert epoch seconds to milliseconds for Date object
-	startOfDay.setHours(0, 0, 1, 0) // Set time to 00:00:01
-	return startOfDay
-}
-
-function calculateEndOfDay(startOfDay) {
-	const endOfDay = new Date(startOfDay)
-	endOfDay.setHours(23, 59, 59, 999) // Set time to 23:59:59
-	return endOfDay
-}
-
-function getEpochDates(startDateEpoch, option) {
-	const startDate = new Date(startDateEpoch * 1000) // Convert epoch seconds to Date object
-
-	let fromDateEpoch, toDateEpoch
-
-	switch (option) {
-		case 'week':
-			const startOfWeek = calculateStartOfWeek(startDate)
-			const endOfWeek = calculateEndOfWeek(startOfWeek)
-			fromDateEpoch = Math.floor(startOfWeek.getTime() / 1000) // Convert to seconds
-			toDateEpoch = Math.floor(endOfWeek.getTime() / 1000) // Convert to seconds
-			break
-
-		case 'month':
-			const startOfMonth = calculateStartOfMonth(startDate)
-			const endOfMonth = calculateEndOfMonth(startOfMonth)
-			fromDateEpoch = Math.floor(startOfMonth.getTime() / 1000) // Convert to seconds
-			toDateEpoch = Math.floor(endOfMonth.getTime() / 1000) // Convert to seconds
-			break
-
-		case 'day':
-			const startOfDay = calculateStartOfDay(startDate)
-			const endOfDay = calculateEndOfDay(startOfDay)
-			fromDateEpoch = Math.floor(startOfDay.getTime() / 1000) // Convert to seconds
-			toDateEpoch = Math.floor(endOfDay.getTime() / 1000) // Convert to seconds
-			break
-	}
-
-	return {
-		start_date: fromDateEpoch,
-		end_date: toDateEpoch,
-	}
-}
-
-function getAllEpochDates(startDateEpoch, endDateEpoch, option) {
-	const dateArray = []
-	let currentStartDate = startDateEpoch
-
-	// Loop until we reach the end date
-	while (currentStartDate <= endDateEpoch) {
-		const { start_date, end_date } = getEpochDates(currentStartDate, option)
-		dateArray.push({ start_date, end_date })
-
-		// Move the currentStartDate to the next interval (week, month, or day)
-		currentStartDate = end_date + 1 // Increment by 1 second to move to next interval
-	}
-
-	return dateArray
-}
-
-const generateFilters = (data) => {
+const generateFilters = (data, entityTypeKeys, defaultValueKeys, columnConfigs) => {
 	const filters = {}
+
+	const entityTypeKeySet = entityTypeKeys
+		? new Set(entityTypeKeys.split(',')) // Convert entityTypeKeys to a Set if provided
+		: null // Set to null if not provided
+
+	const defaultValueKeySet = defaultValueKeys
+		? new Set(defaultValueKeys.split(',')) // Convert defaultValueKeys to a Set if provided
+		: null // Set to null if not provided
+
+	// Loop through keys in the first item of data
 	for (const key in data[0]) {
-		const uniqueValues = [...new Set(data.map((item) => item[key]))]
-		filters[key] = uniqueValues
+		if (!entityTypeKeySet || !entityTypeKeySet.has(key)) {
+			if (defaultValueKeySet && defaultValueKeySet.has(key)) {
+				const columnConfig = columnConfigs.find((col) => col.key === key)
+				if (columnConfig && columnConfig.defaultValues) {
+					filters[key] = columnConfig.defaultValues.map(({ value, label }) => ({
+						value: value, // Use the value directly from the defaultValues object
+						label: ['<=', '>='].includes(columnConfig.filterType)
+							? `${columnConfig.filterType} ${label}` // Add filterType to label if it's '<=' or '>='
+							: label, // Otherwise, just use the label
+					}))
+				} else {
+					// If no defaultValues found, use unique values from data
+					const uniqueValues = [...new Set(data.map((item) => item[key]))]
+					filters[key] = uniqueValues.map((value) => ({
+						value: value,
+						label: value,
+					}))
+				}
+			} else {
+				// If not in defaultValueKeys, use unique values from data
+				const uniqueValues = [...new Set(data.map((item) => item[key]))]
+				filters[key] = uniqueValues.map((value) => ({
+					value: value,
+					label: value,
+				}))
+			}
+		}
 	}
+
 	return filters
+}
+
+Date.prototype.getWeek = function () {
+	var target = new Date(this.valueOf())
+	var dayNr = (this.getDay() + 6) % 7
+	target.setDate(target.getDate() - dayNr + 3)
+	var firstThursday = target.valueOf()
+	target.setMonth(0, 1)
+	if (target.getDay() != 4) {
+		target.setMonth(0, 1 + ((4 - target.getDay() + 7) % 7))
+	}
+	return 1 + Math.ceil((firstThursday - target) / 604800000)
+}
+
+Date.prototype.getWeek = function () {
+	var target = new Date(this.valueOf())
+	var dayNr = (this.getDay() + 6) % 7
+	target.setDate(target.getDate() - dayNr + 3)
+	var firstThursday = target.valueOf()
+	target.setMonth(0, 1)
+	if (target.getDay() != 4) {
+		target.setMonth(0, 1 + ((4 - target.getDay() + 7) % 7))
+	}
+	return 1 + Math.ceil((firstThursday - target) / 604800000)
+}
+
+const generateDateRanges = (startEpoch, endEpoch, interval) => {
+	const startDate = new Date(startEpoch * 1000)
+	const endDate = new Date(endEpoch * 1000)
+
+	const dateRanges = []
+	let currentDate = new Date(startDate)
+
+	while (currentDate <= endDate) {
+		let nextDate
+
+		switch (interval) {
+			case 'day':
+				nextDate = new Date(currentDate)
+				nextDate.setDate(currentDate.getDate() + 1)
+				dateRanges.push({
+					start_date: Math.floor(currentDate.getTime() / 1000),
+					end_date: Math.floor(nextDate.getTime() / 1000) - 1,
+				})
+				break
+			case 'week':
+				const currentWeek = currentDate.getWeek()
+				const sunday = new Date(currentDate)
+				sunday.setDate(sunday.getDate() - sunday.getDay())
+				nextDate = new Date(sunday)
+				nextDate.setDate(sunday.getDate() + 7)
+
+				dateRanges.push({
+					start_date: Math.floor(sunday.getTime() / 1000),
+					end_date: Math.floor(Math.min(nextDate.getTime() - 1, endDate.getTime()) / 1000),
+				})
+
+				break
+			case 'month':
+				nextDate = new Date(currentDate)
+				nextDate.setMonth(currentDate.getMonth() + 1)
+				dateRanges.push({
+					start_date: Math.floor(currentDate.getTime() / 1000),
+					end_date: Math.floor(new Date(nextDate.getFullYear(), nextDate.getMonth(), 0).getTime() / 1000),
+				})
+				break
+			default:
+				throw new Error('Invalid interval. Valid options: "day", "week", "month"')
+		}
+
+		currentDate = nextDate
+	}
+
+	return dateRanges
 }
 
 const mapEntityTypesToData = (data, entityTypes) => {
@@ -929,6 +947,23 @@ function extractColumnMappings(sqlQuery) {
 	})
 
 	return columnMappings
+}
+
+function applyDefaultFilters(filters, columnConfigs) {
+	columnConfigs.forEach((column) => {
+		if (
+			column.key in filters && // Check if the key exists in the filters object
+			column.defaultValues && // Ensure there are default values
+			Array.isArray(column.defaultValues) // Ensure defaultValues is an array
+		) {
+			const currentFilterValues = filters[column.key]
+			if (Array.isArray(currentFilterValues) && currentFilterValues.includes('ALL')) {
+				// Exclude "ALL" and include the rest of the default values
+				filters[column.key] = column.defaultValues.filter((value) => value !== 'ALL')
+			}
+		}
+	})
+	return filters
 }
 
 function getDynamicFilterCondition(filters, columnMappings, baseQuery, columnConfig) {
@@ -1008,7 +1043,7 @@ function getDynamicFilterCondition(filters, columnMappings, baseQuery, columnCon
 	if (conditionsString) {
 		if (hasGroupBy) {
 			// Append before GROUP BY clause if it exists
-			return `${hasWhereClause ? 'AND' : 'WHERE'} ${conditionsString}`
+			return `${hasWhereClause ? 'WHERE' : 'AND'} ${conditionsString}`
 		} else {
 			// Standard WHERE clause logic
 			return `${hasWhereClause ? 'AND' : 'WHERE'} ${conditionsString}`
@@ -1016,6 +1051,42 @@ function getDynamicFilterCondition(filters, columnMappings, baseQuery, columnCon
 	}
 
 	// Return an empty string if no conditions were generated
+	return ''
+}
+
+function getDynamicEntityCondition(entityData, columnConfig) {
+	if (!entityData || Object.keys(entityData).length === 0) {
+		return ''
+	}
+
+	const conditions = []
+
+	// Iterate over entityData and generate conditions
+	for (const [column, values] of Object.entries(entityData)) {
+		if (values) {
+			const columnMapping = columnConfig.find((col) => col.key === column)
+
+			if (columnMapping) {
+				// Check if the value is an array
+				if (Array.isArray(values)) {
+					// Process array of values
+					for (const value of values) {
+						if (value !== '') {
+							const formattedValue = `{${value}}`
+							conditions.push(`${columnMapping.model}.${columnMapping.key} = '${formattedValue}'`)
+						}
+					}
+				} else {
+					// Process single value
+					conditions.push(`${columnMapping.model}.${columnMapping.key} = '${values}'`)
+				}
+			}
+		}
+	}
+
+	if (conditions.length > 0) {
+		return ` AND (${conditions.join(' AND ')})` // Semicolon not included here to be consistent
+	}
 	return ''
 }
 
@@ -1099,6 +1170,87 @@ function getDynamicSearchCondition(search, columnMappings, baseQuery) {
 	return ''
 }
 
+function extractFiltersAndEntityType(data) {
+	let filters = []
+	let entityType = []
+	let defaultValues = []
+
+	data.forEach((item) => {
+		if (item.filter) {
+			if (item.isEntityType) {
+				// Add to entityType if filter is true and isEntityType is true
+				entityType.push(item.key)
+			} else if (item.defaultValues && Array.isArray(item.defaultValues)) {
+				// Check if defaultValues is present and an array
+				defaultValues.push(item.key)
+			} else {
+				// Add to filters if filter is true and not an entityType
+				filters.push(item.key)
+			}
+		}
+	})
+
+	// Join arrays into comma-separated strings
+	filters = filters.join(',')
+	entityType = entityType.join(',')
+	defaultValues = defaultValues.join(',')
+
+	return { filters, entityType, defaultValues }
+}
+
+// Function to map EntityTypes to data
+const mapEntityTypeToData = (data, entityTypes) => {
+	return data.map((item) => {
+		const newItem = { ...item }
+
+		// Loop through EntityTypes to check for matching keys
+		entityTypes.forEach((entityType) => {
+			const key = entityType.value
+
+			// If the key exists in the data item
+			if (newItem[key]) {
+				const values = newItem[key].split(',').map((val) => val.trim())
+
+				// Map values to corresponding entity labels
+				const mappedValues = values
+					.map((value) => {
+						const entity = entityType.entities.find((e) => e.value === value)
+						return entity ? entity.label : value
+					})
+					.join(', ')
+
+				newItem[key] = mappedValues
+			}
+		})
+
+		return newItem
+	})
+}
+
+function transformEntityTypes(input) {
+	// Flatten all group arrays into a single entityTypes array
+	const entityTypes = Object.keys(input).flatMap((key) =>
+		input[key].map((group) => ({
+			id: group.id,
+			label: group.label,
+			value: group.value,
+			parent_id: group.parent_id,
+			organization_id: group.organization_id,
+			entities: group.entities.map((entity) => ({
+				id: entity.id,
+				value: entity.value,
+				label: entity.label,
+				status: entity.status,
+				type: entity.type,
+				created_at: entity.created_at,
+				updated_at: entity.updated_at,
+			})),
+		}))
+	)
+
+	return { entityTypes }
+}
+
 module.exports = {
 	hash: hash,
 	getCurrentMonthRange,
@@ -1150,10 +1302,14 @@ module.exports = {
 	filterEntitiesBasedOnParent,
 	convertToTitleCase,
 	removeLimitAndOffset,
-	getAllEpochDates,
 	generateFilters,
 	mapEntityTypesToData,
 	extractColumnMappings,
 	getDynamicFilterCondition,
 	getDynamicSearchCondition,
+	extractFiltersAndEntityType,
+	generateDateRanges,
+	mapEntityTypeToData,
+	getDynamicEntityCondition,
+	transformEntityTypes,
 }

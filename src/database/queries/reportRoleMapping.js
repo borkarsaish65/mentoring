@@ -9,14 +9,6 @@ module.exports = class ReportRoleMappingQueries {
 		}
 	}
 
-	static async findReportRoleMappingById(id) {
-		try {
-			return await ReportRoleMapping.findByPk(id)
-		} catch (error) {
-			throw error
-		}
-	}
-
 	static async findAllReportRoleMappings(filter, attributes, options = {}) {
 		try {
 			const reportRoleMappings = await ReportRoleMapping.findAndCountAll({

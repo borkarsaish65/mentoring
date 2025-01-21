@@ -9,22 +9,10 @@ module.exports = class ReportTypeQueries {
 		}
 	}
 
-	static async findReportTypeById(id) {
+	static async findReportTypeByTitle(title) {
 		try {
-			return await ReportType.findByPk(id)
-		} catch (error) {
-			throw error
-		}
-	}
-
-	static async findAllReportTypes(filter, attributes, options = {}) {
-		try {
-			const reportTypes = await ReportType.findAndCountAll({
-				where: filter,
-				attributes,
-				...options,
-			})
-			return reportTypes
+			const reportType = await ReportType.findByPk(title)
+			return reportType
 		} catch (error) {
 			throw error
 		}
@@ -42,10 +30,10 @@ module.exports = class ReportTypeQueries {
 		}
 	}
 
-	static async DeleteReportType(id) {
+	static async deleteReportType(id) {
 		try {
 			const deletedRows = await ReportType.destroy({
-				where: { id },
+				where: { id: id },
 			})
 			return deletedRows // Soft delete (paranoid enabled)
 		} catch (error) {

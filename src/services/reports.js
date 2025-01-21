@@ -16,6 +16,7 @@ const fs = require('fs')
 const ProjectRootDir = path.join(__dirname, '../')
 const inviteeFileDir = ProjectRootDir + common.tempFolderForBulkUpload
 const fileUploadPath = require('@helpers/uploadFileToCloud')
+const { Op } = require('sequelize')
 
 module.exports = class ReportsHelper {
 	/**
@@ -101,6 +102,7 @@ module.exports = class ReportsHelper {
 					}
 				})
 			}
+			result = utils.transformEntityTypes(result.entity_types)
 			result.roles = tokenInformation.roles
 			return responses.successResponse({
 				statusCode: httpStatusCode.ok,
@@ -108,7 +110,7 @@ module.exports = class ReportsHelper {
 				result,
 			})
 		} catch (error) {
-			return error
+			throw error
 		}
 	}
 
@@ -136,7 +138,7 @@ module.exports = class ReportsHelper {
 
 	static async getReportData(
 		userId,
-		orgId,
+		orgId, //token id
 		page,
 		limit,
 		reportCode,
@@ -144,7 +146,8 @@ module.exports = class ReportsHelper {
 		startDate,
 		endDate,
 		sessionType,
-		entitiesValue,
+		entityTypesColumns,
+		entityTypesValues,
 		sortColumn,
 		sortType,
 		searchColumns,
@@ -165,9 +168,49 @@ module.exports = class ReportsHelper {
 				})
 			}
 
-			// Fetch report configuration
-			const reportConfig = await reportsQueries.findReportByCode(reportCode)
-			const reportQuery = await reportQueryQueries.findReportQueryByCode(reportCode)
+			const defaultOrgId = await getDefaultOrgId()
+			if (!defaultOrgId)
+				return responses.failureResponse({
+					message: 'DEFAULT_ORG_ID_NOT_SET',
+					statusCode: httpStatusCode.bad_request,
+					responseCode: 'CLIENT_ERROR',
+				})
+
+			let reportConfig
+
+			// Fetch report configuration for the given organization ID
+			const reportConfigWithOrgId = await reportsQueries.findReport({
+				code: reportCode,
+				organization_id: orgId,
+			})
+
+			if (reportConfigWithOrgId) {
+				reportConfig = reportConfigWithOrgId
+			} else {
+				// Fetch report configuration for the default organization ID
+				const reportConfigWithDefaultOrgId = await reportsQueries.findReport({
+					code: reportCode,
+					organization_id: defaultOrgId,
+				})
+				reportConfig = reportConfigWithDefaultOrgId
+			}
+
+			let reportQuery
+
+			const reportQueryWithOrgId = await reportQueryQueries.findReportQueries({
+				report_code: reportCode,
+				organization_id: orgId,
+			})
+
+			if (reportQueryWithOrgId) {
+				reportQuery = reportQueryWithOrgId
+			} else {
+				const reportQueryWithDefaultOrgId = await reportQueryQueries.findReportQueries({
+					report_code: reportCode,
+					organization_id: defaultOrgId,
+				})
+				reportQuery = reportQueryWithDefaultOrgId
+			}
 			if (!reportConfig || !reportQuery) {
 				return responses.failureResponse({
 					message: 'REPORT_CONFIG_OR_QUERY_NOT_FOUND',
@@ -175,29 +218,40 @@ module.exports = class ReportsHelper {
 					responseCode: 'CLIENT_ERROR',
 				})
 			}
-			const columnConfig = reportConfig.dataValues.config
+			const columnConfig = reportConfig[0]?.config
 			const reportDataResult = {
-				report_type: reportConfig.dataValues.report_type_title,
+				report_type: reportConfig[0].report_type_title,
 				config: columnConfig,
 			}
 
 			// Handle BAR_CHART report type with groupBy
-			if (reportConfig.dataValues.report_type_title === common.BAR_CHART && groupBy) {
-				const listOfDates = await utils.getAllEpochDates(startDate, endDate, groupBy.toLowerCase())
+			if (reportConfig[0].report_type_title === common.BAR_CHART && groupBy) {
+				//	const listOfDates = await utils.getAllEpochDates(startDate, endDate, groupBy)
+
+				const dateRanges = await utils.generateDateRanges(startDate, endDate, groupBy)
 
 				// Initialize the array to store results
 				const dateRangeResults = []
 
-				for (let dateRange of listOfDates) {
+				for (let dateRange of dateRanges) {
 					const replacements = {
 						userId: userId || null,
-						entities_value: entitiesValue ? `{${entitiesValue}}` : null,
+						//	entities_value: entitiesValue ? `{${entitiesValue}}` : null,
 						session_type: sessionType ? utils.convertToTitleCase(sessionType) : null,
 						start_date: dateRange.start_date || null,
 						end_date: dateRange.end_date || null,
 					}
 
 					let query = reportQuery.query.replace(/:sort_type/g, replacements.sort_type)
+					const entityConditions = await utils.getDynamicEntityCondition(
+						Object.fromEntries(entityTypesColumns.map((col, idx) => [col, entityTypesValues[idx]])),
+						columnConfig.columns
+					)
+
+					// Add dynamic entity conditions to the query
+					if (entityConditions) {
+						query += entityConditions
+					}
 
 					// Execute query with the current date range
 					const result = await sequelize.query(query, { replacements, type: sequelize.QueryTypes.SELECT })
@@ -224,7 +278,7 @@ module.exports = class ReportsHelper {
 					userId: userId || null,
 					start_date: startDate || null,
 					end_date: endDate || null,
-					entities_value: entitiesValue ? `{${entitiesValue}}` : null,
+					//	entities_value: entitiesValue ? `{${entitiesValue}}` : null,
 					session_type: sessionType ? utils.convertToTitleCase(sessionType) : null,
 					limit: limit || defaultLimit,
 					offset: common.getPaginationOffset(page, limit),
@@ -241,8 +295,22 @@ module.exports = class ReportsHelper {
 				}
 
 				let query = reportQuery.query
-				if (reportConfig.dataValues.report_type_title === common.REPORT_TABLE) {
-					query = reportQuery.query.replace(';', '') // Base query for report table
+
+				if (entityTypesColumns && entityTypesValues) {
+					const entityConditions = await utils.getDynamicEntityCondition(
+						Object.fromEntries(entityTypesColumns.map((col, idx) => [col, entityTypesValues[idx]])),
+						columnConfig.columns
+					)
+
+					// Add dynamic entity conditions to the query
+					if (entityConditions) {
+						query = reportQuery.query.replace(';', '')
+						query += entityConditions
+					}
+				}
+
+				if (reportConfig[0].report_type_title === common.REPORT_TABLE) {
+					query = query.replace(';', '') // Base query for report table
 					const columnMappings = await utils.extractColumnMappings(query)
 
 					// Generate dynamic WHERE conditions for filters
@@ -295,53 +363,65 @@ module.exports = class ReportsHelper {
 					}),
 				])
 
+				const sessionModelName = await sessionQueries.getModelName()
+
+				let entityTypesDataWithPagination = await getOrgIdAndEntityTypes.getEntityTypeWithEntitiesBasedOnOrg(
+					orgId,
+					'',
+					defaultOrgId ? defaultOrgId : '',
+					sessionModelName
+				)
+
+				if (reportDataResult.report_type === common.REPORT_TABLE && resultWithoutPagination) {
+					reportDataResult.count = resultWithoutPagination.length
+				}
 				// Process query results
 				if (result?.length) {
+					const transformedEntityData = await utils.mapEntityTypeToData(
+						result,
+						entityTypesDataWithPagination.result
+					)
 					reportDataResult.data =
-						reportDataResult.report_type === common.REPORT_TABLE ? result : { ...result[0] }
+						reportDataResult.report_type === common.REPORT_TABLE ? transformedEntityData : { ...result[0] }
 				} else {
 					reportDataResult.data = []
+					reportDataResult.count = resultWithoutPagination.length
 					reportDataResult.message = common.report_session_message
 				}
 
 				// Handle CSV download
 				if (resultWithoutPagination?.length) {
-					const defaultOrgId = await getDefaultOrgId()
-					if (!defaultOrgId)
-						return responses.failureResponse({
-							message: 'DEFAULT_ORG_ID_NOT_SET',
-							statusCode: httpStatusCode.bad_request,
-							responseCode: 'CLIENT_ERROR',
-						})
 					const sessionModelName = await sessionQueries.getModelName()
-					const generateFilters = (data) => {
-						const filters = {}
-						for (const key in data[0]) {
-							const uniqueValues = [...new Set(data.map((item) => item[key]))]
-							filters[key] = uniqueValues
+					if (reportConfig[0].report_type_title === common.REPORT_TABLE) {
+						const ExtractFilterAndEntityTypesKeys = await utils.extractFiltersAndEntityType(
+							columnConfig.columns
+						)
+
+						let entityTypeFilters = await getOrgIdAndEntityTypes.getEntityTypeWithEntitiesBasedOnOrg(
+							orgId,
+							ExtractFilterAndEntityTypesKeys.entityType,
+							defaultOrgId ? defaultOrgId : '',
+							sessionModelName
+						)
+
+						const filtersEntity = entityTypeFilters.result.reduce((acc, item) => {
+							acc[item.value] = item.entities
+							return acc
+						}, {})
+
+						reportDataResult.filters = await utils.generateFilters(
+							resultWithoutPagination,
+							ExtractFilterAndEntityTypesKeys.entityType,
+							ExtractFilterAndEntityTypesKeys.defaultValues,
+							columnConfig.columns
+						)
+
+						if (ExtractFilterAndEntityTypesKeys.entityType) {
+							ExtractFilterAndEntityTypesKeys.entityType.split(',').forEach((key) => {
+								reportDataResult.filters[key] = filtersEntity[key]
+							})
 						}
-						return filters
 					}
-
-					const entityTypeValues = 'categories,recommended_for'
-					let entityTypeFilters = await getOrgIdAndEntityTypes.getEntityTypeWithEntitiesBasedOnOrg(
-						orgId,
-						entityTypeValues,
-						defaultOrgId ? defaultOrgId : '',
-						sessionModelName
-					)
-
-					const filtersEntity = entityTypeFilters.result.reduce((acc, item) => {
-						acc[item.value] = item.entities
-						return acc
-					}, {})
-
-					reportDataResult.filters = generateFilters(resultWithoutPagination)
-					delete reportDataResult.filters.categories
-					delete reportDataResult.filters.recommended_for
-
-					reportDataResult.filters.categories = filtersEntity.categories
-					reportDataResult.filters.recommended_for = filtersEntity.recommended_for
 
 					if (downloadCsv === 'true') {
 						let entityTypesData = await getOrgIdAndEntityTypes.getEntityTypeWithEntitiesBasedOnOrg(
@@ -351,37 +431,11 @@ module.exports = class ReportsHelper {
 							sessionModelName
 						)
 
-						// Function to map EntityTypes to data
-						const mapEntityTypesToData = (data, entityTypes) => {
-							return data.map((item) => {
-								const newItem = { ...item }
-
-								// Loop through EntityTypes to check for matching keys
-								entityTypes.forEach((entityType) => {
-									const key = entityType.value
-
-									// If the key exists in the data item
-									if (newItem[key]) {
-										const values = newItem[key].split(',').map((val) => val.trim())
-
-										// Map values to corresponding entity labels
-										const mappedValues = values
-											.map((value) => {
-												const entity = entityType.entities.find((e) => e.value === value)
-												return entity ? entity.label : value
-											})
-											.join(', ')
-
-										newItem[key] = mappedValues
-									}
-								})
-
-								return newItem
-							})
-						}
-
 						// Process the data
-						const transformedData = mapEntityTypesToData(resultWithoutPagination, entityTypesData.result)
+						const transformedData = await utils.mapEntityTypeToData(
+							resultWithoutPagination,
+							entityTypesData.result
+						)
 
 						const keyToLabelMap = Object.fromEntries(
 							columnConfig.columns.map(({ key, label }) => [key, label])
@@ -410,7 +464,7 @@ module.exports = class ReportsHelper {
 				result: reportDataResult,
 			})
 		} catch (error) {
-			return error
+			throw error
 		}
 	}
 
@@ -451,17 +505,18 @@ module.exports = class ReportsHelper {
 				})
 			}
 			return responses.successResponse({
-				statusCode: httpStatusCode.created,
+				statusCode: httpStatusCode.ok,
 				message: 'REPORT_FETCHED_SUCCESSFULLY',
 				result: readReport.dataValues,
 			})
 		} catch (error) {
-			return error
+			throw error
 		}
 	}
 
-	static async updateReport(filter, updateData) {
+	static async updateReport(id, updateData) {
 		try {
+			const filter = { id: id }
 			const updatedReport = await reportsQueries.updateReport(filter, updateData)
 			if (!updatedReport) {
 				return responses.failureResponse({
@@ -471,12 +526,12 @@ module.exports = class ReportsHelper {
 				})
 			}
 			return responses.successResponse({
-				statusCode: httpStatusCode.created,
+				statusCode: httpStatusCode.accepted,
 				message: 'REPORT_UPATED_SUCCESSFULLY',
 				result: updatedReport.dataValues,
 			})
 		} catch (error) {
-			return error
+			throw error
 		}
 	}
 
@@ -491,11 +546,11 @@ module.exports = class ReportsHelper {
 				})
 			}
 			return responses.successResponse({
-				statusCode: httpStatusCode.created,
+				statusCode: httpStatusCode.accepted,
 				message: 'REPORT_DELETED_SUCCESSFULLY',
 			})
 		} catch (error) {
-			return error
+			throw error
 		}
 	}
 
