@@ -3,6 +3,11 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
 	async up(queryInterface, Sequelize) {
+		const defaultOrgId = queryInterface.sequelize.options.defaultOrgId
+
+		if (!defaultOrgId) {
+			throw new Error('Default org ID is undefined. Please make sure it is set in sequelize options.')
+		}
 		// Insert data into the report_queries table
 		await queryInterface.bulkInsert('report_queries', [
 			{
@@ -38,6 +43,7 @@ module.exports = {
                         ELSE TRUE
                     END
                 );`,
+				organization_id: defaultOrgId,
 				status: 'ACTIVE',
 				created_at: Sequelize.literal('CURRENT_TIMESTAMP'),
 				updated_at: Sequelize.literal('CURRENT_TIMESTAMP'),
@@ -89,6 +95,7 @@ module.exports = {
                         ELSE TRUE
                     END
                 );`,
+				organization_id: defaultOrgId,
 				status: 'ACTIVE',
 				created_at: Sequelize.literal('CURRENT_TIMESTAMP'),
 				updated_at: Sequelize.literal('CURRENT_TIMESTAMP'),
@@ -144,6 +151,7 @@ module.exports = {
             (CASE WHEN :userId IS NOT NULL THEN sa.mentee_id = :userId ELSE TRUE END)
             AND (CASE WHEN :start_date IS NOT NULL THEN s.start_date > :start_date ELSE TRUE END)
             AND (CASE WHEN :end_date IS NOT NULL THEN s.end_date < :end_date ELSE TRUE END);`,
+				organization_id: defaultOrgId,
 				status: 'ACTIVE',
 				created_at: Sequelize.literal('CURRENT_TIMESTAMP'),
 				updated_at: Sequelize.literal('CURRENT_TIMESTAMP'),
@@ -178,6 +186,7 @@ module.exports = {
                 )
             ;
             `,
+				organization_id: defaultOrgId,
 				status: 'ACTIVE',
 				created_at: Sequelize.literal('CURRENT_TIMESTAMP'),
 				updated_at: Sequelize.literal('CURRENT_TIMESTAMP'),
@@ -220,6 +229,7 @@ module.exports = {
                         ELSE TRUE
                     END
                 );`,
+				organization_id: defaultOrgId,
 				status: 'ACTIVE',
 				created_at: Sequelize.literal('CURRENT_TIMESTAMP'),
 				updated_at: Sequelize.literal('CURRENT_TIMESTAMP'),
@@ -289,6 +299,7 @@ module.exports = {
                     END
                 );
             `,
+				organization_id: defaultOrgId,
 				status: 'ACTIVE',
 				created_at: Sequelize.literal('CURRENT_TIMESTAMP'),
 				updated_at: Sequelize.literal('CURRENT_TIMESTAMP'),
@@ -371,6 +382,7 @@ module.exports = {
                     OR :session_type = 'Private'
                 );                        
             `,
+				organization_id: defaultOrgId,
 				status: 'ACTIVE',
 				created_at: Sequelize.literal('CURRENT_TIMESTAMP'),
 				updated_at: Sequelize.literal('CURRENT_TIMESTAMP'),
@@ -402,6 +414,7 @@ CASE WHEN s.started_at IS NOT NULL THEN 'Yes' ELSE 'No' END AS "session_conducte
                     END
                 )
 ;`,
+				organization_id: defaultOrgId,
 				status: 'ACTIVE',
 				created_at: Sequelize.literal('CURRENT_TIMESTAMP'),
 				updated_at: Sequelize.literal('CURRENT_TIMESTAMP'),
@@ -451,6 +464,7 @@ CASE WHEN s.started_at IS NOT NULL THEN 'Yes' ELSE 'No' END AS "session_conducte
                                         ELSE TRUE
                                     END
                                 );`,
+				organization_id: defaultOrgId,
 				status: 'ACTIVE',
 				created_at: Sequelize.literal('CURRENT_TIMESTAMP'),
 				updated_at: Sequelize.literal('CURRENT_TIMESTAMP'),
@@ -500,6 +514,7 @@ CASE WHEN s.started_at IS NOT NULL THEN 'Yes' ELSE 'No' END AS "session_conducte
                                     ELSE TRUE
                                 END
                                 );`,
+				organization_id: defaultOrgId,
 				status: 'ACTIVE',
 				created_at: Sequelize.literal('CURRENT_TIMESTAMP'),
 				updated_at: Sequelize.literal('CURRENT_TIMESTAMP'),
@@ -586,6 +601,7 @@ CASE WHEN s.started_at IS NOT NULL THEN 'Yes' ELSE 'No' END AS "session_conducte
                     OR :session_type = 'Private'
                 );            
             `,
+				organization_id: defaultOrgId,
 				status: 'ACTIVE',
 				created_at: Sequelize.literal('CURRENT_TIMESTAMP'),
 				updated_at: Sequelize.literal('CURRENT_TIMESTAMP'),
@@ -639,6 +655,7 @@ CASE WHEN s.started_at IS NOT NULL THEN 'Yes' ELSE 'No' END AS "session_conducte
                     COALESCE(CAST(ue.rating ->> 'average' AS NUMERIC), 0)
             ) AS subquery
             ;`,
+				organization_id: defaultOrgId,
 				status: 'ACTIVE',
 				created_at: Sequelize.literal('CURRENT_TIMESTAMP'),
 				updated_at: Sequelize.literal('CURRENT_TIMESTAMP'),
