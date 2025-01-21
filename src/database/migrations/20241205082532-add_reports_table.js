@@ -13,7 +13,6 @@ module.exports = {
 			code: {
 				allowNull: false,
 				type: Sequelize.STRING(255),
-				unique: true,
 			},
 			title: {
 				allowNull: false,
@@ -31,7 +30,6 @@ module.exports = {
 			},
 			organization_id: {
 				type: Sequelize.STRING,
-				unique: true,
 			},
 			created_at: {
 				allowNull: false,
@@ -46,6 +44,11 @@ module.exports = {
 			deleted_at: {
 				type: Sequelize.DATE,
 			},
+		})
+
+		await queryInterface.addIndex('reports', ['code', 'organization_id'], {
+			unique: true,
+			name: 'report_code_organization_unique',
 		})
 	},
 

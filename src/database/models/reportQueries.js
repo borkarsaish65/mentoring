@@ -41,6 +41,13 @@ module.exports = (sequelize, DataTypes) => {
 			modelName: 'ReportQuery',
 			tableName: 'report_queries',
 			freezeTableName: true,
+			indexes: [
+				{
+					unique: true,
+					fields: ['report_code', 'organization_id'],
+					name: 'report_code_organization_unique_queries',
+				},
+			],
 			paranoid: true, // Enables soft delete handling via deleted_at
 			timestamps: true, // Automatically manages created_at and updated_at
 			createdAt: 'created_at',

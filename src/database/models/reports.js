@@ -7,13 +7,11 @@ module.exports = (sequelize, DataTypes) => {
 			id: {
 				type: DataTypes.INTEGER,
 				allowNull: false,
-				primaryKey: true,
 				autoIncrement: true,
 			},
 			code: {
 				type: DataTypes.STRING(255),
 				allowNull: false,
-				unique: true,
 			},
 			title: {
 				type: DataTypes.STRING(255),
@@ -51,11 +49,13 @@ module.exports = (sequelize, DataTypes) => {
 			tableName: 'reports',
 			freezeTableName: true,
 			paranoid: true, // Enables soft delete handling via deleted_at
-			uniqueKeys: {
-				report_code_organization_unique: {
+			indexes: [
+				{
+					unique: true,
 					fields: ['code', 'organization_id'],
+					name: 'report_code_organization_unique',
 				},
-			},
+			],
 		}
 	)
 

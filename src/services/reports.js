@@ -87,8 +87,6 @@ module.exports = class ReportsHelper {
 				}
 			}
 
-			console.log('=========================', result.entity_types)
-
 			// search for type entityType and add 'ALL' to entities list of type
 			// added roles inside the result
 			if (result.entity_types.type) {
@@ -178,14 +176,49 @@ module.exports = class ReportsHelper {
 					responseCode: 'CLIENT_ERROR',
 				})
 
-			// Fetch report configuration
-			const reportConfig = await reportsQueries.findReport({
+			let reportConfig
+
+			// Fetch report configuration for the given organization ID
+			const reportConfigWithOrgId = await reportsQueries.findReport({
 				code: reportCode,
 				organization_id: {
-					[Op.in]: [orgId, defaultOrgId],
+					[Op.in]: [orgId],
 				},
 			})
-			const reportQuery = await reportQueryQueries.findReportQueryByCode(reportCode)
+
+			if (reportConfigWithOrgId) {
+				reportConfig = reportConfigWithOrgId
+			} else {
+				// Fetch report configuration for the default organization ID
+				const reportConfigWithDefaultOrgId = await reportsQueries.findReport({
+					code: reportCode,
+					organization_id: {
+						[Op.in]: [defaultOrgId],
+					},
+				})
+				reportConfig = reportConfigWithDefaultOrgId
+			}
+
+			let reportQuery
+
+			const reportQueryWithOrgId = await reportQueryQueries.findReportQueries({
+				report_code: reportCode,
+				organization_id: {
+					[Op.in]: [orgId],
+				},
+			})
+
+			if (reportQueryWithOrgId) {
+				reportQuery = reportQueryWithOrgId
+			} else {
+				const reportQueryWithDefaultOrgId = await reportQueryQueries.findReportQueries({
+					report_code: reportCode,
+					organization_id: {
+						[Op.in]: [orgId],
+					},
+				})
+				reportQuery = reportQueryWithDefaultOrgId
+			}
 			if (!reportConfig || !reportQuery) {
 				return responses.failureResponse({
 					message: 'REPORT_CONFIG_OR_QUERY_NOT_FOUND',
@@ -286,7 +319,6 @@ module.exports = class ReportsHelper {
 
 				if (reportConfig[0].report_type_title === common.REPORT_TABLE) {
 					query = query.replace(';', '') // Base query for report table
-					console.log('------------------', query)
 					const columnMappings = await utils.extractColumnMappings(query)
 
 					// Generate dynamic WHERE conditions for filters
@@ -330,7 +362,6 @@ module.exports = class ReportsHelper {
 
 				// Replace sort type placeholder in query
 				query = query.replace(/:sort_type/g, replacements.sort_type)
-				console.log('final qury ==================', query)
 				// Execute query with pagination
 				const [result, resultWithoutPagination] = await Promise.all([
 					sequelize.query(query, { replacements, type: sequelize.QueryTypes.SELECT }),

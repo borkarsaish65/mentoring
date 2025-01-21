@@ -63,4 +63,15 @@ module.exports = class ReportQueryServiceQueries {
 			throw error
 		}
 	}
+
+	static async findReportQueries(filter) {
+		try {
+			return await ReportQuery.findAll({
+				where: filter,
+				raw: true,
+			})
+		} catch (error) {
+			throw error
+		}
+	}
 }

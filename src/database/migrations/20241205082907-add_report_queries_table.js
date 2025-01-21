@@ -17,6 +17,9 @@ module.exports = {
 			query: {
 				type: Sequelize.TEXT,
 			},
+			organization_id: {
+				type: Sequelize.STRING,
+			},
 			status: {
 				type: Sequelize.STRING,
 				defaultValue: 'ACTIVE',
@@ -37,9 +40,9 @@ module.exports = {
 		})
 
 		// Add an index on `report_code` to improve query performance
-		await queryInterface.addIndex('report_queries', {
-			fields: ['report_code'],
-			name: 'idx_report_queries_report_code',
+		await queryInterface.addIndex('report_queries', ['report_code', 'organization_id'], {
+			unique: true,
+			name: 'unique_queries_report_code_organization',
 		})
 	},
 

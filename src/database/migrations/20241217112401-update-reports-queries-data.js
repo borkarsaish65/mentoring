@@ -385,7 +385,6 @@ module.exports = {
                 s.type AS "session_type",
 CASE WHEN s.started_at IS NOT NULL THEN 'Yes' ELSE 'No' END AS "session_conducted",
                 ROUND(EXTRACT(EPOCH FROM(TO_TIMESTAMP(s.end_date)-TO_TIMESTAMP(s.start_date)))/60) AS "duration_of_sessions_attended_in_minutes",
-COALESCE(CAST(ue.rating ->>'average'AS NUMERIC),0) AS "mentor_rating"
             FROM public.session_ownerships AS sa
             JOIN public.sessions AS s ON sa.session_id = s.id
             LEFT JOIN public.user_extensions AS ue ON s.created_by = ue.user_id
