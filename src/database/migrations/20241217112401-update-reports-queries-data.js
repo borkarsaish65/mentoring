@@ -16,30 +16,30 @@ module.exports = {
                 COUNT(*) AS total_count,
             CASE 
                 WHEN 'All' = 'All' THEN 
-                    COUNT(*) FILTER (WHERE s.type = 'PUBLIC') -- Count for Public sessions
+                    COUNT(*) FILTER (WHERE Session.type = 'PUBLIC') -- Count for Public sessions
                 ELSE NULL 
             END AS public_count,
             CASE 
                 WHEN 'All' = 'All' THEN 
-                    COUNT(*) FILTER (WHERE s.type = 'PRIVATE') -- Count for Private sessions
+                    COUNT(*) FILTER (WHERE Session.type = 'PRIVATE') -- Count for Private sessions
                 ELSE NULL 
             END AS private_count
             FROM 
                 public.session_attendees AS sa
             JOIN 
-                public.sessions AS s
+                public.sessions AS Session
             ON 
-                sa.session_id = s.id
+                sa.session_id = Session.id
             WHERE 
                 (CASE WHEN :userId IS NOT NULL THEN sa.mentee_id = :userId ELSE TRUE END)
                 AND sa.joined_at IS NOT NULL
-                AND (CASE WHEN :start_date IS NOT NULL THEN s.start_date > :start_date ELSE TRUE END)
-                AND (CASE WHEN :end_date IS NOT NULL THEN s.end_date < :end_date ELSE TRUE END)
+                AND (CASE WHEN :start_date IS NOT NULL THEN Session.start_date > :start_date ELSE TRUE END)
+                AND (CASE WHEN :end_date IS NOT NULL THEN Session.end_date < :end_date ELSE TRUE END)
                 AND (
                     CASE 
-                        WHEN :session_type = 'All' THEN s.type IN ('PUBLIC', 'PRIVATE')
-                        WHEN :session_type = 'Public' THEN s.type = 'PUBLIC'
-                        WHEN :session_type = 'Private' THEN s.type = 'PRIVATE'
+                        WHEN :session_type = 'All' THEN Session.type IN ('PUBLIC', 'PRIVATE')
+                        WHEN :session_type = 'Public' THEN Session.type = 'PUBLIC'
+                        WHEN :session_type = 'Private' THEN Session.type = 'PRIVATE'
                         ELSE TRUE
                     END
                 );`,
@@ -53,45 +53,45 @@ module.exports = {
 				query: `SELECT 
                 TO_CHAR(
     INTERVAL '1 hour' * FLOOR(SUM(
-        CASE WHEN s.type IN ('PUBLIC', 'PRIVATE') THEN EXTRACT(EPOCH FROM (s.completed_at - s.started_at)) ELSE 0 END
+        CASE WHEN Session.type IN ('PUBLIC', 'PRIVATE') THEN EXTRACT(EPOCH FROM (Session.completed_at - Session.started_at)) ELSE 0 END
     ) / 3600) +
     INTERVAL '1 minute' * FLOOR(SUM(
-        CASE WHEN s.type IN ('PUBLIC', 'PRIVATE') THEN EXTRACT(EPOCH FROM (s.completed_at - s.started_at)) ELSE 0 END
+        CASE WHEN Session.type IN ('PUBLIC', 'PRIVATE') THEN EXTRACT(EPOCH FROM (Session.completed_at - Session.started_at)) ELSE 0 END
     ) / 60 % 60) +
     INTERVAL '1 second' * FLOOR(SUM(
-        CASE WHEN s.type IN ('PUBLIC', 'PRIVATE') THEN EXTRACT(EPOCH FROM (s.completed_at - s.started_at)) ELSE 0 END
+        CASE WHEN Session.type IN ('PUBLIC', 'PRIVATE') THEN EXTRACT(EPOCH FROM (Session.completed_at - Session.started_at)) ELSE 0 END
     ) % 60),
     'HH24:MI:SS'
 ) AS total_hours
 , -- Total duration of all sessions
             TO_CHAR(
-                INTERVAL '1 hour' * FLOOR(SUM(CASE WHEN s.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (s.completed_at - s.started_at)) / 3600 ELSE 0 END)) +
-                INTERVAL '1 minute' * FLOOR(SUM(CASE WHEN s.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (s.completed_at - s.started_at)) / 60 ELSE 0 END) % 60) +
-                INTERVAL '1 second' * FLOOR(SUM(CASE WHEN s.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (s.completed_at - s.started_at)) % 60 ELSE 0 END)),
+                INTERVAL '1 hour' * FLOOR(SUM(CASE WHEN Session.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (Session.completed_at - Session.started_at)) / 3600 ELSE 0 END)) +
+                INTERVAL '1 minute' * FLOOR(SUM(CASE WHEN Session.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (Session.completed_at - Session.started_at)) / 60 ELSE 0 END) % 60) +
+                INTERVAL '1 second' * FLOOR(SUM(CASE WHEN Session.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (Session.completed_at - Session.started_at)) % 60 ELSE 0 END)),
                 'HH24:MI:SS'
             ) AS public_hours, -- Total duration of public sessions
             TO_CHAR(
-                INTERVAL '1 hour' * FLOOR(SUM(CASE WHEN s.type = 'PRIVATE' THEN EXTRACT(EPOCH FROM (s.completed_at - s.started_at)) / 3600 ELSE 0 END)) +
-                INTERVAL '1 minute' * FLOOR(SUM(CASE WHEN s.type = 'PRIVATE' THEN EXTRACT(EPOCH FROM (s.completed_at - s.started_at)) / 60 ELSE 0 END) % 60) +
-                INTERVAL '1 second' * FLOOR(SUM(CASE WHEN s.type = 'PRIVATE' THEN EXTRACT(EPOCH FROM (s.completed_at - s.started_at)) % 60 ELSE 0 END)),
+                INTERVAL '1 hour' * FLOOR(SUM(CASE WHEN Session.type = 'PRIVATE' THEN EXTRACT(EPOCH FROM (Session.completed_at - Session.started_at)) / 3600 ELSE 0 END)) +
+                INTERVAL '1 minute' * FLOOR(SUM(CASE WHEN Session.type = 'PRIVATE' THEN EXTRACT(EPOCH FROM (Session.completed_at - Session.started_at)) / 60 ELSE 0 END) % 60) +
+                INTERVAL '1 second' * FLOOR(SUM(CASE WHEN Session.type = 'PRIVATE' THEN EXTRACT(EPOCH FROM (Session.completed_at - Session.started_at)) % 60 ELSE 0 END)),
                 'HH24:MI:SS'
             ) AS private_hours
             FROM 
                 public.session_attendees AS sa
             JOIN 
-                public.sessions AS s
+                public.sessions AS Session
             ON 
-                sa.session_id = s.id
+                sa.session_id = Session.id
             WHERE 
                 (CASE WHEN :userId IS NOT NULL THEN sa.mentee_id = :userId ELSE TRUE END)
                 AND sa.joined_at IS NOT NULL 
-                AND (CASE WHEN :start_date IS NOT NULL THEN s.start_date > :start_date ELSE TRUE END)
-                AND (CASE WHEN :end_date IS NOT NULL THEN s.end_date < :end_date ELSE TRUE END)
+                AND (CASE WHEN :start_date IS NOT NULL THEN Session.start_date > :start_date ELSE TRUE END)
+                AND (CASE WHEN :end_date IS NOT NULL THEN Session.end_date < :end_date ELSE TRUE END)
                 AND (
                     CASE 
-                        WHEN :session_type = 'All' THEN s.type IN ('PUBLIC', 'PRIVATE')
-                        WHEN :session_type = 'Public' THEN s.type = 'PUBLIC'
-                        WHEN :session_type = 'Private' THEN s.type = 'PRIVATE'
+                        WHEN :session_type = 'All' THEN Session.type IN ('PUBLIC', 'PRIVATE')
+                        WHEN :session_type = 'Public' THEN Session.type = 'PUBLIC'
+                        WHEN :session_type = 'Private' THEN Session.type = 'PRIVATE'
                         ELSE TRUE
                     END
                 );`,
@@ -109,7 +109,7 @@ module.exports = {
             COUNT(
         CASE 
             WHEN (sa.type = 'ENROLLED' OR sa.type = 'INVITED')
-                AND s.type = 'PUBLIC' 
+                AND Session.type = 'PUBLIC' 
                 AND (:session_type = 'All' OR :session_type = 'Public') 
             THEN 1 
         END
@@ -119,7 +119,7 @@ module.exports = {
     COUNT(
         CASE 
             WHEN (sa.type = 'ENROLLED' OR sa.type = 'INVITED')
-                AND s.type = 'PRIVATE' 
+                AND Session.type = 'PRIVATE' 
                 AND (:session_type = 'All' OR :session_type = 'Private') 
             THEN 1 
         END
@@ -129,7 +129,7 @@ module.exports = {
     COUNT(
         CASE 
             WHEN sa.joined_at IS NOT NULL 
-                AND s.type = 'PUBLIC' 
+                AND Session.type = 'PUBLIC' 
                 AND (:session_type = 'All' OR :session_type = 'Public') 
             THEN 1 
         END
@@ -139,18 +139,18 @@ module.exports = {
     COUNT(
         CASE 
             WHEN sa.joined_at IS NOT NULL 
-                AND s.type = 'PRIVATE' 
+                AND Session.type = 'PRIVATE' 
                 AND (:session_type = 'All' OR :session_type = 'Private') 
             THEN 1 
         END
     ) AS private_session_attended
             FROM public.session_attendees AS sa
-            JOIN public.sessions AS s
-            ON sa.session_id = s.id
+            JOIN public.sessions AS Session
+            ON sa.session_id = Session.id
             WHERE 
             (CASE WHEN :userId IS NOT NULL THEN sa.mentee_id = :userId ELSE TRUE END)
-            AND (CASE WHEN :start_date IS NOT NULL THEN s.start_date > :start_date ELSE TRUE END)
-            AND (CASE WHEN :end_date IS NOT NULL THEN s.end_date < :end_date ELSE TRUE END);`,
+            AND (CASE WHEN :start_date IS NOT NULL THEN Session.start_date > :start_date ELSE TRUE END)
+            AND (CASE WHEN :end_date IS NOT NULL THEN Session.end_date < :end_date ELSE TRUE END);`,
 				organization_id: defaultOrgId,
 				status: 'ACTIVE',
 				created_at: Sequelize.literal('CURRENT_TIMESTAMP'),
@@ -159,30 +159,30 @@ module.exports = {
 			{
 				report_code: 'mentee_session_details',
 				query: `SELECT 
-                s.title AS "sessions_title",
+                Session.title AS "sessions_title",
                 ue.name AS "sessions_created_by",
-                s.mentor_name AS "mentor_name",
-                TO_TIMESTAMP(s.start_date)::DATE AS "date_of_session", 
-                s.type AS "session_type",
-                ARRAY_TO_STRING(s.categories, ', ') AS "categories", -- Converts array to a comma-separated string
-                ARRAY_TO_STRING(s.recommended_for, ', ') AS "recommended_for",
+                Session.mentor_name AS "mentor_name",
+                TO_TIMESTAMP(Session.start_date)::DATE AS "date_of_session", 
+                Session.type AS "session_type",
+                ARRAY_TO_STRING(Session.categories, ', ') AS "categories", -- Converts array to a comma-separated string
+                ARRAY_TO_STRING(Session.recommended_for, ', ') AS "recommended_for",
             CASE WHEN sa.joined_at IS NOT NULL THEN 'Yes' ELSE 'No' END AS "session_attended",
-            ROUND(EXTRACT(EPOCH FROM(TO_TIMESTAMP(s.end_date)-TO_TIMESTAMP(s.start_date)))/60) AS "duration_of_sessions_attended_in_minutes"
+            ROUND(EXTRACT(EPOCH FROM(TO_TIMESTAMP(Session.end_date)-TO_TIMESTAMP(Session.start_date)))/60) AS "duration_of_sessions_attended_in_minutes"
             FROM public.session_attendees AS sa
-            JOIN public.sessions AS s ON sa.session_id = s.id
-            LEFT JOIN public.user_extensions AS ue ON s.created_by = ue.user_id 
+            JOIN public.sessions AS Session ON sa.session_id = Session.id
+            LEFT JOIN public.user_extensions AS ue ON Session.created_by = ue.user_id 
             WHERE 
                 -- Filter by mentee ID if provided
                 (sa.mentee_id = :userId OR :userId IS NULL) 
                 -- Filter by start date if provided
-                AND (s.start_date > :start_date OR :start_date IS NULL)
+                AND (Session.start_date > :start_date OR :start_date IS NULL)
                 -- Filter by end date if provided
-                AND (s.end_date < :end_date OR :end_date IS NULL)
+                AND (Session.end_date < :end_date OR :end_date IS NULL)
                 -- Filter by session type
                 AND (
-                    :session_type = 'All' AND s.type IN ('PUBLIC', 'PRIVATE')
-                    OR :session_type = 'Public' AND s.type = 'PUBLIC'
-                    OR :session_type = 'Private' AND s.type = 'PRIVATE'
+                    :session_type = 'All' AND Session.type IN ('PUBLIC', 'PRIVATE')
+                    OR :session_type = 'Public' AND Session.type = 'PUBLIC'
+                    OR :session_type = 'Private' AND Session.type = 'PRIVATE'
                 )
             ;
             `,
@@ -198,34 +198,34 @@ module.exports = {
         
             -- Public count: Calculate only when the session type is 'All' or 'Public'
             COUNT(CASE 
-                    WHEN s.type = 'PUBLIC' AND 
+                    WHEN Session.type = 'PUBLIC' AND 
                         (:session_type = 'All' OR :session_type = 'Public') 
                     THEN 1 
                 END) AS public_count,
         
             -- Private count: Calculate only when the session type is 'All' or 'Private'
             COUNT(CASE 
-                    WHEN s.type = 'PRIVATE' AND 
+                    WHEN Session.type = 'PRIVATE' AND 
                         (:session_type = 'All' OR :session_type = 'Private') 
                     THEN 1 
                 END) AS private_count
             FROM 
                 public.session_ownerships AS so
             JOIN 
-                public.sessions AS s
+                public.sessions AS Session
             ON 
-                so.session_id = s.id
+                so.session_id = Session.id
             WHERE 
                 (:userId IS NOT NULL AND so.user_id = :userId)
                 AND ('MENTOR' IS NULL OR so.type = 'MENTOR')
-                AND s.status = 'COMPLETED'
-                AND (:start_date IS NOT NULL AND s.start_date > :start_date)
-                AND (:end_date IS NOT NULL AND s.end_date < :end_date)
+                AND Session.status = 'COMPLETED'
+                AND (:start_date IS NOT NULL AND Session.start_date > :start_date)
+                AND (:end_date IS NOT NULL AND Session.end_date < :end_date)
                 AND (
                     CASE 
-                        WHEN :session_type = 'All' THEN s.type IN ('PUBLIC', 'PRIVATE') 
-                        WHEN :session_type = 'Public' THEN s.type = 'PUBLIC' 
-                        WHEN :session_type = 'Private' THEN s.type = 'PRIVATE'
+                        WHEN :session_type = 'All' THEN Session.type IN ('PUBLIC', 'PRIVATE') 
+                        WHEN :session_type = 'Public' THEN Session.type = 'PUBLIC' 
+                        WHEN :session_type = 'Private' THEN Session.type = 'PRIVATE'
                         ELSE TRUE
                     END
                 );`,
@@ -240,13 +240,13 @@ module.exports = {
                 -- Total duration (sum of both public and private sessions)
                 TO_CHAR(
                 INTERVAL '1 hour' * FLOOR(SUM(
-                CASE WHEN s.type IN ('PUBLIC', 'PRIVATE') THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END
+                CASE WHEN Session.type IN ('PUBLIC', 'PRIVATE') THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END
                 ) / 3600) +
                 INTERVAL '1 minute' * FLOOR(SUM(
-                CASE WHEN s.type IN ('PUBLIC', 'PRIVATE') THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END
+                CASE WHEN Session.type IN ('PUBLIC', 'PRIVATE') THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END
                 ) / 60 % 60) +
                 INTERVAL '1 second' * FLOOR(SUM(
-                CASE WHEN s.type IN ('PUBLIC', 'PRIVATE') THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END
+                CASE WHEN Session.type IN ('PUBLIC', 'PRIVATE') THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END
                 ) % 60),
                 'HH24:MI:SS'
                 ) AS total_hours,
@@ -254,13 +254,13 @@ module.exports = {
                 -- Duration for public sessions
                 TO_CHAR(
                     INTERVAL '1 hour' * FLOOR(SUM(
-                        CASE WHEN s.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END
+                        CASE WHEN Session.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END
                     ) / 3600) +
                     INTERVAL '1 minute' * FLOOR(SUM(
-                        CASE WHEN s.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END
+                        CASE WHEN Session.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END
                     ) / 60 % 60) +
                     INTERVAL '1 second' * FLOOR(SUM(
-                        CASE WHEN s.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END
+                        CASE WHEN Session.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END
                     ) % 60),
                     'HH24:MI:SS'
                 ) AS public_hours,
@@ -268,33 +268,33 @@ module.exports = {
                 -- Duration for private sessions
                 TO_CHAR(
                     INTERVAL '1 hour' * FLOOR(SUM(
-                        CASE WHEN s.type = 'PRIVATE' THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END
+                        CASE WHEN Session.type = 'PRIVATE' THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END
                     ) / 3600) +
                     INTERVAL '1 minute' * FLOOR(SUM(
-                        CASE WHEN s.type = 'PRIVATE' THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END
+                        CASE WHEN Session.type = 'PRIVATE' THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END
                     ) / 60 % 60) +
                     INTERVAL '1 second' * FLOOR(SUM(
-                        CASE WHEN s.type = 'PRIVATE' THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END
+                        CASE WHEN Session.type = 'PRIVATE' THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END
                     ) % 60),
                     'HH24:MI:SS'
                 ) AS private_hours
             FROM 
                 public.session_ownerships AS so
             JOIN 
-                public.sessions AS s
+                public.sessions AS Session
             ON 
-                so.session_id = s.id
+                so.session_id = Session.id
             WHERE 
                 (:userId IS NOT NULL AND so.user_id = :userId)
                 AND ('MENTOR' IS NULL OR so.type = 'MENTOR')
-                AND s.status = 'COMPLETED'
-                AND (:start_date IS NOT NULL AND s.start_date > :start_date)
-                AND (:end_date IS NOT NULL AND s.end_date < :end_date)
+                AND Session.status = 'COMPLETED'
+                AND (:start_date IS NOT NULL AND Session.start_date > :start_date)
+                AND (:end_date IS NOT NULL AND Session.end_date < :end_date)
                 AND (
                     CASE 
-                        WHEN :session_type = 'All' THEN s.type IN ('PUBLIC', 'PRIVATE') 
-                        WHEN :session_type = 'Public' THEN s.type = 'PUBLIC' 
-                        WHEN :session_type = 'Private' THEN s.type = 'PRIVATE'
+                        WHEN :session_type = 'All' THEN Session.type IN ('PUBLIC', 'PRIVATE') 
+                        WHEN :session_type = 'Public' THEN Session.type = 'PUBLIC' 
+                        WHEN :session_type = 'Private' THEN Session.type = 'PRIVATE'
                         ELSE TRUE
                     END
                 );
@@ -315,8 +315,8 @@ module.exports = {
                         WHEN so.type = 'CREATOR'
                             AND (
                                 :session_type = 'All' 
-                                OR (:session_type = 'Public' AND s.type = 'PUBLIC')
-                                OR (:session_type = 'Private' AND s.type = 'PRIVATE')
+                                OR (:session_type = 'Public' AND Session.type = 'PUBLIC')
+                                OR (:session_type = 'Private' AND Session.type = 'PRIVATE')
                             )
                         THEN 1
                     END) AS total_sessions_created,
@@ -324,7 +324,7 @@ module.exports = {
                 -- Public sessions created (shows 0 if session_type is Private)
                 COUNT(CASE 
                         WHEN so.type = 'CREATOR'
-                            AND s.type = 'PUBLIC'
+                            AND Session.type = 'PUBLIC'
                             AND (:session_type = 'All' OR :session_type = 'Public')
                         THEN 1
                     END) AS public_sessions_created,
@@ -332,7 +332,7 @@ module.exports = {
                 -- Private sessions created (counts only private sessions)
                 COUNT(CASE 
                         WHEN so.type = 'CREATOR'
-                            AND s.type = 'PRIVATE'
+                            AND Session.type = 'PRIVATE'
                             AND (:session_type = 'All' OR :session_type = 'Private')
                         THEN 1
                     END) AS private_sessions_created,
@@ -340,11 +340,11 @@ module.exports = {
                 -- Total sessions conducted (reflects only private sessions if session_type is Private)
                 COUNT(CASE 
                         WHEN so.type = 'MENTOR'
-                            AND s.status = 'COMPLETED'
+                            AND Session.status = 'COMPLETED'
                             AND (
                                 :session_type = 'All' 
-                                OR (:session_type = 'Public' AND s.type = 'PUBLIC')
-                                OR (:session_type = 'Private' AND s.type = 'PRIVATE')
+                                OR (:session_type = 'Public' AND Session.type = 'PUBLIC')
+                                OR (:session_type = 'Private' AND Session.type = 'PRIVATE')
                             )
                         THEN 1
                     END) AS total_sessions_conducted,
@@ -352,8 +352,8 @@ module.exports = {
                 -- Public sessions conducted (shows 0 if session_type is Private)
                 COUNT(CASE 
                         WHEN so.type = 'MENTOR'
-                            AND s.status = 'COMPLETED'
-                            AND s.type = 'PUBLIC'
+                            AND Session.status = 'COMPLETED'
+                            AND Session.type = 'PUBLIC'
                             AND (:session_type = 'All' OR :session_type = 'Public')
                         THEN 1
                     END) AS public_sessions_conducted,
@@ -361,8 +361,8 @@ module.exports = {
                 -- Private sessions conducted (counts only private sessions)
                 COUNT(CASE 
                         WHEN so.type = 'MENTOR'
-                            AND s.status = 'COMPLETED'
-                            AND s.type = 'PRIVATE'
+                            AND Session.status = 'COMPLETED'
+                            AND Session.type = 'PRIVATE'
                             AND (:session_type = 'All' OR :session_type = 'Private')
                         THEN 1
                     END) AS private_sessions_conducted
@@ -370,12 +370,12 @@ module.exports = {
             FROM 
                 public.session_ownerships AS so
             JOIN 
-                public.sessions AS s 
-                ON so.session_id = s.id
+                public.sessions AS Session 
+                ON so.session_id = Session.id
             WHERE 
                 (:userId IS NOT NULL AND so.user_id = :userId OR :userId IS NULL)
-                AND (s.start_date > :start_date OR :start_date IS NULL)
-                AND (s.end_date < :end_date OR :end_date IS NULL)
+                AND (Session.start_date > :start_date OR :start_date IS NULL)
+                AND (Session.end_date < :end_date OR :end_date IS NULL)
                 AND (
                     :session_type = 'All' 
                     OR :session_type = 'Public' 
@@ -390,26 +390,26 @@ module.exports = {
 			{
 				report_code: 'mentoring_session_details',
 				query: `SELECT 
-                s.title AS "sessions_title",
+                Session.title AS "sessions_title",
                 ue.name AS "sessions_created_by",
-                s.seats_limit-s.seats_remaining AS "number_of_mentees",
-                TO_TIMESTAMP(s.start_date)::DATE AS "date_of_session",
-                s.type AS "session_type",
-CASE WHEN s.started_at IS NOT NULL THEN 'Yes' ELSE 'No' END AS "session_conducted",
-                ROUND(EXTRACT(EPOCH FROM(TO_TIMESTAMP(s.end_date)-TO_TIMESTAMP(s.start_date)))/60) AS "duration_of_sessions_attended_in_minutes",
+                Session.seats_limit-Session.seats_remaining AS "number_of_mentees",
+                TO_TIMESTAMP(Session.start_date)::DATE AS "date_of_session",
+                Session.type AS "session_type",
+CASE WHEN Session.started_at IS NOT NULL THEN 'Yes' ELSE 'No' END AS "session_conducted",
+                ROUND(EXTRACT(EPOCH FROM(TO_TIMESTAMP(Session.end_date)-TO_TIMESTAMP(Session.start_date)))/60) AS "duration_of_sessions_attended_in_minutes"
             FROM public.session_ownerships AS sa
-            JOIN public.sessions AS s ON sa.session_id = s.id
-            LEFT JOIN public.user_extensions AS ue ON s.created_by = ue.user_id
+            JOIN public.sessions AS Session ON sa.session_id = Session.id
+            LEFT JOIN public.user_extensions AS ue ON Session.created_by = ue.user_id
             WHERE 
                 (CASE WHEN :userId IS NOT NULL THEN sa.user_id = :userId ELSE TRUE END)
                 AND (sa.type = 'MENTOR' )
-                AND (CASE WHEN :start_date IS NOT NULL THEN s.start_date > :start_date ELSE TRUE END)
-                AND (CASE WHEN :end_date IS NOT NULL THEN s.end_date < :end_date ELSE TRUE END)
+                AND (CASE WHEN :start_date IS NOT NULL THEN Session.start_date > :start_date ELSE TRUE END)
+                AND (CASE WHEN :end_date IS NOT NULL THEN Session.end_date < :end_date ELSE TRUE END)
                 AND (
                     CASE 
-                        WHEN :session_type = 'All' THEN s.type IN ('PUBLIC', 'PRIVATE')
-                        WHEN :session_type = 'PUBLIC' THEN s.type = 'PUBLIC'
-                        WHEN :session_type = 'PRIVATE' THEN s.type = 'PRIVATE'
+                        WHEN :session_type = 'All' THEN Session.type IN ('PUBLIC', 'PRIVATE')
+                        WHEN :session_type = 'PUBLIC' THEN Session.type = 'PUBLIC'
+                        WHEN :session_type = 'PRIVATE' THEN Session.type = 'PRIVATE'
                         ELSE TRUE
                     END
                 )
@@ -424,43 +424,43 @@ CASE WHEN s.started_at IS NOT NULL THEN 'Yes' ELSE 'No' END AS "session_conducte
 				query: `SELECT 
                 -- Total minutes for all sessions
                 TO_CHAR(
-                    INTERVAL '1 hour' * FLOOR(SUM(EXTRACT(EPOCH FROM (TO_TIMESTAMP(s.end_date) - TO_TIMESTAMP(s.start_date))) / 60) / 60) +
-                    INTERVAL '1 minute' * FLOOR(SUM(EXTRACT(EPOCH FROM (TO_TIMESTAMP(s.end_date) - TO_TIMESTAMP(s.start_date))) / 60) % 60) +
-                    INTERVAL '1 second' * FLOOR(SUM(EXTRACT(EPOCH FROM (TO_TIMESTAMP(s.end_date) - TO_TIMESTAMP(s.start_date))) / 60) % 60),
+                    INTERVAL '1 hour' * FLOOR(SUM(EXTRACT(EPOCH FROM (TO_TIMESTAMP(Session.end_date) - TO_TIMESTAMP(Session.start_date))) / 60) / 60) +
+                    INTERVAL '1 minute' * FLOOR(SUM(EXTRACT(EPOCH FROM (TO_TIMESTAMP(Session.end_date) - TO_TIMESTAMP(Session.start_date))) / 60) % 60) +
+                    INTERVAL '1 second' * FLOOR(SUM(EXTRACT(EPOCH FROM (TO_TIMESTAMP(Session.end_date) - TO_TIMESTAMP(Session.start_date))) / 60) % 60),
                     'HH24:MI:SS'
                 ) AS total_hours,
                 
                 -- Total minutes for Public sessions
                 TO_CHAR(
-                    INTERVAL '1 hour' * FLOOR(SUM(CASE WHEN s.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (TO_TIMESTAMP(s.end_date) - TO_TIMESTAMP(s.start_date))) / 60 ELSE 0 END) / 60) +
-                    INTERVAL '1 minute' * FLOOR(SUM(CASE WHEN s.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (TO_TIMESTAMP(s.end_date) - TO_TIMESTAMP(s.start_date))) / 60 ELSE 0 END) % 60) +
-                    INTERVAL '1 second' * FLOOR(SUM(CASE WHEN s.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (TO_TIMESTAMP(s.end_date) - TO_TIMESTAMP(s.start_date))) / 60 ELSE 0 END) % 60),
+                    INTERVAL '1 hour' * FLOOR(SUM(CASE WHEN Session.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (TO_TIMESTAMP(Session.end_date) - TO_TIMESTAMP(Session.start_date))) / 60 ELSE 0 END) / 60) +
+                    INTERVAL '1 minute' * FLOOR(SUM(CASE WHEN Session.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (TO_TIMESTAMP(Session.end_date) - TO_TIMESTAMP(Session.start_date))) / 60 ELSE 0 END) % 60) +
+                    INTERVAL '1 second' * FLOOR(SUM(CASE WHEN Session.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (TO_TIMESTAMP(Session.end_date) - TO_TIMESTAMP(Session.start_date))) / 60 ELSE 0 END) % 60),
                     'HH24:MI:SS'
                 ) AS total_public_hours,
                 
                 -- Total minutes for Private sessions
                 TO_CHAR(
-                    INTERVAL '1 hour' * FLOOR(SUM(CASE WHEN s.type = 'PRIVATE' THEN EXTRACT(EPOCH FROM (TO_TIMESTAMP(s.end_date) - TO_TIMESTAMP(s.start_date))) / 60 ELSE 0 END) / 60) +
-                    INTERVAL '1 minute' * FLOOR(SUM(CASE WHEN s.type = 'PRIVATE' THEN EXTRACT(EPOCH FROM (TO_TIMESTAMP(s.end_date) - TO_TIMESTAMP(s.start_date))) / 60 ELSE 0 END) % 60) +
-                    INTERVAL '1 second' * FLOOR(SUM(CASE WHEN s.type = 'PRIVATE' THEN EXTRACT(EPOCH FROM (TO_TIMESTAMP(s.end_date) - TO_TIMESTAMP(s.start_date))) / 60 ELSE 0 END) % 60),
+                    INTERVAL '1 hour' * FLOOR(SUM(CASE WHEN Session.type = 'PRIVATE' THEN EXTRACT(EPOCH FROM (TO_TIMESTAMP(Session.end_date) - TO_TIMESTAMP(Session.start_date))) / 60 ELSE 0 END) / 60) +
+                    INTERVAL '1 minute' * FLOOR(SUM(CASE WHEN Session.type = 'PRIVATE' THEN EXTRACT(EPOCH FROM (TO_TIMESTAMP(Session.end_date) - TO_TIMESTAMP(Session.start_date))) / 60 ELSE 0 END) % 60) +
+                    INTERVAL '1 second' * FLOOR(SUM(CASE WHEN Session.type = 'PRIVATE' THEN EXTRACT(EPOCH FROM (TO_TIMESTAMP(Session.end_date) - TO_TIMESTAMP(Session.start_date))) / 60 ELSE 0 END) % 60),
                     'HH24:MI:SS'
                 ) AS total_private_hours
                             FROM 
                                 public.session_ownerships AS so
                             JOIN 
-                                public.sessions AS s
+                                public.sessions AS Session
                             ON 
-                                so.session_id = s.id
+                                so.session_id = Session.id
                             WHERE 
                                 (:userId IS NOT NULL AND so.user_id = :userId) 
                                 AND ('CREATOR' IS NULL OR so.type = 'CREATOR') 
-                                AND (:start_date IS NOT NULL AND s.start_date > :start_date) 
-                                AND (:end_date IS NOT NULL AND s.end_date < :end_date) 
+                                AND (:start_date IS NOT NULL AND Session.start_date > :start_date) 
+                                AND (:end_date IS NOT NULL AND Session.end_date < :end_date) 
                                 AND (
                                     CASE 
-                                        WHEN :session_type = 'All' THEN s.type IN ('PUBLIC', 'PRIVATE') 
-                                        WHEN :session_type = 'Public' THEN s.type = 'PUBLIC' 
-                                        WHEN :session_type = 'Private' THEN s.type = 'PRIVATE' 
+                                        WHEN :session_type = 'All' THEN Session.type IN ('PUBLIC', 'PRIVATE') 
+                                        WHEN :session_type = 'Public' THEN Session.type = 'PUBLIC' 
+                                        WHEN :session_type = 'Private' THEN Session.type = 'PRIVATE' 
                                         ELSE TRUE
                                     END
                                 );`,
@@ -481,36 +481,36 @@ CASE WHEN s.started_at IS NOT NULL THEN 'Yes' ELSE 'No' END AS "session_conducte
                     
                     -- Total hours for Public sessions
                     TO_CHAR(
-                        INTERVAL '1 hour' * FLOOR(SUM(CASE WHEN s.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END) / 3600) +
-                        INTERVAL '1 minute' * FLOOR(SUM(CASE WHEN s.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END) / 60 % 60) +
-                        INTERVAL '1 second' * FLOOR(SUM(CASE WHEN s.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END) % 60),
+                        INTERVAL '1 hour' * FLOOR(SUM(CASE WHEN Session.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END) / 3600) +
+                        INTERVAL '1 minute' * FLOOR(SUM(CASE WHEN Session.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END) / 60 % 60) +
+                        INTERVAL '1 second' * FLOOR(SUM(CASE WHEN Session.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END) % 60),
                         'HH24:MI:SS'
                     ) AS public_hours,
                     
                     -- Total hours for Private sessions
                     TO_CHAR(
-                        INTERVAL '1 hour' * FLOOR(SUM(CASE WHEN s.type = 'PRIVATE' THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END) / 3600) +
-                        INTERVAL '1 minute' * FLOOR(SUM(CASE WHEN s.type = 'PRIVATE' THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END) / 60 % 60) +
-                        INTERVAL '1 second' * FLOOR(SUM(CASE WHEN s.type = 'PRIVATE' THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END) % 60),
+                        INTERVAL '1 hour' * FLOOR(SUM(CASE WHEN Session.type = 'PRIVATE' THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END) / 3600) +
+                        INTERVAL '1 minute' * FLOOR(SUM(CASE WHEN Session.type = 'PRIVATE' THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END) / 60 % 60) +
+                        INTERVAL '1 second' * FLOOR(SUM(CASE WHEN Session.type = 'PRIVATE' THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END) % 60),
                         'HH24:MI:SS'
                     ) AS private_hours
                             FROM 
                                 public.session_ownerships AS so
                             JOIN 
-                                public.sessions AS s
+                                public.sessions AS Session
                             ON 
-                                so.session_id = s.id
+                                so.session_id = Session.id
                             WHERE 
                             (:userId IS NOT NULL AND so.user_id = :userId)
                             AND ('MENTOR' IS NULL OR so.type = 'MENTOR')
-                            AND s.status = 'COMPLETED'
-                            AND (:start_date IS NOT NULL AND s.start_date > :start_date)
-                            AND (:end_date IS NOT NULL AND s.end_date < :end_date)
+                            AND Session.status = 'COMPLETED'
+                            AND (:start_date IS NOT NULL AND Session.start_date > :start_date)
+                            AND (:end_date IS NOT NULL AND Session.end_date < :end_date)
                             AND (
                                 CASE 
-                                    WHEN :session_type = 'All' THEN s.type IN ('PUBLIC', 'PRIVATE') 
-                                    WHEN :session_type = 'Public' THEN s.type = 'PUBLIC' 
-                                    WHEN :session_type = 'Private' THEN s.type = 'PRIVATE'
+                                    WHEN :session_type = 'All' THEN Session.type IN ('PUBLIC', 'PRIVATE') 
+                                    WHEN :session_type = 'Public' THEN Session.type = 'PUBLIC' 
+                                    WHEN :session_type = 'Private' THEN Session.type = 'PRIVATE'
                                     ELSE TRUE
                                 END
                                 );`,
@@ -530,70 +530,70 @@ CASE WHEN s.started_at IS NOT NULL THEN 'Yes' ELSE 'No' END AS "session_conducte
                     WHERE so.type = 'CREATOR' 
                     AND (
                         :session_type = 'All' 
-                        OR (:session_type = 'Public' AND s.type = 'PUBLIC')
-                        OR (:session_type = 'Private' AND s.type = 'PRIVATE')
+                        OR (:session_type = 'Public' AND Session.type = 'PUBLIC')
+                        OR (:session_type = 'Private' AND Session.type = 'PRIVATE')
                     )
                 ) AS session_created,
             
                 -- Count sessions_conducted (sum of public and private conducted sessions based on session_type)
                 COUNT(*) FILTER (
                     WHERE so.type = 'MENTOR' 
-                    AND s.status = 'COMPLETED'
+                    AND Session.status = 'COMPLETED'
                     AND (
                         :session_type = 'All' 
-                        OR (:session_type = 'Public' AND s.type = 'PUBLIC')
-                        OR (:session_type = 'Private' AND s.type = 'PRIVATE')
+                        OR (:session_type = 'Public' AND Session.type = 'PUBLIC')
+                        OR (:session_type = 'Private' AND Session.type = 'PRIVATE')
                     )
                 ) AS sessions_conducted,
             
                 -- Total sessions conducted (all types combined)
                 COUNT(*) FILTER (
                     WHERE so.type = 'MENTOR' 
-                    AND s.status = 'COMPLETED'
+                    AND Session.status = 'COMPLETED'
                     AND (
                         :session_type = 'All' 
-                        OR :session_type = 'Public' AND s.type = 'PUBLIC'
-                        OR :session_type = 'Private' AND s.type = 'PRIVATE'
+                        OR :session_type = 'Public' AND Session.type = 'PUBLIC'
+                        OR :session_type = 'Private' AND Session.type = 'PRIVATE'
                     )
                 ) AS total_sessions_conducted,
             
                 -- Public sessions conducted
                 COUNT(*) FILTER (
                     WHERE so.type = 'MENTOR' 
-                    AND s.status = 'COMPLETED'
+                    AND Session.status = 'COMPLETED'
                     AND :session_type IN ('All', 'Public') 
-                    AND s.type = 'PUBLIC'
+                    AND Session.type = 'PUBLIC'
                 ) AS public_sessions_conducted,
             
                 -- Private sessions conducted
                 COUNT(*) FILTER (
                     WHERE so.type = 'MENTOR' 
-                    AND s.status = 'COMPLETED'
+                    AND Session.status = 'COMPLETED'
                     AND :session_type IN ('All', 'Private') 
-                    AND s.type = 'PRIVATE'
+                    AND Session.type = 'PRIVATE'
                 ) AS private_sessions_conducted,
             
                 -- Public sessions created
                 COUNT(*) FILTER (
                     WHERE so.type = 'CREATOR' 
                     AND :session_type IN ('All', 'Public') 
-                    AND s.type = 'PUBLIC'
+                    AND Session.type = 'PUBLIC'
                 ) AS public_sessions_created,
             
                 -- Private sessions created
                 COUNT(*) FILTER (
                     WHERE so.type = 'CREATOR' 
                     AND :session_type IN ('All', 'Private') 
-                    AND s.type = 'PRIVATE'
+                    AND Session.type = 'PRIVATE'
                 ) AS private_sessions_created
             FROM
                 public.session_ownerships AS so
             JOIN
-                public.sessions AS s ON so.session_id = s.id
+                public.sessions AS Session ON so.session_id = Session.id
             WHERE
                 (:userId IS NOT NULL AND so.user_id = :userId OR :userId IS NULL)
-                AND (:start_date IS NOT NULL AND s.start_date > :start_date OR :start_date IS NULL)
-                AND (:end_date IS NOT NULL AND s.end_date < :end_date OR :end_date IS NULL)
+                AND (:start_date IS NOT NULL AND Session.start_date > :start_date OR :start_date IS NULL)
+                AND (:end_date IS NOT NULL AND Session.end_date < :end_date OR :end_date IS NULL)
                 AND (so.type IN ('CREATOR', 'MENTOR'))
                 AND (
                     :session_type = 'All' 
@@ -615,43 +615,43 @@ CASE WHEN s.started_at IS NOT NULL THEN 'Yes' ELSE 'No' END AS "session_conducte
                 subquery."avg_mentor_rating" 
             FROM (
                 SELECT 
-                    s.mentor_name,
+                    Session.mentor_name,
                     COUNT(*) OVER (PARTITION BY so.user_id) AS "number_of_mentoring_sessions",
-                    CASE WHEN ROUND(SUM(EXTRACT(EPOCH FROM(s.completed_at-s.started_at)))/3600.0)=FLOOR(SUM(EXTRACT(EPOCH FROM(s.completed_at-s.started_at)))/3600.0)
-                        THEN CAST(FLOOR(SUM(EXTRACT(EPOCH FROM(s.completed_at-s.started_at)))/3600.0) AS TEXT)  -- Removes .0 for whole numbers
-                        ELSE CAST(ROUND(SUM(EXTRACT(EPOCH FROM(s.completed_at-s.started_at)))/3600.0, 1) AS TEXT)  -- Keeps decimals for non-whole numbers
+                    CASE WHEN ROUND(SUM(EXTRACT(EPOCH FROM(Session.completed_at-Session.started_at)))/3600.0)=FLOOR(SUM(EXTRACT(EPOCH FROM(Session.completed_at-Session.started_at)))/3600.0)
+                        THEN CAST(FLOOR(SUM(EXTRACT(EPOCH FROM(Session.completed_at-Session.started_at)))/3600.0) AS TEXT)  -- Removes .0 for whole numbers
+                        ELSE CAST(ROUND(SUM(EXTRACT(EPOCH FROM(Session.completed_at-Session.started_at)))/3600.0, 1) AS TEXT)  -- Keeps decimals for non-whole numbers
                     END AS "hours_of_mentoring_sessions",
                     COALESCE(CAST(ue.rating ->>'average'AS NUMERIC),0) AS "avg_mentor_rating" 
                 FROM 
-                    public.sessions AS s
+                    public.sessions AS Session
                 JOIN 
                     public.session_ownerships AS so
                 ON 
-                    s.id = so.session_id
+                    Session.id = so.session_id
                 LEFT JOIN 
                     public.user_extensions AS ue
                 ON 
                     so.user_id = ue.user_id -- Join user_extension based on user_id
                 WHERE 
-                    s.created_by = :userId -- Replace with dynamic session manager's ID
+                    Session.created_by = :userId -- Replace with dynamic session manager'Session ID
                     AND so.type = 'MENTOR' -- Filter for sessions where ownership is 'MENTOR' (individual mentor)
                     AND so.user_id IS NOT NULL -- Ensure that the mentor has a valid ID
-                    AND s.started_at IS NOT NULL
-                    AND s.completed_at IS NOT NULL
-                    AND s.start_date > :start_date -- Optional: Replace with dynamic start date in epoch format
-                    AND s.end_date < :end_date -- Optional: Replace with dynamic end date in epoch format
+                    AND Session.started_at IS NOT NULL
+                    AND Session.completed_at IS NOT NULL
+                    AND Session.start_date > :start_date -- Optional: Replace with dynamic start date in epoch format
+                    AND Session.end_date < :end_date -- Optional: Replace with dynamic end date in epoch format
                     AND (
                     CASE 
-                        WHEN :session_type = 'All' THEN s.type IN ('PUBLIC', 'PRIVATE')
-                        WHEN :session_type = 'PUBLIC' THEN s.type = 'PUBLIC'
-                        WHEN :session_type = 'PRIVATE' THEN s.type = 'PRIVATE'
+                        WHEN :session_type = 'All' THEN Session.type IN ('PUBLIC', 'PRIVATE')
+                        WHEN :session_type = 'PUBLIC' THEN Session.type = 'PUBLIC'
+                        WHEN :session_type = 'PRIVATE' THEN Session.type = 'PRIVATE'
                         ELSE TRUE
                     END
                 )
                 GROUP BY 
                     so.user_id, 
-                    s.created_by, 
-                    s.mentor_name, 
+                    Session.created_by, 
+                    Session.mentor_name, 
                     COALESCE(CAST(ue.rating ->> 'average' AS NUMERIC), 0)
             ) AS subquery
             ;`,
