@@ -183,8 +183,7 @@ module.exports = class ReportsHelper {
 				code: reportCode,
 				organization_id: orgId,
 			})
-
-			if (reportConfigWithOrgId) {
+			if (reportConfigWithOrgId.length > 0) {
 				reportConfig = reportConfigWithOrgId
 			} else {
 				// Fetch report configuration for the default organization ID
@@ -202,7 +201,7 @@ module.exports = class ReportsHelper {
 				organization_id: orgId,
 			})
 
-			if (reportQueryWithOrgId) {
+			if (reportQueryWithOrgId.length > 0) {
 				reportQuery = reportQueryWithOrgId
 			} else {
 				const reportQueryWithDefaultOrgId = await reportQueryQueries.findReportQueries({
@@ -242,17 +241,18 @@ module.exports = class ReportsHelper {
 						end_date: dateRange.end_date || null,
 					}
 
-					let query = reportQuery.query.replace(/:sort_type/g, replacements.sort_type)
-					const entityConditions = await utils.getDynamicEntityCondition(
-						Object.fromEntries(entityTypesColumns.map((col, idx) => [col, entityTypesValues[idx]])),
-						columnConfig.columns
-					)
+					let query = reportQuery[0].query.replace(/:sort_type/g, replacements.sort_type)
+					if (entityTypesColumns && entityTypesValues) {
+						const entityConditions = await utils.getDynamicEntityCondition(
+							Object.fromEntries(entityTypesColumns.map((col, idx) => [col, entityTypesValues[idx]])),
+							columnConfig.columns
+						)
 
-					// Add dynamic entity conditions to the query
-					if (entityConditions) {
-						query += entityConditions
+						// Add dynamic entity conditions to the query
+						if (entityConditions) {
+							query += entityConditions
+						}
 					}
-
 					// Execute query with the current date range
 					const result = await sequelize.query(query, { replacements, type: sequelize.QueryTypes.SELECT })
 
@@ -294,7 +294,7 @@ module.exports = class ReportsHelper {
 					sort_type: sortType.toUpperCase() || 'ASC',
 				}
 
-				let query = reportQuery.query
+				let query = reportQuery[0].query
 
 				if (entityTypesColumns && entityTypesValues) {
 					const entityConditions = await utils.getDynamicEntityCondition(
@@ -304,7 +304,7 @@ module.exports = class ReportsHelper {
 
 					// Add dynamic entity conditions to the query
 					if (entityConditions) {
-						query = reportQuery.query.replace(';', '')
+						query = reportQuery[0].query.replace(';', '')
 						query += entityConditions
 					}
 				}

@@ -7,12 +7,15 @@ module.exports = (sequelize, DataTypes) => {
 			id: {
 				type: DataTypes.INTEGER,
 				allowNull: false,
+				primaryKey: true,
 				autoIncrement: true,
 			},
 			report_code: {
 				type: DataTypes.STRING,
-				primaryKey: true,
 				allowNull: false,
+			},
+			organization_id: {
+				type: DataTypes.STRING,
 			},
 			query: {
 				type: DataTypes.TEXT,
