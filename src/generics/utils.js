@@ -1054,40 +1054,35 @@ function getDynamicFilterCondition(filters, columnMappings, baseQuery, columnCon
 	return ''
 }
 
-function getDynamicEntityCondition(entityData, columnConfig) {
+function getDynamicEntityCondition(entityData, sessionModel) {
 	if (!entityData || Object.keys(entityData).length === 0) {
 		return ''
 	}
 
+	// Ensure sessionModel is a string
+	if (typeof sessionModel !== 'string') {
+		throw new Error('sessionModel must be a string representing the table or model name')
+	}
+
 	const conditions = []
 
-	// Iterate over entityData and generate conditions
+	// Iterate over entityData to handle conditions
 	for (const [column, values] of Object.entries(entityData)) {
-		if (values) {
-			const columnMapping = columnConfig.find((col) => col.key === column)
+		if (Array.isArray(values) && values.length > 0) {
+			// Generate combined condition for all values as a single array
+			const combinedValues = `{${values.join(',')}}`
+			conditions.push(`${sessionModel}.${column} IN ('${combinedValues}')`)
 
-			if (columnMapping) {
-				// Check if the value is an array
-				if (Array.isArray(values)) {
-					// Process array of values
-					for (const value of values) {
-						if (value !== '') {
-							const formattedValue = `{${value}}`
-							conditions.push(`${columnMapping.model}.${columnMapping.key} = '${formattedValue}'`)
-						}
-					}
-				} else {
-					// Process single value
-					conditions.push(`${columnMapping.model}.${columnMapping.key} = '${values}'`)
-				}
-			}
+			// Generate individual conditions for each value as arrays
+			values.forEach((value) => {
+				const formattedValue = `{${value}}`
+				conditions.push(`${sessionModel}.${column} IN ('${formattedValue}')`)
+			})
 		}
 	}
 
-	if (conditions.length > 0) {
-		return ` AND (${conditions.join(' AND ')})` // Semicolon not included here to be consistent
-	}
-	return ''
+	// Join all conditions with OR instead of AND
+	return ` AND (${conditions.join(' OR ')})`
 }
 
 // Utility function to check strict date validity

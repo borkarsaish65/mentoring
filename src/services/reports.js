@@ -242,14 +242,17 @@ module.exports = class ReportsHelper {
 					}
 
 					let query = reportQuery[0].query.replace(/:sort_type/g, replacements.sort_type)
+					const sessionModel = await sessionQueries.getModelName()
+
 					if (entityTypesColumns && entityTypesValues) {
 						const entityConditions = await utils.getDynamicEntityCondition(
 							Object.fromEntries(entityTypesColumns.map((col, idx) => [col, entityTypesValues[idx]])),
-							columnConfig.columns
+							sessionModel.toLowerCase()
 						)
 
 						// Add dynamic entity conditions to the query
 						if (entityConditions) {
+							query = reportQuery[0].query.replace(';', '')
 							query += entityConditions
 						}
 					}
@@ -294,18 +297,30 @@ module.exports = class ReportsHelper {
 					sort_type: sortType.toUpperCase() || 'ASC',
 				}
 
+				const sessionModel = await sessionQueries.getModelName()
+
 				let query = reportQuery[0].query
 
 				if (entityTypesColumns && entityTypesValues) {
 					const entityConditions = await utils.getDynamicEntityCondition(
 						Object.fromEntries(entityTypesColumns.map((col, idx) => [col, entityTypesValues[idx]])),
-						columnConfig.columns
+						sessionModel,
+						query
 					)
 
 					// Add dynamic entity conditions to the query
 					if (entityConditions) {
 						query = reportQuery[0].query.replace(';', '')
-						query += entityConditions
+
+						// Check if the query contains 'GROUP BY'
+						const groupByIndex = query.toUpperCase().indexOf('GROUP BY')
+						if (groupByIndex !== -1) {
+							// Insert entityConditions before 'GROUP BY'
+							query = query.slice(0, groupByIndex) + entityConditions + ' ' + query.slice(groupByIndex)
+						} else {
+							// Append entityConditions if 'GROUP BY' is not present
+							query += entityConditions
+						}
 					}
 				}
 
