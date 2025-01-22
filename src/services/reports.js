@@ -242,16 +242,17 @@ module.exports = class ReportsHelper {
 					}
 
 					let query = reportQuery[0].query.replace(/:sort_type/g, replacements.sort_type)
-					const entityConditions = await utils.getDynamicEntityCondition(
-						Object.fromEntries(entityTypesColumns.map((col, idx) => [col, entityTypesValues[idx]])),
-						columnConfig.columns
-					)
+					if (entityTypesColumns && entityTypesValues) {
+						const entityConditions = await utils.getDynamicEntityCondition(
+							Object.fromEntries(entityTypesColumns.map((col, idx) => [col, entityTypesValues[idx]])),
+							columnConfig.columns
+						)
 
-					// Add dynamic entity conditions to the query
-					if (entityConditions) {
-						query += entityConditions
+						// Add dynamic entity conditions to the query
+						if (entityConditions) {
+							query += entityConditions
+						}
 					}
-
 					// Execute query with the current date range
 					const result = await sequelize.query(query, { replacements, type: sequelize.QueryTypes.SELECT })
 
