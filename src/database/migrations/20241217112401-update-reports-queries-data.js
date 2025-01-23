@@ -318,6 +318,10 @@ module.exports = {
                                 OR (:session_type = 'Public' AND Session.type = 'PUBLIC')
                                 OR (:session_type = 'Private' AND Session.type = 'PRIVATE')
                             )
+                            AND (
+                                (Session.created_by != :userId AND Session.mentor_id = :userId) 
+                                OR (Session.created_by = :userId AND Session.mentor_id = :userId)
+                            )
                         THEN 1
                     END) AS total_sessions_created,
             
@@ -326,6 +330,10 @@ module.exports = {
                         WHEN so.type = 'CREATOR'
                             AND Session.type = 'PUBLIC'
                             AND (:session_type = 'All' OR :session_type = 'Public')
+                            AND (
+                                (Session.created_by != :userId AND Session.mentor_id = :userId) 
+                                OR (Session.created_by = :userId AND Session.mentor_id = :userId)
+                            )
                         THEN 1
                     END) AS public_sessions_created,
             
@@ -334,6 +342,10 @@ module.exports = {
                         WHEN so.type = 'CREATOR'
                             AND Session.type = 'PRIVATE'
                             AND (:session_type = 'All' OR :session_type = 'Private')
+                            AND (
+                                (Session.created_by != :userId AND Session.mentor_id = :userId) 
+                                OR (Session.created_by = :userId AND Session.mentor_id = :userId)
+                            )
                         THEN 1
                     END) AS private_sessions_created,
             
