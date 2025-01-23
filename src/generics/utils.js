@@ -983,12 +983,11 @@ function getDynamicFilterCondition(filters, columnMappings, baseQuery, columnCon
 			// Find the filterType for the column from columnConfig
 			const columnConfigEntry = columnConfig.find((config) => config.key === column)
 			const filterType = columnConfigEntry ? columnConfigEntry.filterType || '=' : '=' // Default to '=' if not found
-
 			// Special case: Handle the column with ROUND(EXTRACT...) logic
 			if (mappedColumn.includes('ROUND(EXTRACT')) {
-				if (typeof value !== 'string') {
+				if (!Array.isArray(value) || !value.every((item) => typeof item === 'string')) {
 					console.error(
-						`Invalid filter value for column ${column}. Expected a string but received ${typeof value}.`
+						`Invalid filter value for column ${column}. Expected an array of strings but received ${typeof value}.`
 					)
 					return null
 				}
