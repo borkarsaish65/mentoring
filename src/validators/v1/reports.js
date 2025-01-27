@@ -142,7 +142,35 @@ module.exports = {
 			.matches(/^[a-z_]+$/)
 			.withMessage('report_type_title should not contain any spaces')
 
-		req.checkBody('config').notEmpty('config field is required').withMessage('')
+		req.checkBody('config')
+			.notEmpty()
+			.withMessage('config field is required')
+			.custom((config) => {
+				if (!Array.isArray(config.columns)) {
+					throw new Error('config.columns should be an array')
+				}
+
+				// Validate each column object
+				config.columns.forEach((column, index) => {
+					if (!column.key || typeof column.key !== 'string') {
+						throw new Error(`Column at index ${index} must have a valid "key" as a string`)
+					}
+					if (!column.label || typeof column.label !== 'string') {
+						throw new Error(`Column at index ${index} must have a valid "label" as a string`)
+					}
+					if (typeof column.sort !== 'boolean') {
+						throw new Error(`Column at index ${index} must have "sort" as a boolean`)
+					}
+					if (typeof column.filter !== 'boolean') {
+						throw new Error(`Column at index ${index} must have "filter" as a boolean`)
+					}
+					if (column.defaultValues && !Array.isArray(column.defaultValues)) {
+						throw new Error(`Column at index ${index} must have "defaultValues" as an array if provided`)
+					}
+				})
+
+				return true
+			})
 
 		req.checkBody('organization_id').optional().notEmpty().isInt().withMessage('organization_id field is empty')
 	},
@@ -174,18 +202,36 @@ module.exports = {
 			.matches(/^[a-z_]+$/)
 			.withMessage('report_type_title should not contain any spaces')
 
-		req.checkBody('config')
+		req
+			.checkBody('config')
 			.optional()
-			.custom((value) => {
-				try {
-					JSON.parse(value)
-					return true
-				} catch (e) {
-					throw new Error('config should be a valid JSON object')
+			.custom((config) => {
+				if (!Array.isArray(config.columns)) {
+					throw new Error('config.columns should be an array')
 				}
-			})
 
-		req.checkBody('organization_id').optional().notEmpty().isInt().withMessage('organization_id field is empty')
+				// Validate each column object
+				config.columns.forEach((column, index) => {
+					if (!column.key || typeof column.key !== 'string') {
+						throw new Error(`Column at index ${index} must have a valid "key" as a string`)
+					}
+					if (!column.label || typeof column.label !== 'string') {
+						throw new Error(`Column at index ${index} must have a valid "label" as a string`)
+					}
+					if (typeof column.sort !== 'boolean') {
+						throw new Error(`Column at index ${index} must have "sort" as a boolean`)
+					}
+					if (typeof column.filter !== 'boolean') {
+						throw new Error(`Column at index ${index} must have "filter" as a boolean`)
+					}
+					if (column.defaultValues && !Array.isArray(column.defaultValues)) {
+						throw new Error(`Column at index ${index} must have "defaultValues" as an array if provided`)
+					}
+				})
+
+				return true
+			}),
+			req.checkBody('organization_id').optional().notEmpty().isInt().withMessage('organization_id field is empty')
 	},
 
 	delete: (req) => {

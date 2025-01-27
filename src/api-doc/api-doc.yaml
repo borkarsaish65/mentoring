@@ -9398,26 +9398,258 @@ paths:
                   type: string
                 report_type_title:
                   type: string
-                config:
+                created_at:
                   type: string
+                updated_at:
+                  type: string
+                config:
+                  type: object
+                  properties:
+                    columns:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          key:
+                            type: string
+                          label:
+                            type: string
+                          filter:
+                            type: boolean
+                          sort:
+                            type: boolean
+                          search:
+                            type: boolean
+                          filterType:
+                            type: string
+                          isEntityType:
+                            type: boolean
+                          isMultipleFilter:
+                            type: boolean
+                          dataType:
+                            type: string
+                          defaultValues:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                label:
+                                  type: string
+                                value:
+                                  type: string
+                              required:
+                                - label
+                                - value
+                        required:
+                          - key
+                          - label
+                          - filter
+                          - sort
+                          - search
+                          - filterType
+                          - isEntityType
+                          - isMultipleFilter
+                          - defaultValues
                 organization_id:
-                  type: number
+                  type: string
               required:
                 - code
-                - title
-                - description
                 - report_type_title
                 - config
-                - organization_id
             examples:
               example1:
                 value:
-                  code: sample_report_code
-                  title: Sample Report
-                  description: ' Sample report in big number'
-                  report_type_title: big_number
-                  config: '{}'
-                  organization_id: 1
+                  code: sample_testing
+                  title: Session Testing
+                  description: Session Testing
+                  report_type_title: table
+                  created_at: CURRENT_TIMESTAMP
+                  updated_at: CURRENT_TIMESTAMP
+                  config:
+                    columns:
+                      - key: sessions_title
+                        label: Sessions Title
+                        filter: false
+                        sort: true
+                        search: true
+                        filterType: '='
+                        isEntityType: false
+                        isMultipleFilter: false
+                      - key: sessions_created_by
+                        label: Sessions Created By
+                        filter: false
+                        sort: true
+                        search: true
+                        filterType: '='
+                        isEntityType: false
+                        isMultipleFilter: false
+                      - key: mentor_name
+                        label: Mentor Name
+                        filter: false
+                        sort: true
+                        search: true
+                        filterType: '='
+                        isEntityType: false
+                        isMultipleFilter: false
+                      - key: date_of_session
+                        label: Date of Session
+                        filter: true
+                        sort: true
+                        search: false
+                        filterType: '='
+                        dataType: Date
+                        isEntityType: false
+                        isMultipleFilter: true
+                      - key: session_type
+                        label: Session Type
+                        filter: true
+                        sort: true
+                        search: false
+                        filterType: '='
+                        isEntityType: false
+                        defaultValues:
+                          - label: ALL
+                            value: PUBLIC,PRIVATE
+                          - label: PUBLIC
+                            value: PUBLIC
+                          - label: PRIVATE
+                            value: PRIVATE
+                        isMultipleFilter: false
+                      - key: categories
+                        label: Categories
+                        filter: true
+                        sort: true
+                        search: false
+                        filterType: '='
+                        isEntityType: true
+                        isMultipleFilter: true
+                      - key: recommended_for
+                        label: Recommended for
+                        filter: true
+                        sort: true
+                        search: false
+                        filterType: '='
+                        isEntityType: true
+                        isMultipleFilter: true
+                      - key: session_attended
+                        label: Session Attended
+                        filter: true
+                        sort: true
+                        search: false
+                        filterType: '='
+                        isEntityType: false
+                        defaultValues:
+                          - label: 'Yes'
+                            value: 'Yes'
+                          - label: 'No'
+                            value: 'No'
+                        isMultipleFilter: true
+                      - key: duration_of_sessions_attended_in_minutes
+                        label: Duration of Sessions Attended - min (at setup time)
+                        filter: true
+                        sort: true
+                        search: false
+                        filterType: <=
+                        isEntityType: false
+                        defaultValues:
+                          - label: '30'
+                            value: '30'
+                          - label: '60'
+                            value: '60'
+                          - label: '90'
+                            value: '90'
+                          - label: '120'
+                            value: '120'
+                          - label: '150'
+                            value: '150'
+                          - label: '180'
+                            value: '180'
+                          - label: '210'
+                            value: '210'
+                          - label: '240'
+                            value: '240'
+                          - label: '270'
+                            value: '270'
+                          - label: '300'
+                            value: '300'
+                          - label: '330'
+                            value: '330'
+                          - label: '360'
+                            value: '360'
+                          - label: '390'
+                            value: '390'
+                          - label: '420'
+                            value: '420'
+                          - label: '450'
+                            value: '450'
+                          - label: '480'
+                            value: '480'
+                          - label: '510'
+                            value: '510'
+                          - label: '540'
+                            value: '540'
+                          - label: '570'
+                            value: '570'
+                          - label: '600'
+                            value: '600'
+                          - label: '630'
+                            value: '630'
+                          - label: '660'
+                            value: '660'
+                          - label: '690'
+                            value: '690'
+                          - label: '720'
+                            value: '720'
+                          - label: '750'
+                            value: '750'
+                          - label: '780'
+                            value: '780'
+                          - label: '810'
+                            value: '810'
+                          - label: '840'
+                            value: '840'
+                          - label: '870'
+                            value: '870'
+                          - label: '900'
+                            value: '900'
+                          - label: '930'
+                            value: '930'
+                          - label: '960'
+                            value: '960'
+                          - label: '990'
+                            value: '990'
+                          - label: '1020'
+                            value: '1020'
+                          - label: '1050'
+                            value: '1050'
+                          - label: '1080'
+                            value: '1080'
+                          - label: '1110'
+                            value: '1110'
+                          - label: '1140'
+                            value: '1140'
+                          - label: '1170'
+                            value: '1170'
+                          - label: '1200'
+                            value: '1200'
+                          - label: '1230'
+                            value: '1230'
+                          - label: '1260'
+                            value: '1260'
+                          - label: '1290'
+                            value: '1290'
+                          - label: '1320'
+                            value: '1320'
+                          - label: '1350'
+                            value: '1350'
+                          - label: '1380'
+                            value: '1380'
+                          - label: '1410'
+                            value: '1410'
+                          - label: '1440'
+                            value: '1440'
+                        isMultipleFilter: false
+                  organization_id: '1'
       parameters:
         - name: x-auth-token
           in: header
@@ -9458,7 +9690,53 @@ paths:
                       report_type_title:
                         type: string
                       config:
-                        type: string
+                        type: object
+                        properties:
+                          columns:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                key:
+                                  type: string
+                                sort:
+                                  type: boolean
+                                label:
+                                  type: string
+                                filter:
+                                  type: boolean
+                                search:
+                                  type: boolean
+                                filterType:
+                                  type: string
+                                isEntityType:
+                                  type: boolean
+                                isMultipleFilter:
+                                  type: boolean
+                                dataType:
+                                  type: string
+                                defaultValues:
+                                  type: array
+                                  items:
+                                    type: object
+                                    properties:
+                                      label:
+                                        type: string
+                                      value:
+                                        type: string
+                                    required:
+                                      - label
+                                      - value
+                              required:
+                                - key
+                                - sort
+                                - label
+                                - filter
+                                - search
+                                - filterType
+                                - isEntityType
+                                - isMultipleFilter
+                                - defaultValues
                       organization_id:
                         type: string
                       deleted_at:
@@ -9491,14 +9769,201 @@ paths:
                     responseCode: OK
                     message: REPORT_CREATED_SUCCESS
                     result:
-                      created_at: '2025-01-12T16:16:27.813Z'
-                      updated_at: '2025-01-12T16:16:27.814Z'
-                      id: 13
-                      code: sample_report_code
-                      title: Sample Report Code
-                      description: Sample Report in big number
-                      report_type_title: big_number
-                      config: '{}'
+                      created_at: '2025-01-27T13:31:23.663Z'
+                      updated_at: '2025-01-27T13:31:23.664Z'
+                      id: 19
+                      code: mentee_session_detailsdddddd
+                      title: Session details
+                      description: >-
+                        Mentee session details table with pagination and
+                        downloadable pdf
+                      report_type_title: table
+                      config:
+                        columns:
+                          - key: sessions_title
+                            sort: true
+                            label: Sessions Title
+                            filter: false
+                            search: true
+                            filterType: '='
+                            isEntityType: false
+                            isMultipleFilter: false
+                          - key: sessions_created_by
+                            sort: true
+                            label: Sessions Created By
+                            filter: false
+                            search: true
+                            filterType: '='
+                            isEntityType: false
+                            isMultipleFilter: false
+                          - key: mentor_name
+                            sort: true
+                            label: Mentor Name
+                            filter: false
+                            search: true
+                            filterType: '='
+                            isEntityType: false
+                            isMultipleFilter: false
+                          - key: date_of_session
+                            sort: true
+                            label: Date of Session
+                            filter: true
+                            search: false
+                            dataType: Date
+                            filterType: '='
+                            isEntityType: false
+                            isMultipleFilter: true
+                          - key: session_type
+                            sort: true
+                            label: Session Type
+                            filter: true
+                            search: false
+                            filterType: '='
+                            isEntityType: false
+                            defaultValues:
+                              - label: ALL
+                                value: PUBLIC,PRIVATE
+                              - label: PUBLIC
+                                value: PUBLIC
+                              - label: PRIVATE
+                                value: PRIVATE
+                            isMultipleFilter: false
+                          - key: categories
+                            sort: true
+                            label: Categories
+                            filter: true
+                            search: false
+                            filterType: '='
+                            isEntityType: true
+                            isMultipleFilter: true
+                          - key: recommended_for
+                            sort: true
+                            label: Recommended for
+                            filter: true
+                            search: false
+                            filterType: '='
+                            isEntityType: true
+                            isMultipleFilter: true
+                          - key: session_attended
+                            sort: true
+                            label: Session Attended
+                            filter: true
+                            search: false
+                            filterType: '='
+                            isEntityType: false
+                            defaultValues:
+                              - label: 'Yes'
+                                value: 'Yes'
+                              - label: 'No'
+                                value: 'No'
+                            isMultipleFilter: true
+                          - key: duration_of_sessions_attended_in_minutes
+                            sort: true
+                            label: >-
+                              Duration of Sessions Attended - min (at setup
+                              time)
+                            filter: true
+                            search: false
+                            filterType: <=
+                            isEntityType: false
+                            defaultValues:
+                              - label: '30'
+                                value: '30'
+                              - label: '60'
+                                value: '60'
+                              - label: '90'
+                                value: '90'
+                              - label: '120'
+                                value: '120'
+                              - label: '150'
+                                value: '150'
+                              - label: '180'
+                                value: '180'
+                              - label: '210'
+                                value: '210'
+                              - label: '240'
+                                value: '240'
+                              - label: '270'
+                                value: '270'
+                              - label: '300'
+                                value: '300'
+                              - label: '330'
+                                value: '330'
+                              - label: '360'
+                                value: '360'
+                              - label: '390'
+                                value: '390'
+                              - label: '420'
+                                value: '420'
+                              - label: '450'
+                                value: '450'
+                              - label: '480'
+                                value: '480'
+                              - label: '510'
+                                value: '510'
+                              - label: '540'
+                                value: '540'
+                              - label: '570'
+                                value: '570'
+                              - label: '600'
+                                value: '600'
+                              - label: '630'
+                                value: '630'
+                              - label: '660'
+                                value: '660'
+                              - label: '690'
+                                value: '690'
+                              - label: '720'
+                                value: '720'
+                              - label: '750'
+                                value: '750'
+                              - label: '780'
+                                value: '780'
+                              - label: '810'
+                                value: '810'
+                              - label: '840'
+                                value: '840'
+                              - label: '870'
+                                value: '870'
+                              - label: '900'
+                                value: '900'
+                              - label: '930'
+                                value: '930'
+                              - label: '960'
+                                value: '960'
+                              - label: '990'
+                                value: '990'
+                              - label: '1020'
+                                value: '1020'
+                              - label: '1050'
+                                value: '1050'
+                              - label: '1080'
+                                value: '1080'
+                              - label: '1110'
+                                value: '1110'
+                              - label: '1140'
+                                value: '1140'
+                              - label: '1170'
+                                value: '1170'
+                              - label: '1200'
+                                value: '1200'
+                              - label: '1230'
+                                value: '1230'
+                              - label: '1260'
+                                value: '1260'
+                              - label: '1290'
+                                value: '1290'
+                              - label: '1320'
+                                value: '1320'
+                              - label: '1350'
+                                value: '1350'
+                              - label: '1380'
+                                value: '1380'
+                              - label: '1410'
+                                value: '1410'
+                              - label: '1440'
+                                value: '1440'
+                            isMultipleFilter: false
                       organization_id: '1'
                       deleted_at: null
                     meta:
@@ -9563,7 +10028,7 @@ paths:
                         - id: 21
                           type: managersSession
                           version: 119
-                      correlation: c91b543f-0951-4619-9dfd-7849149228a2
+                      correlation: a51da70c-f29b-48d4-8175-9ece573fddec
                       meetingPlatform: 'OFF'
       description: >-
         You can use this API to create Report
