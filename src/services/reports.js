@@ -485,6 +485,9 @@ module.exports = class ReportsHelper {
 
 	static async createReport(data) {
 		try {
+			data.created_at = new Date().toISOString()
+			data.updated_at = new Date().toISOString()
+
 			// Attempt to create a new report directly
 			const reportCreation = await reportsQueries.createReport(data)
 			return responses.successResponse({

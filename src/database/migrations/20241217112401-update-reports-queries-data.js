@@ -311,73 +311,85 @@ module.exports = {
                 :end_date AS endDate,
             
                 -- Total sessions created (reflects only private sessions if session_type is Private)
-                COUNT(CASE 
-                        WHEN so.type = 'CREATOR'
-                            AND (
-                                :session_type = 'All' 
-                                OR (:session_type = 'Public' AND Session.type = 'PUBLIC')
-                                OR (:session_type = 'Private' AND Session.type = 'PRIVATE')
-                            )
-                            AND (
-                                (Session.created_by != :userId AND Session.mentor_id = :userId) 
-                                OR (Session.created_by = :userId AND Session.mentor_id = :userId)
-                            )
-                        THEN 1
-                    END) AS total_sessions_created,
+                COUNT(DISTINCT CASE 
+                    WHEN (
+                        (so.type = 'CREATOR' OR so.type = 'MENTOR')
+                        AND (
+                            :session_type = 'All' 
+                            OR (:session_type = 'Public' AND Session.type = 'PUBLIC')
+                            OR (:session_type = 'Private' AND Session.type = 'PRIVATE')
+                        )
+                        AND (
+                            (Session.created_by != :userId AND Session.mentor_id = :userId) 
+                            OR (Session.created_by = :userId AND Session.mentor_id = :userId)
+                        )
+                    )
+                    THEN Session.id
+                END) AS total_sessions_created,
             
                 -- Public sessions created (shows 0 if session_type is Private)
-                COUNT(CASE 
-                        WHEN so.type = 'CREATOR'
-                            AND Session.type = 'PUBLIC'
-                            AND (:session_type = 'All' OR :session_type = 'Public')
-                            AND (
-                                (Session.created_by != :userId AND Session.mentor_id = :userId) 
-                                OR (Session.created_by = :userId AND Session.mentor_id = :userId)
-                            )
-                        THEN 1
-                    END) AS public_sessions_created,
+                COUNT(DISTINCT CASE 
+                    WHEN (
+                        (so.type = 'CREATOR' OR so.type = 'MENTOR')
+                        AND Session.type = 'PUBLIC'
+                        AND (:session_type = 'All' OR :session_type = 'Public')
+                        AND (
+                            (Session.created_by != :userId AND Session.mentor_id = :userId) 
+                            OR (Session.created_by = :userId AND Session.mentor_id = :userId)
+                        )
+                    )
+                    THEN Session.id
+                END) AS public_sessions_created,
             
                 -- Private sessions created (counts only private sessions)
-                COUNT(CASE 
-                        WHEN so.type = 'CREATOR'
-                            AND Session.type = 'PRIVATE'
-                            AND (:session_type = 'All' OR :session_type = 'Private')
-                            AND (
-                                (Session.created_by != :userId AND Session.mentor_id = :userId) 
-                                OR (Session.created_by = :userId AND Session.mentor_id = :userId)
-                            )
-                        THEN 1
-                    END) AS private_sessions_created,
+                COUNT(DISTINCT CASE 
+                    WHEN (
+                        (so.type = 'CREATOR' OR so.type = 'MENTOR')
+                        AND Session.type = 'PRIVATE'
+                        AND (:session_type = 'All' OR :session_type = 'Private')
+                        AND (
+                            (Session.created_by != :userId AND Session.mentor_id = :userId) 
+                            OR (Session.created_by = :userId AND Session.mentor_id = :userId)
+                        )
+                    )
+                    THEN Session.id
+                END) AS private_sessions_created,
             
                 -- Total sessions conducted (reflects only private sessions if session_type is Private)
-                COUNT(CASE 
-                        WHEN so.type = 'MENTOR'
-                            AND Session.status = 'COMPLETED'
-                            AND (
-                                :session_type = 'All' 
-                                OR (:session_type = 'Public' AND Session.type = 'PUBLIC')
-                                OR (:session_type = 'Private' AND Session.type = 'PRIVATE')
-                            )
-                        THEN 1
-                    END) AS total_sessions_conducted,
+                COUNT(DISTINCT CASE 
+                    WHEN (
+                        so.type = 'MENTOR'
+                        AND Session.status = 'COMPLETED'
+                        AND (
+                            :session_type = 'All' 
+                            OR (:session_type = 'Public' AND Session.type = 'PUBLIC')
+                            OR (:session_type = 'Private' AND Session.type = 'PRIVATE')
+                        )
+                    )
+                    THEN Session.id
+                END) AS total_sessions_conducted,
             
                 -- Public sessions conducted (shows 0 if session_type is Private)
-                COUNT(CASE 
-                        WHEN so.type = 'MENTOR'
-                            AND Session.status = 'COMPLETED'
-                            AND Session.type = 'PUBLIC'
-                            AND (:session_type = 'All' OR :session_type = 'Public')
-                        THEN 1
-                    END) AS public_sessions_conducted,
+                COUNT(DISTINCT CASE 
+                    WHEN (
+                        so.type = 'MENTOR'
+                        AND Session.status = 'COMPLETED'
+                        AND Session.type = 'PUBLIC'
+                        AND (:session_type = 'All' OR :session_type = 'Public')
+                    )
+                    THEN Session.id
+                END) AS public_sessions_conducted,
             
                 -- Private sessions conducted (counts only private sessions)
-                COUNT(CASE 
-                        WHEN so.type = 'MENTOR'
-                            AND Session.status = 'COMPLETED'
-                            AND Session.type = 'PRIVATE'
-                            AND (:session_type = 'All' OR :session_type = 'Private')
-                        THEN 1
-                    END) AS private_sessions_conducted
+                COUNT(DISTINCT CASE 
+                    WHEN (
+                        so.type = 'MENTOR'
+                        AND Session.status = 'COMPLETED'
+                        AND Session.type = 'PRIVATE'
+                        AND (:session_type = 'All' OR :session_type = 'Private')
+                    )
+                    THEN Session.id
+                END) AS private_sessions_conducted
             
             FROM 
                 public.session_ownerships AS so
@@ -392,7 +404,7 @@ module.exports = {
                     :session_type = 'All' 
                     OR :session_type = 'Public' 
                     OR :session_type = 'Private'
-                );                        
+                );
             `,
 				organization_id: defaultOrgId,
 				status: 'ACTIVE',
