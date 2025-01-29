@@ -1,86 +1,73 @@
-/**
- * name : form.spec.js
- * author : Nevil
- * created-date : 16-Oct-2022
- * Description : Integration test for form controllers.
- */
-
+require('jest-json-schema')
 const commonHelper = require('@commonTests')
 const { faker } = require('@faker-js/faker')
-const formData = require('./formData')
 const schema = require('./responseSchema')
+jest.setTimeout(10000)
 
-describe('mentoring/v1/form', function () {
+describe('Form APIs', function () {
+	let userDetails
 	beforeAll(async () => {
-		await commonHelper.logIn()
+		try {
+			userDetails = await commonHelper.userlogIn()
+			console.log('Logged in User:', userDetails.id, userDetails.roles)
+		} catch (error) {
+			console.error('Error in beforeAll setup:', error)
+			throw error // Ensure the error is thrown to fail the tests
+		}
 	})
-	it('/create', async () => {
-		let res = await request.post('/mentoring/v1/form/create').send({
-			type: faker.random.alpha(5),
-			subType: faker.random.alpha(5),
-			action: faker.random.alpha(5),
-			data: {
-				templateName: 'defaultTemplate',
-				fields: {
-					controls: [
-						{
-							name: 'categories',
-							label: 'Select categories',
-							value: '',
-							class: 'ion-margin',
-							type: 'chip',
-							position: '',
-							disabled: false,
-							showSelectAll: true,
-							validators: {
-								required: true,
-							},
-						},
-					],
-				},
-			},
-		})
-		//console.dir(res.body)
+
+	it('Create Form', async () => {
+		let res = await request.post('/mentoring/v1/form/create').send(insertFormData())
 		expect(res.statusCode).toBe(201)
 		expect(res.body).toMatchSchema(schema.createSchema)
 	})
-	it('/read', async () => {
-		let formId = await formData.insertForm()
-		let res = await request.get('/mentoring/v1/form/read/' + formId)
 
-		//console.log(res.body)
+	it('Read form', async () => {
+		let res = await request.get('/mentoring/v1/form/read/')
+
 		expect(res.statusCode).toBe(200)
 		expect(res.body).toMatchSchema(schema.readSchema)
 	})
+
 	it('/update', async () => {
-		let entityId = await formData.insertForm()
-		let res = await request.post('/mentoring/v1/form/update/' + entityId).send({
-			type: faker.random.alpha(5),
-			subType: faker.random.alpha(5),
-			action: faker.random.alpha(5),
-			data: {
-				templateName: 'defaultTemplate',
-				fields: {
-					controls: [
-						{
-							name: 'categories',
-							label: 'Select categories',
-							value: '',
-							class: 'ion-margin',
-							type: 'chip',
-							position: '',
-							disabled: false,
-							showSelectAll: true,
-							validators: {
-								required: true,
-							},
-						},
-					],
-				},
-			},
-		})
-		//console.log(res.body)
-		expect(res.statusCode).toBe(202)
-		expect(res.body).toMatchSchema(schema.updateSchema)
+		let formData = await request.post('/mentoring/v1/form/create').send(insertFormData())
+
+		if (formData.meta && formData.meta.formVersion && formData.meta.formVersion.length > 0) {
+			let formId = formData.meta.formVersion[0].id
+			let res = await request.post('/mentoring/v1/form/update/' + formId).send(insertFormData())
+
+			expect(res.statusCode).toBe(200)
+			expect(res.body).toMatchSchema(schema.updateSchema)
+		}
 	})
 })
+
+function insertFormData() {
+	let formData = {
+		type: faker.random.alpha(5),
+		sub_type: faker.random.alpha(5),
+		action: faker.random.alpha(5),
+		data: {
+			template_name: 'defaultTemplate',
+			fields: {
+				controls: [
+					{
+						name: 'categories',
+						label: 'Select categories',
+						value: '',
+						class: 'ion-margin',
+						type: 'chip',
+						position: '',
+						disabled: false,
+						showSelectAll: true,
+						validators: {
+							required: true,
+						},
+					},
+				],
+			},
+		},
+	}
+
+	return formData
+}

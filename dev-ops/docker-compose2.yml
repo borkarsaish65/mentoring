@@ -1,0 +1,204 @@
+version: '3'
+services:
+  zookeeper:
+    image: 'bitnami/zookeeper:3.8.0'
+    ports:
+      - '2181:2181'
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    networks:
+      - elevate_net
+    volumes:
+      - zookeeper-data:/bitnami/zookeeper
+    logging:
+      driver: none
+
+  kafka:
+    image: 'bitnami/kafka:3.1.0'
+    ports:
+      - '9092:9092'
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_CFG_LISTENERS=CLIENT://:9092,EXTERNAL://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://kafka:9092,EXTERNAL://localhost:9093
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=CLIENT
+    depends_on:
+      - zookeeper
+    networks:
+      - elevate_net
+    volumes:
+      - kafka-data:/bitnami/kafka
+    logging:
+      driver: none
+
+  postgres:
+      image: 'postgres:latest'
+      container_name: postgres
+      ports:
+        - '5432:5432'
+      environment:
+        - POSTGRES_DB=postgres
+        - POSTGRES_USER=postgres
+        - POSTGRES_PASSWORD=postgres
+      networks:
+        - elevate_net
+      logging:
+        driver: none
+
+  scheduler:
+    image: shikshalokamqa/elevate-scheduler:3.1
+    container_name: scheduler
+    ports:
+      - '4000:4000'
+    command: ['nodemon', 'app.js']
+    environment:
+      - KAFKA_URL=kafka:9092
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - kafka
+      - redis
+    networks:
+      - elevate_net
+    env_file:
+      - integration_test.scheduler.env
+
+  redis:
+    image: 'redis:7.0.0'
+    restart: 'always'
+    expose:
+      - '6379'
+    networks:
+      - elevate_net
+    logging:
+      driver: none
+
+  user:
+    build: '../../user/'
+    container_name: user
+    ports:
+      - '3001:3001'
+    command: >
+      bash -c "echo 'Waiting for PostgreSQL to accept connections...' &&
+        until timeout 1 bash -c '</dev/tcp/postgres/5432' >/dev/null 2>&1; do
+            echo 'Waiting for PostgreSQL to be ready...'
+            sleep 1
+        done &&
+        echo 'Database is ready.' &&
+        if ! psql -U postgres -h postgres -lqt | cut -d \| -f 1 | grep -qw integration_test_user; then
+            npm run db:init && npm run db:seed:all
+        else
+            echo 'Database already exists. Skipping initialization and seeding.'
+            exit 0
+        fi &&
+        (echo 'Running User' && nodemon app.js &) &&
+        (/bin/bash -c 'cd scripts && echo Running user service scripts && node insertDefaultOrg.js && node viewsScript.js') &&
+        tail -f /dev/null"
+    depends_on:
+      - kafka
+      - redis
+      - postgres
+      - scheduler
+    environment:
+      - DEV_DATABASE_URL=postgres://postgres:postgres@postgres:5432/integration_test_user
+      - KAFKA_URL=kafka:9092
+      - REDIS_HOST=redis://redis:6379
+    networks:
+      - elevate_net
+    env_file:
+      - integration_test.user.env
+
+  # interface:
+  #   build: '../../interface-service/'
+  #   container_name: interface
+  #   ports:
+  #     - '3567:3567'
+  #   command: ["node", "app.js"]
+  #   networks:
+  #     - elevate_net
+  #   env_file:
+  #     - integration_test.interface.env
+
+  notification:
+    image: shikshalokamqa/elevate-notification:3.1.1
+    ports:
+      - "3002:3002"
+    command: >
+     bash -c "echo 'Waiting for PostgreSQL to accept connections...' &&
+        until timeout 1 bash -c '</dev/tcp/postgres/5432' >/dev/null 2>&1; do
+            echo 'Waiting for PostgreSQL to be ready...'
+            sleep 1
+        done &&
+        echo 'Database is ready.' &&
+        if ! psql -U postgres -h postgres -lqt | cut -d \| -f 1 | grep -qw integration_test_notification; then
+            npm run db:init && npm run db:seed:all
+        else
+            echo 'Database already exists. Skipping initialization and seeding.'
+            exit 0
+        fi &&
+        (echo 'Running User' && nodemon app.js &) &&
+        (/bin/bash -c 'cd scripts && echo Running user service scripts && node insertDefaultOrg.js && node viewsScript.js') &&
+        tail -f /dev/null"
+    depends_on:
+      - kafka
+      - postgres
+    environment:
+      - KAFKA_HOST=kafka:9092
+      - DEV_DATABASE_URL=postgres://postgres:postgres@citus_master:5432/notification
+    networks:
+      - elevate_net
+    env_file:
+      - integration_test.notification.env
+
+  mentoring:
+    build: '../../mentoring'
+    container_name: mentoringLatest
+    ports:
+      - '3000:3000'
+    command: >
+      bash -c '
+      echo "Waiting for mentoring service to accept connections...";
+      ./wait-for-it mentoring:3000 --timeout=60 -- echo "mentoring service is ready.";
+
+       echo "Waiting for PostgreSQL to accept connections...";
+      ./wait-for-it postgres:5432 --timeout=60 -- echo "PostgreSQL is ready.";
+
+      echo "Checking if database exists...";
+      if psql -h postgres -U postgres -lqt | cut -d \| -f 1 | grep -qw integration_test_mentoring; then
+      echo "Database exists. Running migrations...";
+      npm run db:migrate && npm run db:seed:all;
+      else
+        echo "Database does not exist. Running db:init...";
+      npm run db:init  && npm run db:seed:all;
+      fi &&
+
+      echo "Starting the application... : ";
+       node app.js &&
+      node scripts/psqlFunction.js &&
+      node scripts/viewsScript.js &&
+      node -r module-alias/register scripts/sessionUploadScript.js;
+
+      tail -f /dev/null'
+    environment:
+      - DEV_DATABASE_URL=postgres://postgres:postgres@postgres:5432/integration_test_mentoring
+      - KAFKA_URL=kafka:9092
+      - REDIS_HOST=redis://redis:6379
+    depends_on:
+      - kafka
+      - redis
+      - postgres
+      - user
+    networks:
+      - elevate_net
+    env_file:
+      - integration_test.mentoring.env
+networks:
+  elevate_net:
+    external: false
+volumes:
+  zookeeper-data:
+  kafka-data:
+  mongo-data:

@@ -283,303 +283,225 @@ const menteeListSchema = {
 						{
 							type: 'object',
 							properties: {
-								id: {
+								key: {
 									type: 'string',
 								},
-								email: {
-									type: 'string',
-								},
-								email_verified: {
-									type: 'string',
-								},
-								name: {
-									type: 'string',
-								},
-								location: {
-									type: 'null',
-								},
-								about: {
-									type: 'null',
-								},
-								share_link: {
-									type: 'null',
-								},
-								status: {
-									type: 'string',
-								},
-								image: {
-									type: 'null',
-								},
-								has_accepted_terms_and_conditions: {
-									type: 'boolean',
-								},
-								languages: {
-									type: 'null',
-								},
-								preferred_language: {
-									type: 'string',
-								},
-								roles: {
-									type: 'array',
-									items: [
-										{
-											type: 'string',
-										},
-										{
-											type: 'string',
-										},
-										{
-											type: 'string',
-										},
-										{
-											type: 'string',
-										},
-										{
-											type: 'string',
-										},
-									],
-								},
-								custom_entity_text: {
-									type: 'null',
-								},
-								created_at: {
-									type: 'string',
-								},
-								updated_at: {
-									type: 'string',
-								},
-								deleted_at: {
-									type: 'null',
-								},
-								organization: {
-									type: 'object',
-									properties: {
-										id: {
-											type: 'string',
-										},
-										name: {
-											type: 'string',
-										},
-										code: {
-											type: 'string',
-										},
-									},
-									required: ['id', 'name', 'code'],
-								},
-								user_roles: {
+								values: {
 									type: 'array',
 									items: [
 										{
 											type: 'object',
 											properties: {
 												id: {
-													type: 'string',
-												},
-												title: {
-													type: 'string',
-												},
-												label: {
-													type: 'string',
-												},
-												user_type: {
 													type: 'integer',
 												},
-												status: {
+												name: {
 													type: 'string',
 												},
-												organization_id: {
+												email: {
 													type: 'string',
 												},
-												visibility: {
-													type: 'string',
-												},
-											},
-											required: [
-												'id',
-												'title',
-												'label',
-												'user_type',
-												'status',
-												'organization_id',
-												'visibility',
-											],
-										},
-										{
-											type: 'object',
-											properties: {
-												id: {
-													type: 'string',
-												},
-												title: {
-													type: 'string',
-												},
-												label: {
-													type: 'string',
-												},
-												user_type: {
-													type: 'integer',
-												},
-												status: {
-													type: 'string',
-												},
-												organization_id: {
-													type: 'string',
-												},
-												visibility: {
-													type: 'string',
-												},
-											},
-											required: [
-												'id',
-												'title',
-												'label',
-												'user_type',
-												'status',
-												'organization_id',
-												'visibility',
-											],
-										},
-										{
-											type: 'object',
-											properties: {
-												id: {
-													type: 'string',
-												},
-												title: {
-													type: 'string',
-												},
-												label: {
+												about: {
 													type: 'null',
 												},
-												user_type: {
-													type: 'integer',
+												image: {
+													type: 'null',
 												},
-												status: {
-													type: 'string',
+												organization: {
+													type: 'object',
+													properties: {
+														id: {
+															type: 'integer',
+														},
+														code: {
+															type: 'string',
+														},
+														name: {
+															type: 'string',
+														},
+													},
+													required: ['id', 'code', 'name'],
 												},
-												organization_id: {
-													type: 'string',
+												designation: {
+													type: 'array',
+													items: [
+														{
+															type: 'object',
+															properties: {
+																value: {
+																	type: 'string',
+																},
+																label: {
+																	type: 'string',
+																},
+															},
+															required: ['value', 'label'],
+														},
+														{
+															type: 'object',
+															properties: {
+																value: {
+																	type: 'string',
+																},
+																label: {
+																	type: 'string',
+																},
+															},
+															required: ['value', 'label'],
+														},
+													],
 												},
-												visibility: {
+												area_of_expertise: {
+													type: 'array',
+													items: [
+														{
+															type: 'object',
+															properties: {
+																value: {
+																	type: 'string',
+																},
+																label: {
+																	type: 'string',
+																},
+															},
+															required: ['value', 'label'],
+														},
+														{
+															type: 'object',
+															properties: {
+																value: {
+																	type: 'string',
+																},
+																label: {
+																	type: 'string',
+																},
+															},
+															required: ['value', 'label'],
+														},
+													],
+												},
+												education_qualification: {
 													type: 'string',
 												},
 											},
 											required: [
 												'id',
-												'title',
-												'label',
-												'user_type',
-												'status',
-												'organization_id',
-												'visibility',
+												'name',
+												'about',
+												'image',
+												'organization',
+												'designation',
+												'area_of_expertise',
+												'education_qualification',
 											],
 										},
 										{
 											type: 'object',
 											properties: {
 												id: {
-													type: 'string',
-												},
-												title: {
-													type: 'string',
-												},
-												label: {
-													type: 'null',
-												},
-												user_type: {
 													type: 'integer',
 												},
-												status: {
+												name: {
 													type: 'string',
 												},
-												organization_id: {
-													type: 'string',
+												about: {
+													type: 'null',
 												},
-												visibility: {
+												image: {
+													type: 'null',
+												},
+												organization: {
+													type: 'object',
+													properties: {
+														id: {
+															type: 'integer',
+														},
+														code: {
+															type: 'string',
+														},
+														name: {
+															type: 'string',
+														},
+													},
+													required: ['id', 'code', 'name'],
+												},
+												designation: {
+													type: 'array',
+													items: [
+														{
+															type: 'object',
+															properties: {
+																value: {
+																	type: 'string',
+																},
+																label: {
+																	type: 'string',
+																},
+															},
+															required: ['value', 'label'],
+														},
+														{
+															type: 'object',
+															properties: {
+																value: {
+																	type: 'string',
+																},
+																label: {
+																	type: 'string',
+																},
+															},
+															required: ['value', 'label'],
+														},
+													],
+												},
+												area_of_expertise: {
+													type: 'array',
+													items: [
+														{
+															type: 'object',
+															properties: {
+																value: {
+																	type: 'string',
+																},
+																label: {
+																	type: 'string',
+																},
+															},
+															required: ['value', 'label'],
+														},
+														{
+															type: 'object',
+															properties: {
+																value: {
+																	type: 'string',
+																},
+																label: {
+																	type: 'string',
+																},
+															},
+															required: ['value', 'label'],
+														},
+													],
+												},
+												education_qualification: {
 													type: 'string',
 												},
 											},
 											required: [
 												'id',
-												'title',
-												'label',
-												'user_type',
-												'status',
-												'organization_id',
-												'visibility',
-											],
-										},
-										{
-											type: 'object',
-											properties: {
-												id: {
-													type: 'string',
-												},
-												title: {
-													type: 'string',
-												},
-												label: {
-													type: 'null',
-												},
-												user_type: {
-													type: 'integer',
-												},
-												status: {
-													type: 'string',
-												},
-												organization_id: {
-													type: 'string',
-												},
-												visibility: {
-													type: 'string',
-												},
-											},
-											required: [
-												'id',
-												'title',
-												'label',
-												'user_type',
-												'status',
-												'organization_id',
-												'visibility',
+												'name',
+												'about',
+												'image',
+												'organization',
+												'designation',
+												'area_of_expertise',
+												'education_qualification',
 											],
 										},
 									],
-								},
-								designation: {
-									type: 'null',
-								},
-								area_of_expertise: {
-									type: 'null',
-								},
-								education_qualification: {
-									type: 'null',
 								},
 							},
-							required: [
-								'id',
-								'email',
-								'email_verified',
-								'name',
-								'location',
-								'about',
-								'share_link',
-								'status',
-								'image',
-								'has_accepted_terms_and_conditions',
-								'languages',
-								'preferred_language',
-								'roles',
-								'custom_entity_text',
-								'created_at',
-								'updated_at',
-								'deleted_at',
-								'organization',
-								'user_roles',
-								'designation',
-								'area_of_expertise',
-								'education_qualification',
-							],
+							required: ['key', 'values'],
 						},
 					],
 				},
@@ -589,8 +511,20 @@ const menteeListSchema = {
 			},
 			required: ['data', 'count'],
 		},
+		meta: {
+			type: 'object',
+			properties: {
+				correlation: {
+					type: 'string',
+				},
+				meetingPlatform: {
+					type: 'string',
+				},
+			},
+			required: ['correlation', 'meetingPlatform'],
+		},
 	},
-	required: ['responseCode', 'message', 'result'],
+	required: ['responseCode', 'message', 'result', 'meta'],
 }
 
 module.exports = {

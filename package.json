@@ -1,0 +1,10 @@
+{
+	"dependencies": {
+		"csv-parser": "^3.0.0",
+		"dotenv": "^16.4.7",
+		"elevate-logger": "^1.0.0",
+		"fast-csv": "^5.0.1",
+		"openai": "^4.68.4",
+		"pg": "^8.12.0"
+	}
+}

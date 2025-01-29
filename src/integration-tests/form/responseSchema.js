@@ -8,42 +8,24 @@ const createSchema = {
 			type: 'string',
 		},
 		result: {
-			type: 'array',
-			items: {},
-		},
-		meta: {
 			type: 'object',
 			properties: {
-				formsVersion: {
-					type: 'array',
-					items: [
-						{
-							type: 'object',
-						},
-					],
+				version: {
+					type: 'integer',
 				},
-			},
-			required: ['formsVersion'],
-		},
-	},
-	required: ['responseCode', 'message', 'result', 'meta'],
-}
-const readSchema = {
-	type: 'object',
-	properties: {
-		responseCode: {
-			type: 'string',
-		},
-		message: {
-			type: 'string',
-		},
-		result: {
-			type: 'object',
-			properties: {
+				id: {
+					type: 'integer',
+				},
+				type: {
+					type: 'string',
+				},
+				sub_type: {
+					type: 'string',
+				},
 				data: {
 					type: 'object',
 					properties: {
-						templateName: {
+						template_name: {
 							type: 'string',
 						},
 						fields: {
@@ -107,38 +89,197 @@ const readSchema = {
 							required: ['controls'],
 						},
 					},
-					required: ['templateName', 'fields'],
+					required: ['template_name', 'fields'],
 				},
-				_id: {
+				organization_id: {
 					type: 'string',
 				},
-				type: {
+				updated_at: {
 					type: 'string',
 				},
-				subType: {
+				created_at: {
 					type: 'string',
 				},
-				action: {
-					type: 'string',
-				},
-				updatedAt: {
-					type: 'string',
-				},
-				createdAt: {
-					type: 'string',
-				},
-				__v: {
-					type: 'integer',
+				deleted_at: {
+					type: 'null',
 				},
 			},
-			required: ['data', '_id', 'type', 'subType', 'action', 'updatedAt', 'createdAt', '__v'],
+			required: [
+				'version',
+				'id',
+				'type',
+				'sub_type',
+				'data',
+				'organization_id',
+				'updated_at',
+				'created_at',
+				'deleted_at',
+			],
 		},
 		meta: {
 			type: 'object',
 			properties: {
 				formsVersion: {
 					type: 'array',
-					items: {},
+					items: [
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+					],
+				},
+				correlation: {
+					type: 'string',
+				},
+				meetingPlatform: {
+					type: 'string',
+				},
+			},
+			required: ['formsVersion', 'correlation', 'meetingPlatform'],
+		},
+	},
+	required: ['responseCode', 'message', 'result', 'meta'],
+}
+const readSchema = {
+	type: 'object',
+	properties: {
+		responseCode: {
+			type: 'string',
+		},
+		message: {
+			type: 'string',
+		},
+		result: {
+			type: 'array',
+			items: [
+				{
+					type: 'object',
+					properties: {
+						id: {
+							type: 'integer',
+						},
+						type: {
+							type: 'string',
+						},
+						version: {
+							type: 'integer',
+						},
+					},
+					required: ['id', 'type', 'version'],
+				},
+			],
+		},
+		meta: {
+			type: 'object',
+			properties: {
+				formsVersion: {
+					type: 'array',
+					items: [
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+					],
+				},
+				correlation: {
+					type: 'string',
 				},
 			},
 			required: ['formsVersion'],

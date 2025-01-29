@@ -10,96 +10,17 @@ const createSchema = {
 		result: {
 			type: 'object',
 			properties: {
-				id: {
+				Id: {
 					type: 'integer',
 				},
-				name: {
+				code: {
 					type: 'string',
-				},
-				question: {
-					type: 'string',
-				},
-				options: {
-					type: 'null',
-				},
-				type: {
-					type: 'string',
-				},
-				rendering_data: {
-					type: 'object',
-					properties: {
-						value: {
-							type: 'string',
-						},
-						class: {
-							type: 'string',
-						},
-						disabled: {
-							type: 'boolean',
-						},
-						noOfstars: {
-							type: 'string',
-						},
-						position: {
-							type: 'string',
-						},
-						validation: {
-							type: 'object',
-							properties: {
-								required: {
-									type: 'boolean',
-								},
-							},
-							required: ['required'],
-						},
-					},
-					required: ['value', 'class', 'disabled', 'noOfstars', 'position', 'validation'],
-				},
-				no_of_stars: {
-					type: 'integer',
 				},
 				status: {
 					type: 'string',
 				},
-				created_by: {
-					type: 'string',
-				},
-				updated_by: {
-					type: 'string',
-				},
-				updated_at: {
-					type: 'string',
-				},
-				created_at: {
-					type: 'string',
-				},
-				category: {
-					type: 'null',
-				},
-				meta: {
-					type: 'null',
-				},
-				deleted_at: {
-					type: 'null',
-				},
 			},
-			required: [
-				'id',
-				'name',
-				'question',
-				'options',
-				'type',
-				'rendering_data',
-				'no_of_stars',
-				'status',
-				'created_by',
-				'updated_by',
-				'updated_at',
-				'created_at',
-				'category',
-				'meta',
-				'deleted_at',
-			],
+			required: ['Id', 'code', 'status'],
 		},
 		meta: {
 			type: 'object',
@@ -271,7 +192,185 @@ const createSchema = {
 	},
 	required: ['responseCode', 'message', 'result', 'meta'],
 }
+
 const updateSchema = {
+	type: 'object',
+	properties: {
+		responseCode: {
+			type: 'string',
+		},
+		message: {
+			type: 'string',
+		},
+		result: {
+			type: 'object',
+			properties: {
+				id: {
+					type: 'integer',
+				},
+				status: {
+					type: 'string',
+				},
+				code: {
+					type: 'string',
+				},
+			},
+			required: ['id', 'status', 'code'],
+		},
+		meta: {
+			type: 'object',
+			properties: {
+				formsVersion: {
+					type: 'array',
+					items: [
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+					],
+				},
+				correlation: {
+					type: 'string',
+				},
+			},
+			required: ['formsVersion'],
+		},
+	},
+	required: ['responseCode', 'message', 'result', 'meta'],
+}
+
+const deleteSchema = {
 	type: 'object',
 	properties: {
 		responseCode: {
@@ -292,8 +391,143 @@ const updateSchema = {
 					items: [
 						{
 							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
 						},
 					],
+				},
+				correlation: {
+					type: 'string',
 				},
 			},
 			required: ['formsVersion'],
@@ -301,7 +535,8 @@ const updateSchema = {
 	},
 	required: ['responseCode', 'message', 'result', 'meta'],
 }
-const readSchema = {
+
+const listSchema = {
 	type: 'object',
 	properties: {
 		responseCode: {
@@ -313,96 +548,76 @@ const readSchema = {
 		result: {
 			type: 'object',
 			properties: {
-				id: {
-					type: 'integer',
-				},
-				name: {
-					type: 'string',
-				},
-				question: {
-					type: 'string',
-				},
-				options: {
-					type: 'null',
-				},
-				type: {
-					type: 'string',
-				},
-				no_of_stars: {
-					type: 'integer',
-				},
-				status: {
-					type: 'string',
-				},
-				category: {
-					type: 'null',
-				},
-				rendering_data: {
-					type: 'object',
-					properties: {
-						value: {
-							type: 'string',
-						},
-						class: {
-							type: 'string',
-						},
-						disabled: {
-							type: 'boolean',
-						},
-						noOfstars: {
-							type: 'string',
-						},
-						position: {
-							type: 'string',
-						},
-						validation: {
+				data: {
+					type: 'array',
+					items: [
+						{
 							type: 'object',
 							properties: {
-								required: {
-									type: 'boolean',
+								id: {
+									type: 'integer',
+								},
+								code: {
+									type: 'string',
+								},
+								status: {
+									type: 'string',
 								},
 							},
-							required: ['required'],
+							required: ['id', 'code', 'status'],
 						},
-					},
-					required: ['value', 'class', 'disabled', 'noOfstars', 'position', 'validation'],
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								code: {
+									type: 'string',
+								},
+								status: {
+									type: 'string',
+								},
+							},
+							required: ['id', 'code', 'status'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								code: {
+									type: 'string',
+								},
+								status: {
+									type: 'string',
+								},
+							},
+							required: ['id', 'code', 'status'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								code: {
+									type: 'string',
+								},
+								status: {
+									type: 'string',
+								},
+							},
+							required: ['id', 'code', 'status'],
+						},
+					],
 				},
-				meta: {
-					type: 'null',
-				},
-				created_by: {
-					type: 'string',
-				},
-				updated_by: {
-					type: 'string',
-				},
-				created_at: {
-					type: 'string',
-				},
-				updated_at: {
-					type: 'string',
-				},
-				deleted_at: {
-					type: 'null',
+				count: {
+					type: 'integer',
 				},
 			},
-			required: [
-				'id',
-				'name',
-				'question',
-				'options',
-				'type',
-				'no_of_stars',
-				'status',
-				'category',
-				'rendering_data',
-				'meta',
-				'created_by',
-				'updated_by',
-				'created_at',
-				'updated_at',
-				'deleted_at',
-			],
+			required: ['data', 'count'],
 		},
 		meta: {
 			type: 'object',
@@ -545,37 +760,21 @@ const readSchema = {
 							},
 							required: ['id', 'type', 'version'],
 						},
-						{
-							type: 'object',
-							properties: {
-								id: {
-									type: 'integer',
-								},
-								type: {
-									type: 'string',
-								},
-								version: {
-									type: 'integer',
-								},
-							},
-							required: ['id', 'type', 'version'],
-						},
 					],
 				},
 				correlation: {
 					type: 'string',
 				},
-				meetingPlatform: {
-					type: 'string',
-				},
 			},
-			required: ['formsVersion', 'correlation', 'meetingPlatform'],
+			required: ['formsVersion'],
 		},
 	},
 	required: ['responseCode', 'message', 'result', 'meta'],
 }
+
 module.exports = {
 	createSchema,
 	updateSchema,
-	readSchema,
+	deleteSchema,
+	listSchema,
 }

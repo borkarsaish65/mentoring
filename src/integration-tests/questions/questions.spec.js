@@ -7,46 +7,55 @@
 
 const commonHelper = require('@commonTests')
 const { faker } = require('@faker-js/faker')
-const questionsData = require('./questionsData')
 const schema = require('./responseSchema')
 
 describe('mentoring/v1/questions', function () {
 	beforeAll(async () => {
-		await commonHelper.logIn()
+		await commonHelper.userlogIn()
 	})
 	it('/create', async () => {
-		let res = await request.post('/mentoring/v1/questions/create').send({
-			question: faker.lorem.sentence(),
-			options: ['1', '2'],
-			deleted: false,
-			responseType: 'radio',
-			value: '1',
-			hint: '',
-		})
-		//console.log(res.body)
+		let res = await createQuestion()
 		expect(res.statusCode).toBe(201)
 		expect(res.body).toMatchSchema(schema.createSchema)
 	})
 	it('/read', async () => {
-		let questionId = await questionsData.insertQuestion()
-		let res = await request.get('/mentoring/v1/questions/read/' + questionId)
-
+		let createdQuestions = await createQuestion()
+		let res = await request.get('/mentoring/v1/questions/read/' + createdQuestions.body.result.id)
 		//console.log(res.body)
+		console.log(' ---------------  -----', JSON.stringify(res.body))
 		expect(res.statusCode).toBe(200)
 		expect(res.body).toMatchSchema(schema.readSchema)
 	})
 	it('/update', async () => {
-		let questionId = await questionsData.insertQuestion()
-		let res = await request.post('/mentoring/v1/questions/update/' + questionId).send({
+		let createdQuestions = await createQuestion()
+		let res = await request.post('/mentoring/v1/questions/update/' + createdQuestions.body.result.id).send({
 			question: faker.lorem.sentence(),
-			options: ['1', '2', '3'],
-			deleted: false,
-			responseType: 'radio',
-			value: '1',
-			hint: 'Answer hint',
 		})
 		//console.log(res.body)
+
 		expect(res.statusCode).toBe(202)
 		expect(res.body).toMatchSchema(schema.updateSchema)
 	})
 })
+
+async function createQuestion() {
+	let res = await request.post('/mentoring/v1/questions/create').send({
+		name: faker.random.alpha(5),
+		question: faker.lorem.sentence(),
+		options: null,
+		type: 'rating',
+		rendering_data: {
+			value: '',
+			class: 'ion-margin',
+			disabled: false,
+			noOfstars: '5',
+			position: 'floating',
+			validation: {
+				required: false,
+			},
+		},
+		no_of_stars: 5,
+		status: 'active',
+	})
+	return res
+}

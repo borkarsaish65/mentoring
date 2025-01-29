@@ -68,7 +68,7 @@ const updateSchema = {
 					type: 'string',
 				},
 				request_type: {
-					type: 'array',
+					type: array,
 					items: [
 						{
 							type: 'string',
@@ -123,6 +123,7 @@ const deleteSchema = {
 }
 
 const listSchema = {
+	$schema: 'http://json-schema.org/draft-04/schema#',
 	type: 'object',
 	properties: {
 		responseCode: {

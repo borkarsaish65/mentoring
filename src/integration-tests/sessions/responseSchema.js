@@ -10,13 +10,46 @@ const createSchema = {
 		result: {
 			type: 'object',
 			properties: {
+				session_reschedule: {
+					type: 'integer',
+				},
+				is_feedback_skipped: {
+					type: 'boolean',
+				},
+				seats_remaining: {
+					type: 'integer',
+				},
+				seats_limit: {
+					type: 'integer',
+				},
+				type: {
+					type: 'object',
+					properties: {
+						value: {
+							type: 'string',
+						},
+						label: {
+							type: 'string',
+						},
+					},
+					required: ['value', 'label'],
+				},
+				id: {
+					type: 'integer',
+				},
 				title: {
 					type: 'string',
 				},
 				description: {
 					type: 'string',
 				},
-				recommendedFor: {
+				start_date: {
+					type: 'string',
+				},
+				end_date: {
+					type: 'string',
+				},
+				recommended_for: {
 					type: 'array',
 					items: [
 						{
@@ -32,6 +65,21 @@ const createSchema = {
 							required: ['value', 'label'],
 						},
 					],
+				},
+				meeting_info: {
+					type: 'object',
+					properties: {
+						link: {
+							type: 'string',
+						},
+						value: {
+							type: 'string',
+						},
+						platform: {
+							type: 'string',
+						},
+					},
+					required: ['link', 'value', 'platform'],
 				},
 				categories: {
 					type: 'array',
@@ -56,16 +104,19 @@ const createSchema = {
 						{
 							type: 'object',
 							properties: {
-								label: {
-									type: 'string',
-								},
 								value: {
 									type: 'string',
 								},
+								label: {
+									type: 'string',
+								},
 							},
-							required: ['label', 'value'],
+							required: ['value', 'label'],
 						},
 					],
+				},
+				time_zone: {
+					type: 'string',
 				},
 				image: {
 					type: 'array',
@@ -75,87 +126,114 @@ const createSchema = {
 						},
 					],
 				},
-				userId: {
+				created_by: {
+					type: 'string',
+				},
+				updated_by: {
+					type: 'string',
+				},
+				mentor_id: {
+					type: 'string',
+				},
+				mentor_name: {
 					type: 'string',
 				},
 				status: {
-					type: 'string',
+					type: 'object',
+					properties: {
+						value: {
+							type: 'string',
+						},
+						label: {
+							type: 'string',
+						},
+					},
+					required: ['value', 'label'],
 				},
-				deleted: {
-					type: 'boolean',
-				},
-				timeZone: {
-					type: 'string',
-				},
-				startDate: {
-					type: 'string',
-				},
-				endDate: {
-					type: 'string',
-				},
-				startDateUtc: {
-					type: 'string',
-				},
-				endDateUtc: {
-					type: 'string',
-				},
-				skippedFeedback: {
-					type: 'boolean',
-				},
-				isStarted: {
-					type: 'boolean',
-				},
-				menteeFeedbackForm: {
-					type: 'string',
-				},
-				mentorFeedbackForm: {
-					type: 'string',
-				},
-				recordingUrl: {
+				meta: {
 					type: 'null',
 				},
-				_id: {
+				mentor_organization_id: {
 					type: 'string',
 				},
-				feedbacks: {
+				visibility: {
+					type: 'string',
+				},
+				visible_to_organizations: {
 					type: 'array',
-					items: {},
+					items: [
+						{
+							type: 'string',
+						},
+					],
 				},
-				updatedAt: {
+				mentee_feedback_question_set: {
 					type: 'string',
 				},
-				createdAt: {
+				mentor_feedback_question_set: {
 					type: 'string',
 				},
-				__v: {
-					type: 'integer',
+				updated_at: {
+					type: 'string',
+				},
+				created_at: {
+					type: 'string',
+				},
+				mentee_password: {
+					type: 'null',
+				},
+				mentor_password: {
+					type: 'null',
+				},
+				started_at: {
+					type: 'null',
+				},
+				share_link: {
+					type: 'null',
+				},
+				completed_at: {
+					type: 'null',
+				},
+				deleted_at: {
+					type: 'null',
 				},
 			},
 			required: [
+				'session_reschedule',
+				'is_feedback_skipped',
+				'seats_remaining',
+				'seats_limit',
+				'type',
+				'id',
 				'title',
 				'description',
-				'recommendedFor',
+				'start_date',
+				'end_date',
+				'recommended_for',
+				'meeting_info',
 				'categories',
 				'medium',
+				'time_zone',
 				'image',
-				'userId',
+				'created_by',
+				'updated_by',
+				'mentor_id',
+				'mentor_name',
 				'status',
-				'deleted',
-				'timeZone',
-				'startDate',
-				'endDate',
-				'startDateUtc',
-				'endDateUtc',
-				'skippedFeedback',
-				'isStarted',
-				'menteeFeedbackForm',
-				'mentorFeedbackForm',
-				'recordingUrl',
-				'_id',
-				'feedbacks',
-				'updatedAt',
-				'createdAt',
-				'__v',
+				'meta',
+				'mentor_organization_id',
+				'visibility',
+				'visible_to_organizations',
+				'mentee_feedback_question_set',
+				'mentor_feedback_question_set',
+				'updated_at',
+				'created_at',
+				'mentee_password',
+				'mentor_password',
+				'started_at',
+				'share_link',
+				'completed_at',
+				'deleted_at',
 			],
 		},
 		meta: {
@@ -163,10 +241,167 @@ const createSchema = {
 			properties: {
 				formsVersion: {
 					type: 'array',
-					items: {},
+					items: [
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+					],
+				},
+				correlation: {
+					type: 'string',
+				},
+				meetingPlatform: {
+					type: 'string',
 				},
 			},
-			required: ['formsVersion'],
+			required: ['formsVersion', 'correlation', 'meetingPlatform'],
 		},
 	},
 	required: ['responseCode', 'message', 'result', 'meta'],
@@ -272,14 +507,86 @@ const listSchema = {
 						{
 							type: 'object',
 							properties: {
-								_id: {
-									type: 'string',
+								id: {
+									type: 'integer',
 								},
 								title: {
 									type: 'string',
 								},
 								description: {
 									type: 'string',
+								},
+								start_date: {
+									type: 'string',
+								},
+								end_date: {
+									type: 'string',
+								},
+								meta: {
+									type: 'null',
+								},
+								recommended_for: {
+									type: 'array',
+									items: [
+										{
+											type: 'object',
+											properties: {
+												value: {
+													type: 'string',
+												},
+												label: {
+													type: 'string',
+												},
+											},
+											required: ['value', 'label'],
+										},
+									],
+								},
+								medium: {
+									type: 'array',
+									items: [
+										{
+											type: 'object',
+											properties: {
+												value: {
+													type: 'string',
+												},
+												label: {
+													type: 'string',
+												},
+											},
+											required: ['value', 'label'],
+										},
+									],
+								},
+								categories: {
+									type: 'array',
+									items: [
+										{
+											type: 'object',
+											properties: {
+												value: {
+													type: 'string',
+												},
+												label: {
+													type: 'string',
+												},
+											},
+											required: ['value', 'label'],
+										},
+									],
+								},
+								status: {
+									type: 'object',
+									properties: {
+										value: {
+											type: 'string',
+										},
+										label: {
+											type: 'string',
+										},
+									},
+									required: ['value', 'label'],
 								},
 								image: {
 									type: 'array',
@@ -289,44 +596,76 @@ const listSchema = {
 										},
 									],
 								},
-								userId: {
+								mentor_id: {
 									type: 'string',
 								},
-								status: {
+								visibility: {
 									type: 'string',
 								},
-								startDate: {
+								mentor_organization_id: {
 									type: 'string',
 								},
-								endDate: {
+								created_at: {
 									type: 'string',
 								},
-								startDateUtc: {
+								mentor_name: {
 									type: 'string',
 								},
-								endDateUtc: {
-									type: 'string',
+								meeting_info: {
+									type: 'object',
+									properties: {
+										value: {
+											type: 'string',
+										},
+										platform: {
+											type: 'string',
+										},
+									},
+									required: ['value', 'platform'],
 								},
-								createdAt: {
-									type: 'string',
+								is_enrolled: {
+									type: 'boolean',
 								},
-								mentorName: {
-									type: 'string',
+								organization: {
+									type: 'object',
+									properties: {
+										id: {
+											type: 'string',
+										},
+										name: {
+											type: 'string',
+										},
+										code: {
+											type: 'string',
+										},
+									},
+									required: ['id', 'name', 'code'],
+								},
+								index_number: {
+									type: 'integer',
 								},
 							},
 							required: [
-								'_id',
+								'id',
 								'title',
 								'description',
-								'image',
-								'userId',
+								'start_date',
+								'end_date',
+								'meta',
+								'recommended_for',
+								'medium',
+								'categories',
 								'status',
-								'startDate',
-								'endDate',
-								'startDateUtc',
-								'endDateUtc',
-								'createdAt',
-								'mentorName',
+								'image',
+								'mentor_id',
+								'visibility',
+								'mentor_organization_id',
+								'created_at',
+								'mentor_name',
+								'meeting_info',
+								'is_enrolled',
+								'organization',
+								'index_number',
 							],
 						},
 					],
@@ -342,10 +681,167 @@ const listSchema = {
 			properties: {
 				formsVersion: {
 					type: 'array',
-					items: {},
+					items: [
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+					],
+				},
+				correlation: {
+					type: 'string',
+				},
+				meetingPlatform: {
+					type: 'string',
 				},
 			},
-			required: ['formsVersion'],
+			required: ['formsVersion', 'correlation', 'meetingPlatform'],
 		},
 	},
 	required: ['responseCode', 'message', 'result', 'meta'],
@@ -362,8 +858,8 @@ const detailsSchema = {
 		result: {
 			type: 'object',
 			properties: {
-				_id: {
-					type: 'string',
+				id: {
+					type: 'integer',
 				},
 				title: {
 					type: 'string',
@@ -371,7 +867,7 @@ const detailsSchema = {
 				description: {
 					type: 'string',
 				},
-				recommendedFor: {
+				recommended_for: {
 					type: 'array',
 					items: [
 						{
@@ -411,14 +907,14 @@ const detailsSchema = {
 						{
 							type: 'object',
 							properties: {
-								label: {
-									type: 'string',
-								},
 								value: {
 									type: 'string',
 								},
+								label: {
+									type: 'string',
+								},
 							},
-							required: ['label', 'value'],
+							required: ['value', 'label'],
 						},
 					],
 				},
@@ -430,92 +926,178 @@ const detailsSchema = {
 						},
 					],
 				},
-				userId: {
+				mentor_id: {
 					type: 'string',
 				},
-				status: {
-					type: 'string',
-				},
-				deleted: {
-					type: 'boolean',
-				},
-				timeZone: {
-					type: 'string',
-				},
-				startDate: {
-					type: 'string',
-				},
-				endDate: {
-					type: 'string',
-				},
-				startDateUtc: {
-					type: 'string',
-				},
-				endDateUtc: {
-					type: 'string',
-				},
-				skippedFeedback: {
-					type: 'boolean',
-				},
-				isStarted: {
-					type: 'boolean',
-				},
-				menteeFeedbackForm: {
-					type: 'string',
-				},
-				mentorFeedbackForm: {
-					type: 'string',
-				},
-				recordingUrl: {
-					type: 'null',
-				},
-				feedbacks: {
-					type: 'array',
-					items: {},
-				},
-				updatedAt: {
-					type: 'string',
-				},
-				createdAt: {
-					type: 'string',
-				},
-				__v: {
+				session_reschedule: {
 					type: 'integer',
 				},
-				isEnrolled: {
+				status: {
+					type: 'object',
+					properties: {
+						value: {
+							type: 'string',
+						},
+						label: {
+							type: 'string',
+						},
+					},
+					required: ['value', 'label'],
+				},
+				time_zone: {
+					type: 'string',
+				},
+				start_date: {
+					type: 'string',
+				},
+				end_date: {
+					type: 'string',
+				},
+				started_at: {
+					type: 'null',
+				},
+				completed_at: {
+					type: 'null',
+				},
+				is_feedback_skipped: {
 					type: 'boolean',
 				},
-				mentorName: {
+				mentee_feedback_question_set: {
 					type: 'string',
+				},
+				mentor_feedback_question_set: {
+					type: 'string',
+				},
+				meeting_info: {
+					type: 'object',
+					properties: {
+						link: {
+							type: 'string',
+						},
+						value: {
+							type: 'string',
+						},
+						platform: {
+							type: 'string',
+						},
+					},
+					required: ['link', 'value', 'platform'],
+				},
+				meta: {
+					type: 'null',
+				},
+				visibility: {
+					type: 'string',
+				},
+				visible_to_organizations: {
+					type: 'array',
+					items: [
+						{
+							type: 'string',
+						},
+					],
+				},
+				mentor_organization_id: {
+					type: 'string',
+				},
+				seats_remaining: {
+					type: 'integer',
+				},
+				seats_limit: {
+					type: 'integer',
+				},
+				type: {
+					type: 'object',
+					properties: {
+						value: {
+							type: 'string',
+						},
+						label: {
+							type: 'string',
+						},
+					},
+					required: ['value', 'label'],
+				},
+				mentor_name: {
+					type: 'string',
+				},
+				created_by: {
+					type: 'string',
+				},
+				updated_by: {
+					type: 'string',
+				},
+				created_at: {
+					type: 'string',
+				},
+				updated_at: {
+					type: 'string',
+				},
+				deleted_at: {
+					type: 'null',
+				},
+				is_enrolled: {
+					type: 'boolean',
+				},
+				is_assigned: {
+					type: 'boolean',
+				},
+				organization: {
+					type: 'object',
+					properties: {
+						id: {
+							type: 'string',
+						},
+						name: {
+							type: 'string',
+						},
+						code: {
+							type: 'string',
+						},
+					},
+					required: ['id', 'name', 'code'],
+				},
+				mentor_designation: {
+					type: 'null',
 				},
 			},
 			required: [
-				'_id',
+				'id',
 				'title',
 				'description',
-				'recommendedFor',
+				'recommended_for',
 				'categories',
 				'medium',
 				'image',
-				'userId',
+				'mentor_id',
+				'session_reschedule',
 				'status',
-				'deleted',
-				'timeZone',
-				'startDate',
-				'endDate',
-				'startDateUtc',
-				'endDateUtc',
-				'skippedFeedback',
-				'isStarted',
-				'menteeFeedbackForm',
-				'mentorFeedbackForm',
-				'recordingUrl',
-				'feedbacks',
-				'updatedAt',
-				'createdAt',
-				'__v',
-				'isEnrolled',
-				'mentorName',
+				'time_zone',
+				'start_date',
+				'end_date',
+				'started_at',
+				'completed_at',
+				'is_feedback_skipped',
+				'mentee_feedback_question_set',
+				'mentor_feedback_question_set',
+				'meeting_info',
+				'meta',
+				'visibility',
+				'visible_to_organizations',
+				'mentor_organization_id',
+				'seats_remaining',
+				'seats_limit',
+				'type',
+				'mentor_name',
+				'created_by',
+				'updated_by',
+				'created_at',
+				'updated_at',
+				'deleted_at',
+				'is_enrolled',
+				'is_assigned',
+				'organization',
+				'mentor_designation',
 			],
 		},
 		meta: {
@@ -523,10 +1105,167 @@ const detailsSchema = {
 			properties: {
 				formsVersion: {
 					type: 'array',
-					items: {},
+					items: [
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+						{
+							type: 'object',
+							properties: {
+								id: {
+									type: 'integer',
+								},
+								type: {
+									type: 'string',
+								},
+								version: {
+									type: 'integer',
+								},
+							},
+							required: ['id', 'type', 'version'],
+						},
+					],
+				},
+				correlation: {
+					type: 'string',
+				},
+				meetingPlatform: {
+					type: 'string',
 				},
 			},
-			required: ['formsVersion'],
+			required: ['formsVersion', 'correlation', 'meetingPlatform'],
 		},
 	},
 	required: ['responseCode', 'message', 'result', 'meta'],
@@ -642,6 +1381,39 @@ const unenrollSchema = {
 	required: ['responseCode', 'message', 'result', 'meta'],
 }
 
+const completedSchema = {
+	type: 'object',
+	properties: {
+		responseCode: {
+			type: 'string',
+		},
+		message: {
+			type: 'string',
+		},
+		result: {
+			type: 'array',
+			items: {},
+		},
+		meta: {
+			type: 'object',
+			properties: {
+				formsVersion: {
+					type: 'array',
+					items: {},
+				},
+				correlation: {
+					type: 'string',
+				},
+				meetingPlatform: {
+					type: 'string',
+				},
+			},
+			required: ['formsVersion', 'correlation', 'meetingPlatform'],
+		},
+	},
+	required: ['responseCode', 'message', 'result', 'meta'],
+}
+
 module.exports = {
 	createSchema,
 	deleteSchema,
@@ -653,4 +1425,5 @@ module.exports = {
 	updateRecordingUrlSchema,
 	enrollSchema,
 	unenrollSchema,
+	completedSchema,
 }

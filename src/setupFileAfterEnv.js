@@ -1,27 +1,27 @@
-const { Client } = require('pg')
+// const { Client } = require('pg')
 const { matchers } = require('jest-json-schema')
-const { Pool } = require('pg')
-const pool = new Pool()
+// const { Pool } = require('pg')
+// const pool = new Pool()
 
 expect.extend(matchers)
 
-//PostgreSQL connection string
-const connectionString = 'postgres://postgres:postgres@localhost:5432/mentoring-local'
+// //PostgreSQL connection string
+// const connectionString = 'postgres://postgres:postgres@localhost:5432/integration_test_mentoring'
 
-// Connect to the PostgreSQL database using the connection string
-const db = new Client({
-	connectionString: connectionString,
-})
+// // Connect to the PostgreSQL database using the connection string
+// const db = new Client({
+// 	connectionString: connectionString,
+// })
 
-db.connect((err) => {
-	if (err) {
-		console.error('Database connection error:', err)
-	} else {
-		console.log('Connected to DB')
-	}
-})
+// db.connect((err) => {
+// 	if (err) {
+// 		console.error('Database connection error:', err)
+// 	} else {
+// 		console.log('Connected to DB')
+// 	}
+// })
 
-global.db = db
+// global.db = db
 
 beforeAll(async () => {
 	// You can add any setup code you need here
@@ -33,6 +33,6 @@ afterAll(async () => {
 	} catch (error) {
 		console.error(error)
 	} finally {
-		db.end() // Close the PostgreSQL connection
+		// db.end() // Close the PostgreSQL connection
 	}
 })
