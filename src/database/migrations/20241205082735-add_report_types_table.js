@@ -7,12 +7,12 @@ module.exports = {
 			id: {
 				allowNull: false,
 				autoIncrement: true,
+				primaryKey: true,
 				type: Sequelize.INTEGER,
 			},
 			title: {
 				type: Sequelize.STRING,
-				primaryKey: true,
-				unique: true,
+				allowNull: false,
 			},
 			created_at: {
 				allowNull: false,
@@ -30,7 +30,10 @@ module.exports = {
 		})
 
 		await queryInterface.addIndex('report_types', ['title'], {
-			unique: true, // This ensures that `title` remains unique and optimized
+			unique: true,
+			where: {
+				deleted_at: null,
+			},
 		})
 	},
 
