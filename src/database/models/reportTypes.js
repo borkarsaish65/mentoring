@@ -8,11 +8,11 @@ module.exports = (sequelize, DataTypes) => {
 				type: DataTypes.INTEGER,
 				allowNull: false,
 				autoIncrement: true,
+				primaryKey: true,
 			},
 			title: {
 				type: DataTypes.STRING,
-				primaryKey: true,
-				unique: true,
+				allowNull: false,
 			},
 			created_at: {
 				type: DataTypes.DATE,
@@ -37,6 +37,9 @@ module.exports = (sequelize, DataTypes) => {
 				{
 					unique: true,
 					fields: ['title'],
+					where: {
+						deleted_at: null, // Unique only when deleted_at is NULL
+					},
 				},
 			],
 		}
