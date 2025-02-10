@@ -8,7 +8,7 @@ module.exports = {
 				{
 					code: 'reports_data_permission',
 					module: 'reports',
-					request_type: ['GET'],
+					request_type: ['POST'],
 					api_path: '/mentoring/v1/reports/reportData',
 					status: 'ACTIVE',
 					created_at: new Date(),
