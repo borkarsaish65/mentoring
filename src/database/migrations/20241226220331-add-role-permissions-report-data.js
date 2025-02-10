@@ -6,7 +6,7 @@ require('dotenv').config()
 const common = require('@constants/common')
 const Permissions = require('@database/models/index').Permission
 
-const getPermissionId = async (module, request_type, api_path) => {
+const POSTPermissionId = async (module, request_type, api_path) => {
 	try {
 		const permission = await Permissions.findOne({
 			where: { module, request_type, api_path },
@@ -26,9 +26,9 @@ module.exports = {
 			const rolePermissionsData = [
 				{
 					role_title: common.ORG_ADMIN_ROLE,
-					permission_id: await getPermissionId('reports', ['GET'], '/mentoring/v1/reports/reportData'),
+					permission_id: await POSTPermissionId('reports', ['POST'], '/mentoring/v1/reports/reportData'),
 					module: 'reports',
-					request_type: ['GET'],
+					request_type: ['POST'],
 					api_path: '/mentoring/v1/reports/reportData',
 					created_at: new Date(),
 					updated_at: new Date(),
@@ -36,9 +36,9 @@ module.exports = {
 				},
 				{
 					role_title: common.SESSION_MANAGER_ROLE,
-					permission_id: await getPermissionId('reports', ['GET'], '/mentoring/v1/reports/reportData'),
+					permission_id: await POSTPermissionId('reports', ['POST'], '/mentoring/v1/reports/reportData'),
 					module: 'reports',
-					request_type: ['GET'],
+					request_type: ['POST'],
 					api_path: '/mentoring/v1/reports/reportData',
 					created_at: new Date(),
 					updated_at: new Date(),
@@ -46,9 +46,9 @@ module.exports = {
 				},
 				{
 					role_title: common.MENTEE_ROLE,
-					permission_id: await getPermissionId('reports', ['GET'], '/mentoring/v1/reports/reportData'),
+					permission_id: await POSTPermissionId('reports', ['POST'], '/mentoring/v1/reports/reportData'),
 					module: 'reports',
-					request_type: ['GET'],
+					request_type: ['POST'],
 					api_path: '/mentoring/v1/reports/reportData',
 					created_at: new Date(),
 					updated_at: new Date(),
@@ -56,9 +56,9 @@ module.exports = {
 				},
 				{
 					role_title: common.MENTOR_ROLE,
-					permission_id: await getPermissionId('reports', ['GET'], '/mentoring/v1/reports/reportData'),
+					permission_id: await POSTPermissionId('reports', ['POST'], '/mentoring/v1/reports/reportData'),
 					module: 'reports',
-					request_type: ['GET'],
+					request_type: ['POST'],
 					api_path: '/mentoring/v1/reports/reportData',
 					created_at: new Date(),
 					updated_at: new Date(),
