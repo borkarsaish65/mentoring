@@ -12,7 +12,7 @@
 				"type": "GET",
 				"functionName":"mentorDetails"
 
-			},
+			}
 		},
 		{
 			"sourceRoute": "/scheduler/jobs/create",
