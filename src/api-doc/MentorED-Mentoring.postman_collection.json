@@ -2187,6 +2187,25 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "User details",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-auth-token",
+								"value": "bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{MentoringBaseUrl}}interface/v1/profile/get/312",
+							"host": ["{{MentoringBaseUrl}}interface"],
+							"path": ["v1", "profile", "get", "312"]
+						}
+					},
+					"response": []
 				}
 			]
 		},
