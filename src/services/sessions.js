@@ -97,7 +97,7 @@ module.exports = class SessionsHelper {
 				})
 			}
 
-			const mentorDetails = await mentorExtensionQueries.getMentorExtension(mentorIdToCheck)
+			const mentorDetails = await mentorExtensionQueries.getMentorExtension(mentorIdToCheck, '', true)
 			if (!mentorDetails) {
 				return responses.failureResponse({
 					message: 'INVALID_PERMISSION',
@@ -368,6 +368,13 @@ module.exports = class SessionsHelper {
 					await kafkaCommunication.pushEmailToKafka(payload)
 				}
 			}
+
+			//const mentorDetails = await mentorExtensionQueries.getMentorExtension(data.mentor_id)
+			const sessionDetails = processDbResponse
+			sessionDetails.mentor = mentorDetails
+			sessionDetails.organization = userOrgDetails.data.result
+			console.log('sessionDetails::::::::::::::', sessionDetails)
+			await kafkaCommunication.pushSessionToKafka(sessionDetails)
 
 			return responses.successResponse({
 				statusCode: httpStatusCode.created,

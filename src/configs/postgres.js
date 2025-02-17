@@ -27,7 +27,6 @@ module.exports = {
 			underscored: true,
 			freezeTableName: true,
 			paranoid: true,
-			syncOnAssociation: true,
 			charset: 'utf8',
 			collate: 'utf8_general_ci',
 			timestamps: true,

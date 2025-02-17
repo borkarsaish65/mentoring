@@ -48,7 +48,18 @@ const pushPayloadToKafka = async (payload) => {
 	}
 }
 
+const pushSessionToKafka = async (message) => {
+	try {
+		console.log('pushSessionToKafka')
+		const payload = { topic: process.env.SESSION_KAFKA_TOPIC, messages: [{ value: JSON.stringify(message) }] }
+		return await pushPayloadToKafka(payload)
+	} catch (error) {
+		throw error
+	}
+}
+
 module.exports = {
 	pushEmailToKafka,
 	clearInternalCache,
+	pushSessionToKafka,
 }
