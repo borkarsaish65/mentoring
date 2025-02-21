@@ -79,6 +79,17 @@ module.exports = class MenteesHelper {
 		const profileMandatoryFields = await utils.validateProfileData(processDbResponse, validationData)
 		menteeDetails.data.result.profile_mandatory_fields = profileMandatoryFields
 
+		if(!menteeDetails.data.result.organization){
+			    const orgDetails = await organisationExtensionQueries.findOne(
+				{ organization_id: orgId },
+				{ attributes: ['name'] }
+			    )
+			    menteeDetails.data.result["organization"] = {
+					"id": orgId,
+					"name": orgDetails.name
+			     }
+				
+		}
 		return responses.successResponse({
 			statusCode: httpStatusCode.ok,
 			message: 'PROFILE_FTECHED_SUCCESSFULLY',
