@@ -159,18 +159,18 @@ module.exports = {
 			{
 				report_code: 'mentee_session_details',
 				query: `SELECT
-                Session.title AS ""sessions_title"",
-                ue.name AS ""sessions_created_by"",
-                Session.mentor_name AS ""mentor_name"",
-                TO_TIMESTAMP(Session.start_date)::DATE AS ""date_of_session"",
-                Session.type AS ""session_type"",
-                ARRAY_TO_STRING(Session.categories, ', ') AS ""categories"",
-                ARRAY_TO_STRING(Session.recommended_for, ', ') AS ""recommended_for"",
+                Session.title AS "sessions_title",
+                ue.name AS "sessions_created_by",
+                Session.mentor_name AS "mentor_name",
+                TO_TIMESTAMP(Session.start_date)::DATE AS "date_of_session",
+                Session.type AS "session_type",
+                ARRAY_TO_STRING(Session.categories, ', ') AS "categories",
+                ARRAY_TO_STRING(Session.recommended_for, ', ') AS "recommended_for",
                 CASE
                     WHEN sa.joined_at IS NOT NULL THEN 'Yes'
                     ELSE 'No'
-                END AS ""session_attended"",
-                ROUND(EXTRACT(EPOCH FROM (TO_TIMESTAMP(Session.end_date) - TO_TIMESTAMP(Session.start_date))) / 60) AS ""duration_of_sessions_attended_in_minutes""
+                END AS "session_attended",
+                ROUND(EXTRACT(EPOCH FROM (TO_TIMESTAMP(Session.end_date) - TO_TIMESTAMP(Session.start_date))) / 60) AS "duration_of_sessions_attended_in_minutes"
             FROM (
                 SELECT *
                 FROM public.sessions
@@ -332,8 +332,8 @@ module.exports = {
                         (so.type = 'CREATOR' OR so.type = 'MENTOR')
                         AND (
                             :session_type = 'All'
-                            OR (:session_type = 'PUBLIC' AND session.type = 'PUBLIC')
-                            OR (:session_type = 'PRIVATE' AND session.type = 'PRIVATE')
+                            OR (:session_type = 'Public' AND session.type = 'PUBLIC')
+                            OR (:session_type = 'Private' AND session.type = 'PRIVATE')
                         )
                         AND (
                             (session.created_by!= :userId AND session.mentor_id = :userId)
@@ -348,7 +348,7 @@ module.exports = {
                     WHEN (
                         (so.type = 'CREATOR' OR so.type = 'MENTOR')
                         AND session.type = 'PUBLIC'
-                        AND (:session_type = 'All' OR :session_type = 'PUBLIC')
+                        AND (:session_type = 'All' OR :session_type = 'Public')
                         AND (
                             (session.created_by!= :userId AND session.mentor_id = :userId)
                             OR (session.created_by = :userId AND session.mentor_id = :userId)
@@ -362,7 +362,7 @@ module.exports = {
                     WHEN (
                         (so.type = 'CREATOR' OR so.type = 'MENTOR')
                         AND session.type = 'PRIVATE'
-                        AND (:session_type = 'All' OR :session_type = 'PRIVATE')
+                        AND (:session_type = 'All' OR :session_type = 'Private')
                         AND (
                             (session.created_by!= :userId AND session.mentor_id = :userId)
                             OR (session.created_by = :userId AND session.mentor_id = :userId)
@@ -378,8 +378,8 @@ module.exports = {
                         AND session.status = 'COMPLETED'
                         AND (
                             :session_type = 'All'
-                            OR (:session_type = 'PUBLIC' AND session.type = 'PUBLIC')
-                            OR (:session_type = 'PRIVATE' AND session.type = 'PRIVATE')
+                            OR (:session_type = 'Public' AND session.type = 'PUBLIC')
+                            OR (:session_type = 'Private' AND session.type = 'PRIVATE')
                         )
                     )
                     THEN session.id
@@ -391,7 +391,7 @@ module.exports = {
                         so.type = 'MENTOR'
                         AND session.status = 'COMPLETED'
                         AND session.type = 'PUBLIC'
-                        AND (:session_type = 'All' OR :session_type = 'PUBLIC')
+                        AND (:session_type = 'All' OR :session_type = 'Public')
                     )
                     THEN session.id
                 END) AS public_sessions_conducted,
@@ -402,7 +402,7 @@ module.exports = {
                         so.type = 'MENTOR'
                         AND session.status = 'COMPLETED'
                         AND session.type = 'PRIVATE'
-                        AND (:session_type = 'All' OR :session_type = 'PRIVATE')
+                        AND (:session_type = 'All' OR :session_type = 'Private')
                     )
                     THEN session.id
                 END) AS private_sessions_conducted
@@ -428,13 +428,13 @@ module.exports = {
 			{
 				report_code: 'mentoring_session_details',
 				query: `SELECT
-                session.title AS ""sessions_title"",
-                ue.name AS ""sessions_created_by"",
-                session.seats_limit - session.seats_remaining AS ""number_of_mentees"",
-                TO_TIMESTAMP(session.start_date)::DATE AS ""date_of_session"",
-                session.type AS ""session_type"",
-                CASE WHEN session.started_at IS NOT NULL THEN 'Yes' ELSE 'No' END AS ""session_conducted"",
-                ROUND(EXTRACT(EPOCH FROM (TO_TIMESTAMP(session.end_date) - TO_TIMESTAMP(session.start_date))) / 60) AS ""duration_of_sessions_attended_in_minutes""
+                session.title AS "sessions_title",
+                ue.name AS "sessions_created_by",
+                session.seats_limit - session.seats_remaining AS "number_of_mentees",
+                TO_TIMESTAMP(session.start_date)::DATE AS "date_of_session",
+                session.type AS "session_type",
+                CASE WHEN session.started_at IS NOT NULL THEN 'Yes' ELSE 'No' END AS "session_conducted",
+                ROUND(EXTRACT(EPOCH FROM (TO_TIMESTAMP(session.end_date) - TO_TIMESTAMP(session.start_date))) / 60) AS "duration_of_sessions_attended_in_minutes"
             FROM
                 (SELECT * FROM public.sessions WHERE start_date > :start_date AND end_date < :end_date) AS session
             JOIN
@@ -449,7 +449,7 @@ module.exports = {
                         WHEN :session_type = 'PRIVATE' THEN session.type = 'PRIVATE'
                         ELSE TRUE
                     END
-                )"`,
+                )`,
 				organization_id: defaultOrgId,
 				status: 'ACTIVE',
 				created_at: Sequelize.literal('CURRENT_TIMESTAMP'),
@@ -623,14 +623,14 @@ module.exports = {
 			{
 				report_code: 'session_manger_session_details',
 				query: `SELECT
-                subquery.""mentor_name"" ,
-                subquery.""number_of_mentoring_sessions"",
-                subquery.""hours_of_mentoring_sessions"",
-                subquery.""avg_mentor_rating""
+                subquery."mentor_name" ,
+                subquery."number_of_mentoring_sessions",
+                subquery."hours_of_mentoring_sessions",
+                subquery."avg_mentor_rating"
             FROM (
                 SELECT
-                    session.mentor_name AS ""mentor_name"",
-                    COUNT(*) OVER (PARTITION BY so.user_id) AS ""number_of_mentoring_sessions"",
+                    session.mentor_name AS "mentor_name",
+                    COUNT(*) OVER (PARTITION BY so.user_id) AS "number_of_mentoring_sessions",
                     CASE
                         WHEN
                             ROUND(SUM(EXTRACT(EPOCH FROM (session.completed_at - session.started_at))) / 3600.0) = FLOOR(SUM(EXTRACT(EPOCH FROM (session.completed_at - session.started_at))) / 3600.0)
@@ -638,8 +638,8 @@ module.exports = {
                             CAST(FLOOR(SUM(EXTRACT(EPOCH FROM (session.completed_at - session.started_at))) / 3600.0) AS TEXT)
                         ELSE
                             CAST(ROUND(SUM(EXTRACT(EPOCH FROM (session.completed_at - session.started_at))) / 3600.0, 1) AS TEXT)
-                    END AS ""hours_of_mentoring_sessions"",
-                    COALESCE(CAST(ue.rating ->> 'average' AS NUMERIC), 0) AS ""avg_mentor_rating""
+                    END AS "hours_of_mentoring_sessions",
+                    COALESCE(CAST(ue.rating ->> 'average' AS NUMERIC), 0) AS "avg_mentor_rating"
                 FROM
                     (SELECT * FROM public.sessions WHERE created_by = :userId AND started_at IS NOT NULL AND completed_at IS NOT NULL AND start_date > :start_date AND end_date < :end_date AND (
                         CASE
@@ -649,7 +649,7 @@ module.exports = {
                             ELSE TRUE
                         END
                     )) AS session
-                JOIN (SELECT DISTINCT session_id, user_id FROM public.session_ownerships WHERE type IN ('CREATOR', 'MENTOR')) AS so ON session.id = so.session_id                
+                JOIN (SELECT DISTINCT on (session_id, user_id) * FROM public.session_ownerships WHERE type IN ('CREATOR', 'MENTOR')) AS so ON session.id = so.session_id                
                 LEFT JOIN
                     public.user_extensions AS ue ON so.user_id = ue.user_id
                 GROUP BY
