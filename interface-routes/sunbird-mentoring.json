@@ -2823,13 +2823,6 @@
 							"targetField": "mentoring.user_roles[]"
 						}
 					]
-                },
-                {
-					"service": "user",
-					"basePackageName": "mentoring",
-                    "packageName": "sunbird-mentoring",
-                    "targetBody": [],
-                    "responseBody": []
                 }
             ]
         }
