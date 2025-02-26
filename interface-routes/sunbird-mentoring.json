@@ -2809,9 +2809,7 @@
             "type": "GET",
             "priority": "MUST_HAVE",
             "inSequence": true,
-	    "orchestrated": false,
-            "requiresCustomHandling": true,
-	    "service": "mentoring",
+            "orchestrated": true,
             "responseMessage": "Profile fetched successfully.",
             "targetPackages": [
                 {
