@@ -704,6 +704,547 @@ function convertExpiryTimeToSeconds(expiryTime) {
 	}
 }
 
+function convertEntitiesForFilter(entityTypes) {
+	const result = {}
+
+	entityTypes.forEach((entityType) => {
+		const key = entityType.value
+
+		if (!result[key]) {
+			result[key] = []
+		}
+
+		const newObj = {
+			id: entityType.id,
+			label: entityType.label,
+			value: entityType.value,
+			parent_id: entityType.parent_id,
+			organization_id: entityType.organization_id,
+			entities: entityType.entities || [],
+		}
+
+		result[key].push(newObj)
+	})
+	return result
+}
+
+function filterEntitiesBasedOnParent(data, defaultOrgId, doNotRemoveDefaultOrg) {
+	let result = {}
+
+	for (let key in data) {
+		let countWithParentId = 0
+		let countOfEachKey = data[key].length
+		data[key].forEach((obj) => {
+			if (obj.parent_id !== null && obj.organization_id != defaultOrgId) {
+				countWithParentId++
+			}
+		})
+
+		let outputArray = data[key]
+		if (countOfEachKey > 1 && countWithParentId == countOfEachKey - 1 && !doNotRemoveDefaultOrg) {
+			outputArray = data[key].filter((obj) => !(obj.organization_id === defaultOrgId && obj.parent_id === null))
+		}
+
+		result[key] = outputArray
+	}
+	return result
+}
+
+function convertToTitleCase(str) {
+	return str.toLowerCase().replace(/^\w/, (c) => c.toUpperCase())
+}
+
+function removeLimitAndOffset(sql) {
+	return sql.replace(/\s*LIMIT\s+\S+\s+OFFSET\s+\S+/, '')
+}
+
+const generateFilters = (data, entityTypeKeys, defaultValueKeys, columnConfigs) => {
+	const filters = {}
+
+	const entityTypeKeySet = entityTypeKeys
+		? new Set(entityTypeKeys.split(',')) // Convert entityTypeKeys to a Set if provided
+		: null // Set to null if not provided
+
+	const defaultValueKeySet = defaultValueKeys
+		? new Set(defaultValueKeys.split(',')) // Convert defaultValueKeys to a Set if provided
+		: null // Set to null if not provided
+
+	// Loop through keys in the first item of data
+	for (const key in data[0]) {
+		if (!entityTypeKeySet || !entityTypeKeySet.has(key)) {
+			if (defaultValueKeySet && defaultValueKeySet.has(key)) {
+				const columnConfig = columnConfigs.find((col) => col.key === key)
+				if (columnConfig && columnConfig.defaultValues) {
+					filters[key] = columnConfig.defaultValues.map(({ value, label }) => ({
+						value: value, // Use the value directly from the defaultValues object
+						label: ['<=', '>='].includes(columnConfig.filterType)
+							? `${columnConfig.filterType} ${label}` // Add filterType to label if it's '<=' or '>='
+							: label, // Otherwise, just use the label
+					}))
+				} else {
+					// If no defaultValues found, use unique values from data
+					const uniqueValues = [...new Set(data.map((item) => item[key]))]
+					filters[key] = uniqueValues.map((value) => ({
+						value: value,
+						label: value,
+					}))
+				}
+			} else {
+				// If not in defaultValueKeys, use unique values from data
+				const uniqueValues = [...new Set(data.map((item) => item[key]))]
+				filters[key] = uniqueValues.map((value) => ({
+					value: value,
+					label: value,
+				}))
+			}
+		}
+	}
+
+	return filters
+}
+
+Date.prototype.getWeek = function () {
+	var target = new Date(this.valueOf())
+	var dayNr = (this.getDay() + 6) % 7
+	target.setDate(target.getDate() - dayNr + 3)
+	var firstThursday = target.valueOf()
+	target.setMonth(0, 1)
+	if (target.getDay() != 4) {
+		target.setMonth(0, 1 + ((4 - target.getDay() + 7) % 7))
+	}
+	return 1 + Math.ceil((firstThursday - target) / 604800000)
+}
+
+Date.prototype.getWeek = function () {
+	var target = new Date(this.valueOf())
+	var dayNr = (this.getDay() + 6) % 7
+	target.setDate(target.getDate() - dayNr + 3)
+	var firstThursday = target.valueOf()
+	target.setMonth(0, 1)
+	if (target.getDay() != 4) {
+		target.setMonth(0, 1 + ((4 - target.getDay() + 7) % 7))
+	}
+	return 1 + Math.ceil((firstThursday - target) / 604800000)
+}
+
+const generateDateRanges = (startEpoch, endEpoch, interval) => {
+	const startDate = new Date(startEpoch * 1000)
+	const endDate = new Date(endEpoch * 1000)
+
+	const dateRanges = []
+	let currentDate = new Date(startDate)
+
+	while (currentDate <= endDate) {
+		let nextDate
+
+		switch (interval) {
+			case 'day':
+				nextDate = new Date(currentDate)
+				nextDate.setDate(currentDate.getDate() + 1)
+				dateRanges.push({
+					start_date: Math.floor(currentDate.getTime() / 1000),
+					end_date: Math.floor(nextDate.getTime() / 1000) - 1,
+				})
+				break
+			case 'week':
+				const currentWeek = currentDate.getWeek()
+				const sunday = new Date(currentDate)
+				sunday.setDate(sunday.getDate() - sunday.getDay())
+				nextDate = new Date(sunday)
+				nextDate.setDate(sunday.getDate() + 7)
+
+				dateRanges.push({
+					start_date: Math.floor(sunday.getTime() / 1000),
+					end_date: Math.floor(Math.min(nextDate.getTime() - 1, endDate.getTime()) / 1000),
+				})
+
+				break
+			case 'month':
+				nextDate = new Date(currentDate)
+				nextDate.setMonth(currentDate.getMonth() + 1)
+				dateRanges.push({
+					start_date: Math.floor(currentDate.getTime() / 1000),
+					end_date: Math.floor(new Date(nextDate.getFullYear(), nextDate.getMonth(), 0).getTime() / 1000),
+				})
+				break
+			default:
+				throw new Error('Invalid interval. Valid options: "day", "week", "month"')
+		}
+
+		currentDate = nextDate
+	}
+
+	return dateRanges
+}
+
+const mapEntityTypesToData = (data, entityTypes) => {
+	return data.map((item) => {
+		const newItem = { ...item }
+		entityTypes.forEach((entityType) => {
+			const key = entityType.value
+			if (newItem[key]) {
+				const values = newItem[key].split(',').map((val) => val.trim())
+				const mappedValues = values
+					.map((value) => {
+						const entity = entityType.entities.find((e) => e.value === value)
+						return entity ? entity.label : value
+					})
+					.join(', ')
+
+				newItem[key] = mappedValues
+			}
+		})
+		return newItem
+	})
+}
+
+function extractColumnMappings(sqlQuery) {
+	// Match the SELECT part of the query
+	const selectMatch = sqlQuery.match(/SELECT\s+(.*?)\s+FROM /is)
+	if (!selectMatch) return {} // Return an empty object if no match is found
+
+	const selectPart = selectMatch[1]
+
+	// Split columns by commas, but ignore commas inside parentheses (to avoid splitting function calls)
+	const columns = selectPart.split(/,(?![^\(\)]*\))/).map((col) => col.trim())
+
+	const columnMappings = {}
+
+	columns.forEach((column) => {
+		// Match alias expressions like 'TO_TIMESTAMP(s.start_date)::DATE AS "date_of_session"'
+		const aliasMatch = column.match(/(.*?)\s+AS\s+"(.*?)"/i)
+
+		if (aliasMatch) {
+			const original = aliasMatch[1].trim()
+			const alias = aliasMatch[2].trim()
+
+			// If the original expression contains complex SQL like CASE, ROUND, or EXTRACT, preserve the format
+			if (
+				original.includes('\n') ||
+				original.includes('CASE') ||
+				original.includes('ROUND') ||
+				original.includes('EXTRACT')
+			) {
+				columnMappings[alias] = `\n    ${original.replace(/\n/g, '\n    ')}\n`
+			} else {
+				columnMappings[alias] = original
+			}
+		} else {
+			// Handle case where there is no alias (if any)
+			let cleanColumn = column.trim()
+
+			// Remove 'subquery.' and quotes around column names using a regex
+			cleanColumn = cleanColumn.replace(/^subquery\."(.*?)"$/, '$1') // Remove 'subquery.' and quotes
+
+			// Save the cleaned column
+			columnMappings[cleanColumn] = column.trim()
+		}
+	})
+
+	// Clean up spaces and trim extra spaces from column mappings
+	Object.keys(columnMappings).forEach((key) => {
+		columnMappings[key] = columnMappings[key].replace(/\s+/g, ' ').trim()
+	})
+
+	return columnMappings
+}
+
+function applyDefaultFilters(filters, columnConfigs) {
+	columnConfigs.forEach((column) => {
+		if (
+			column.key in filters && // Check if the key exists in the filters object
+			column.defaultValues && // Ensure there are default values
+			Array.isArray(column.defaultValues) // Ensure defaultValues is an array
+		) {
+			const currentFilterValues = filters[column.key]
+			if (Array.isArray(currentFilterValues) && currentFilterValues.includes('ALL')) {
+				// Exclude "ALL" and include the rest of the default values
+				filters[column.key] = column.defaultValues.filter((value) => value !== 'ALL')
+			}
+		}
+	})
+	return filters
+}
+
+function getDynamicFilterCondition(filters, columnMappings, baseQuery, columnConfig) {
+	if (!filters || typeof filters !== 'object') {
+		console.log('Filters is not an object or is empty')
+		return '' // Early exit if filters are not valid
+	}
+
+	const conditions = Object.entries(filters)
+		.map(([column, value]) => {
+			const mappedColumn = columnMappings[column]
+			if (!mappedColumn) {
+				console.log(`No mapping found for column: ${column}`)
+				return null // Skip if no mapping is found for the column
+			}
+
+			// Find the filterType for the column from columnConfig
+			const columnConfigEntry = columnConfig.find((config) => config.key === column)
+			const filterType = columnConfigEntry ? columnConfigEntry.filterType || '=' : '=' // Default to '=' if not found
+			// Special case: Handle the column with ROUND(EXTRACT...) logic
+			if (mappedColumn.includes('ROUND(EXTRACT')) {
+				if (!Array.isArray(value) || !value.every((item) => typeof item === 'string')) {
+					console.error(
+						`Invalid filter value for column ${column}. Expected an array of strings but received ${typeof value}.`
+					)
+					return null
+				}
+				return `${mappedColumn} ${filterType} '${value}'`
+			}
+
+			if (value) {
+				if (Array.isArray(value)) {
+					// If value is an array, combine with OR for multiple values
+					const arrayConditions = value
+						.map((val) => {
+							if (val instanceof Date) {
+								// Handle Date objects
+								return `${mappedColumn} ${filterType} TO_TIMESTAMP('${val.toISOString()}', 'YYYY-MM-DD"T"HH24:MI:SS')`
+							} else if (typeof val === 'string' && isStrictValidDate(val)) {
+								// Handle string-based date values
+								return `${mappedColumn} ${filterType} TO_TIMESTAMP('${val}', 'YYYY-MM-DD')`
+							} else if (typeof val === 'number') {
+								// Handle numeric values
+								return `${mappedColumn} ${filterType} ${val}`
+							}
+							// Handle general string values
+							return `${mappedColumn} ${filterType} '${val}'`
+						})
+						.join(' OR ') // Join array conditions with OR
+					return `(${arrayConditions})`
+				} else if (value instanceof Date) {
+					// Handle single Date object
+					return `${mappedColumn} ${filterType} TO_TIMESTAMP('${value.toISOString()}', 'YYYY-MM-DD"T"HH24:MI:SS')`
+				} else if (typeof value === 'string' && isStrictValidDate(value)) {
+					// Handle single string-based date values
+					return `${mappedColumn} ${filterType} TO_TIMESTAMP('${value}', 'YYYY-MM-DD')`
+				} else if (typeof value === 'number') {
+					// Handle single numeric values
+					return `${mappedColumn} ${filterType} ${value}`
+				}
+				// Handle other value types as strings
+				return `${mappedColumn} ${filterType} '${value}'`
+			}
+
+			return null // Return null if no valid value exists for the filter
+		})
+		.filter(Boolean) // Remove null entries (where no condition was generated)
+
+	const conditionsString = conditions.join('\nAND ') // Join all conditions with AND
+
+	// Check if baseQuery already has WHERE conditions
+	const hasWhereClause = baseQuery.includes('WHERE')
+	const hasGroupBy = baseQuery.includes('GROUP BY')
+
+	// Append conditions to the query
+	if (conditionsString) {
+		if (hasGroupBy) {
+			// Append before GROUP BY clause if it exists
+			return `${hasWhereClause ? 'WHERE' : 'AND'} ${conditionsString}`
+		} else {
+			// Standard WHERE clause logic
+			return `${hasWhereClause ? 'AND' : 'WHERE'} ${conditionsString}`
+		}
+	}
+
+	// Return an empty string if no conditions were generated
+	return ''
+}
+
+function getDynamicEntityCondition(entityData, sessionModel) {
+	if (!entityData || Object.keys(entityData).length === 0) {
+		return ''
+	}
+
+	// Ensure sessionModel is a string
+	if (typeof sessionModel !== 'string') {
+		throw new Error('sessionModel must be a string representing the table or model name')
+	}
+
+	const conditions = []
+
+	// Iterate over entityData to handle conditions
+	for (const [column, values] of Object.entries(entityData)) {
+		if (Array.isArray(values) && values.length > 0) {
+			// Generate combined condition for all values as a single array
+			const combinedValues = `{${values.join(',')}}`
+			conditions.push(`${sessionModel}.${column} IN ('${combinedValues}')`)
+
+			// Generate individual conditions for each value as arrays
+			values.forEach((value) => {
+				const formattedValue = `{${value}}`
+				conditions.push(`${sessionModel}.${column} IN ('${formattedValue}')`)
+			})
+		}
+	}
+
+	// Join all conditions with OR instead of AND
+	return ` AND (${conditions.join(' OR ')})`
+}
+
+// Utility function to check strict date validity
+function isStrictValidDate(dateString) {
+	// Match dates in 'YYYY-MM-DD' format
+	const dateRegex = /^\d{4}-\d{2}-\d{2}$/
+	return dateRegex.test(dateString) && !isNaN(new Date(dateString).getTime())
+}
+
+function getDynamicSearchCondition(search, columnMappings, baseQuery) {
+	if (!search || typeof search !== 'object') {
+		console.log('Search is not an object or is empty')
+		return '' // Early exit if search is not valid
+	}
+
+	const conditions = Object.entries(search)
+		.map(([column, value]) => {
+			const mappedColumn = columnMappings[column]
+			if (!mappedColumn) {
+				console.log(`No mapping found for column: ${column}`)
+				return null // Skip if no mapping is found for the column
+			}
+
+			if (value) {
+				if (Array.isArray(value)) {
+					// If value is an array, combine with OR for multiple values
+					const arrayConditions = value
+						.map((val) => {
+							if (mappedColumn === 's.seats_limit-s.seats_remaining') {
+								// Ensure both seats_limit and seats_remaining are treated as integers and subtract
+								return `((s.seats_limit - s.seats_remaining)::TEXT ILIKE '%${val}%')`
+							} else if (val instanceof Date) {
+								return `${mappedColumn} = TO_TIMESTAMP('${val.toISOString()}', 'YYYY-MM-DD"T"HH24:MI:SS')`
+							} else if (typeof val === 'string' && isStrictValidDate(val)) {
+								return `${mappedColumn} = TO_TIMESTAMP('${val}', 'YYYY-MM-DD')`
+							} else if (typeof val === 'string') {
+								return `${mappedColumn}::TEXT ILIKE '%${val}%'` // Partial text match
+							} else {
+								return `${mappedColumn} = '${val}'` // Exact match for other types
+							}
+						})
+						.join(' OR ')
+					return `(${arrayConditions})`
+				} else {
+					// If it's a single value, handle accordingly
+					if (mappedColumn === 's.seats_limit-s.seats_remaining') {
+						return `((s.seats_limit - s.seats_remaining)::TEXT ILIKE '%${value}%')`
+					} else if (value instanceof Date) {
+						return `${mappedColumn} = TO_TIMESTAMP('${value.toISOString()}', 'YYYY-MM-DD"T"HH24:MI:SS')`
+					} else if (typeof value === 'string' && isStrictValidDate(value)) {
+						return `${mappedColumn} = TO_TIMESTAMP('${value}', 'YYYY-MM-DD')`
+					} else if (typeof value === 'string') {
+						return `${mappedColumn}::TEXT ILIKE '%${value}%'` // Partial text match
+					} else {
+						return `${mappedColumn} = '${value}'` // Exact match for other types
+					}
+				}
+			}
+
+			return null // Return null if no valid value exists for the search
+		})
+		.filter(Boolean) // Remove null entries
+
+	const conditionsString = conditions.join('\nAND ') // Join all conditions with AND
+
+	// Check if baseQuery already has WHERE conditions
+	const hasWhereClause = baseQuery.includes('WHERE')
+	const hasGroupBy = baseQuery.includes('GROUP BY')
+
+	// Append conditions to the query
+	if (conditionsString) {
+		if (hasGroupBy === false) {
+			return `${hasWhereClause ? 'AND' : 'WHERE'} ${conditionsString}`
+		} else {
+			return `${hasWhereClause ? 'WHERE' : 'AND'} ${conditionsString}`
+		}
+	}
+
+	// Return an empty string if no conditions were generated
+	return ''
+}
+
+function extractFiltersAndEntityType(data) {
+	let filters = []
+	let entityType = []
+	let defaultValues = []
+
+	data.forEach((item) => {
+		if (item.filter) {
+			if (item.isEntityType) {
+				// Add to entityType if filter is true and isEntityType is true
+				entityType.push(item.key)
+			} else if (item.defaultValues && Array.isArray(item.defaultValues)) {
+				// Check if defaultValues is present and an array
+				defaultValues.push(item.key)
+			} else {
+				// Add to filters if filter is true and not an entityType
+				filters.push(item.key)
+			}
+		}
+	})
+
+	// Join arrays into comma-separated strings
+	filters = filters.join(',')
+	entityType = entityType.join(',')
+	defaultValues = defaultValues.join(',')
+
+	return { filters, entityType, defaultValues }
+}
+
+// Function to map EntityTypes to data
+const mapEntityTypeToData = (data, entityTypes) => {
+	return data.map((item) => {
+		const newItem = { ...item }
+
+		// Loop through EntityTypes to check for matching keys
+		entityTypes.forEach((entityType) => {
+			const key = entityType.value
+
+			// If the key exists in the data item
+			if (newItem[key]) {
+				const values = newItem[key].split(',').map((val) => val.trim())
+
+				// Map values to corresponding entity labels
+				const mappedValues = values
+					.map((value) => {
+						const entity = entityType.entities.find((e) => e.value === value)
+						return entity ? entity.label : value
+					})
+					.join(', ')
+
+				newItem[key] = mappedValues
+			}
+		})
+
+		return newItem
+	})
+}
+
+function transformEntityTypes(input) {
+	// Flatten all group arrays into a single entityTypes array
+	const entityTypes = Object.keys(input).flatMap((key) =>
+		input[key].map((group) => ({
+			id: group.id,
+			label: group.label,
+			value: group.value,
+			parent_id: group.parent_id,
+			organization_id: group.organization_id,
+			entities: group.entities.map((entity) => ({
+				id: entity.id,
+				value: entity.value,
+				label: entity.label,
+				status: entity.status,
+				type: entity.type,
+				created_at: entity.created_at,
+				updated_at: entity.updated_at,
+			})),
+		}))
+	)
+
+	return { entityTypes }
+}
+
 module.exports = {
 	hash: hash,
 	getCurrentMonthRange,
@@ -751,4 +1292,18 @@ module.exports = {
 	validateProfileData,
 	validateAndBuildFilters,
 	convertExpiryTimeToSeconds,
+	convertEntitiesForFilter,
+	filterEntitiesBasedOnParent,
+	convertToTitleCase,
+	removeLimitAndOffset,
+	generateFilters,
+	mapEntityTypesToData,
+	extractColumnMappings,
+	getDynamicFilterCondition,
+	getDynamicSearchCondition,
+	extractFiltersAndEntityType,
+	generateDateRanges,
+	mapEntityTypeToData,
+	getDynamicEntityCondition,
+	transformEntityTypes,
 }

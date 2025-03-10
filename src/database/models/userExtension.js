@@ -80,6 +80,9 @@ module.exports = (sequelize, DataTypes) => {
 				allowNull: false,
 				defaultValue: false,
 			},
+			image: {
+				type: DataTypes.STRING,
+			},
 		},
 		{
 			sequelize,
@@ -88,14 +91,14 @@ module.exports = (sequelize, DataTypes) => {
 			freezeTableName: true,
 			paranoid: true,
 			defaultScope: {
-				attributes: { exclude: ['name', 'email'] },
+				attributes: { exclude: [ 'email'] },
 			},
 			scopes: {
 				mentors: {
 					where: {
 						is_mentor: true,
 					},
-					attributes: { exclude: ['name', 'email'] },
+					attributes: { exclude: ['email'] },
 				},
 			},
 		}
