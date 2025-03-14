@@ -622,37 +622,28 @@ module.exports = {
 			},
 			{
 				report_code: 'session_manger_session_details',
-				query: `SELECT
-                subquery."mentor_name" ,
-                subquery."number_of_mentoring_sessions",
-                subquery."hours_of_mentoring_sessions",
-                subquery."avg_mentor_rating"
-            FROM (
-                SELECT
-                    session.mentor_name AS "mentor_name",
-                    COUNT(*) AS "number_of_mentoring_sessions",
-                    TO_CHAR( INTERVAL '1 second' * ROUND(SUM(EXTRACT(EPOCH FROM (session.completed_at - session.started_at)))),
+				query: `WITH session_count AS (
+    SELECT s.mentor_id, s.mentor_name, COUNT(*) AS number_of_sessions,
+	TO_CHAR( INTERVAL '1 second' * ROUND(SUM(EXTRACT(EPOCH FROM (s.completed_at - s.started_at)))),
                     'HH24:MI:SS'
-                    ) AS "hours_of_mentoring_sessions",
-                    COALESCE(CAST(ue.rating ->> 'average' AS NUMERIC), 0) AS "avg_mentor_rating"
-                FROM
-                    (SELECT * FROM public.sessions WHERE public.sessions.created_by = :userId AND public.sessions.started_at IS NOT NULL AND public.sessions.completed_at IS NOT NULL AND public.sessions.start_date > :start_date AND public.sessions.end_date < :end_date AND (
+                    ) AS "hours_of_mentoring_sessions"
+    FROM public.sessions AS s WHERE s.created_by = :userId AND s.started_at IS NOT NULL AND s.completed_at IS NOT NULL AND s.start_date > :start_date AND s.end_date < :end_date AND (
                         CASE
-                            WHEN :session_type = 'All' THEN public.sessions.type IN ('PUBLIC', 'PRIVATE')
-                            WHEN :session_type = 'Public' THEN public.sessions.type = 'PUBLIC'
-                            WHEN :session_type = 'Private' THEN public.sessions.type = 'PRIVATE'
+                            WHEN :session_type = 'All' THEN s.type IN ('PUBLIC', 'PRIVATE')
+                            WHEN :session_type = 'Public' THEN s.type = 'PUBLIC'
+                            WHEN :session_type = 'Private' THEN s.type = 'PRIVATE'
                             ELSE TRUE
                         END
-                    )) AS session
-                JOIN (SELECT DISTINCT on (session_id,user_id) * FROM public.session_ownerships WHERE public.session_ownerships.type IN ('CREATOR', 'MENTOR')) AS so ON session.id = so.session_id                
-                LEFT JOIN
-                    public.user_extensions AS ue ON so.user_id = ue.user_id
-                GROUP BY
-                    so.user_id,
-                    session.created_by,
-                    session.mentor_name,
-                    COALESCE(CAST(ue.rating ->> 'average' AS NUMERIC), 0)
-            ) AS subquery ;`,
+                    )
+    GROUP BY s.mentor_id, s.mentor_name
+)
+-- Then join with user_extensions
+SELECT sc.mentor_name as mentor_name , 
+ sc.number_of_sessions as number_of_mentoring_sessions, sc.hours_of_mentoring_sessions as hours_of_mentoring_sessions ,
+       COALESCE(CAST(ue.rating ->> 'average' AS NUMERIC), 0) AS avg_mentor_rating
+FROM session_count AS sc
+JOIN public.user_extensions AS ue ON sc.mentor_id = ue.user_id
+ORDER BY sc.mentor_name;`,
 				organization_id: defaultOrgId,
 				status: 'ACTIVE',
 				created_at: Sequelize.literal('CURRENT_TIMESTAMP'),
