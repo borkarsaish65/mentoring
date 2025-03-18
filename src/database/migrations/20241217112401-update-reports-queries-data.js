@@ -86,17 +86,17 @@ FROM (
     WHERE
         (CASE WHEN :userId IS NOT NULL THEN sa.mentee_id = :userId ELSE TRUE END)
                 AND sa.joined_at IS NOT NULL
-                AND (CASE WHEN :start_date IS NOT NULL THEN Session.start_date > :start_date ELSE TRUE END)
-                AND (CASE WHEN :end_date IS NOT NULL THEN Session.end_date < :end_date ELSE TRUE END)
+                AND (CASE WHEN :start_date IS NOT NULL THEN s.start_date > :start_date ELSE TRUE END)
+                AND (CASE WHEN :end_date IS NOT NULL THEN s.end_date < :end_date ELSE TRUE END)
                 AND (
                     CASE 
-                        WHEN :session_type = 'All' THEN Session.type IN ('PUBLIC', 'PRIVATE')
-                        WHEN :session_type = 'Public' THEN Session.type = 'PUBLIC'
-                        WHEN :session_type = 'Private' THEN Session.type = 'PRIVATE'
+                        WHEN :session_type = 'All' THEN s.type IN ('PUBLIC', 'PRIVATE')
+                        WHEN :session_type = 'Public' THEN s.type = 'PUBLIC'
+                        WHEN :session_type = 'Private' THEN s.type = 'PRIVATE'
                         ELSE TRUE
                     END
-                );
-) AS session_durations;`,
+                )
+) AS session_durations`,
 				organization_id: defaultOrgId,
 				status: 'ACTIVE',
 				created_at: Sequelize.literal('CURRENT_TIMESTAMP'),
