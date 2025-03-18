@@ -337,7 +337,7 @@ SELECT
     ) AS private_hours
 
 FROM filtered_ownerships fo
-JOIN public.sessions s ON s.id = fo.session_id  -- Renamed alias from `session` to `s`
+JOIN public.sessions s ON s.id = fo.session_id  -- Renamed alias from session to s
 WHERE s.status = 'COMPLETED'
 AND s.start_date > :start_date  -- Start date filter
 AND s.end_date < :end_date    -- End date filter
