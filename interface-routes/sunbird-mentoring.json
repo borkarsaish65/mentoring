@@ -785,7 +785,10 @@
 					"basePackageName": "mentoring",
 					"packageName": "sunbird-mentoring",
 					"targetBody": [],
-					"responseBody": []
+					"responseBody": [{
+							"sourceField": "user_id",
+							"targetField": "id"
+						}]
 				}
 			]
 		},
