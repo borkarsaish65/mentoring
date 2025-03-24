@@ -277,9 +277,9 @@ const renameMaterializedView = async (temporaryMaterializedViewName, tableName) 
 	} finally {
 		if (!committed) {
 			await t.rollback()
-			await t.cleanup()
 			console.log('Transaction rolled back due to error.')
 		}
+		await t.cleanup()
 	}
 }
 
