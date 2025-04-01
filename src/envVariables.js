@@ -434,6 +434,10 @@ let enviromentVariables = {
 		optional: true,
 		default: 1440,
 	},
+	PORTAL_BASE_URL: {
+		message: 'Required portal base url',
+		optional: false,
+	},
 }
 
 let success = true

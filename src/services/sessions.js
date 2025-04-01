@@ -49,6 +49,7 @@ const adminService = require('@services/admin')
 const mentorQueries = require('@database/queries/mentorExtension')
 const emailEncryption = require('@utils/emailEncryption')
 const resourceQueries = require('@database/queries/resources')
+const { processSession } = require('./sessionInvite')
 
 module.exports = class SessionsHelper {
 	/**
@@ -329,7 +330,7 @@ module.exports = class SessionsHelper {
 								body: utils.composeEmailBody(templateData.body, {
 									mentorName: data.mentor_name,
 									sessionTitle: data.title,
-									sessionLink: '/sessions/details/' + data.id,
+									sessionLink: process.env.PORTAL_BASE_URL + '/session-detail/' + data.id,
 									startDate: utils.getTimeZone(data.start_date, common.dateFormat, data.time_zone),
 									startTime: utils.getTimeZone(data.start_date, common.timeFormat, data.time_zone),
 								}),
@@ -962,7 +963,8 @@ module.exports = class SessionsHelper {
 								body: utils.composeEmailBody(templateData.body, {
 									mentorName: sessionDetail.mentor_name,
 									sessionTitle: sessionDetail.title,
-									sessionLink: '/sessions/details/' + sessionDetail.id,
+									sessionLink:
+										processSession.env.PORTAL_BASE_URL + '/session-detail/' + sessionDetail.id,
 									startDate: utils.getTimeZone(
 										sessionDetail.start_date,
 										common.dateFormat,
