@@ -337,7 +337,11 @@ module.exports = class ReportsHelper {
 							columnConfig.columns
 						)
 						if (filterConditions) {
-							query += filterConditions
+							if (query.includes('WITH' && 'ORDER BY')) {
+								query = filterConditions
+							} else {
+								query = filterConditions
+							}
 						}
 					}
 
@@ -350,7 +354,11 @@ module.exports = class ReportsHelper {
 							columnConfig.columns
 						)
 						if (searchConditions) {
-							query += searchConditions
+							if (query.includes('WITH' && 'ORDER BY')) {
+								query = searchConditions
+							} else {
+								query = searchConditions
+							}
 						}
 					}
 

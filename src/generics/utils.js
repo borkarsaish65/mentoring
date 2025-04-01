@@ -899,20 +899,30 @@ const mapEntityTypesToData = (data, entityTypes) => {
 }
 
 function extractColumnMappings(sqlQuery) {
-	// Match the SELECT part of the query
-	const selectMatch = sqlQuery.match(/SELECT\s+(.*?)\s+FROM /is)
-	if (!selectMatch) return {} // Return an empty object if no match is found
+	// Match the entire WITH clause including its closing bracket `)` and locate SELECT after it
+	const withMatch = sqlQuery.match(/WITH\s+[^]*?\)\s*GROUP BY\s+[^]*?\s*SELECT\s+(.*?)\s+FROM\s+\w+/is)
 
-	const selectPart = selectMatch[1]
+	if (withMatch) {
+		// Extract only the `SELECT` part after `WITH (...)`
+		return processSelectPart(withMatch[1].trim())
+	} else {
+		// If no WITH clause, look for a regular SELECT query
+		const selectMatch = sqlQuery.match(/SELECT\s+(.*?)\s+FROM /is)
+		if (!selectMatch) return {} // Return empty object if no match is found
 
-	// Split columns by commas, but ignore commas inside parentheses (to avoid splitting function calls)
+		return processSelectPart(selectMatch[1].trim())
+	}
+}
+
+function processSelectPart(selectPart) {
+	// Split columns by commas, ignoring commas inside functions (parentheses)
 	const columns = selectPart.split(/,(?![^\(\)]*\))/).map((col) => col.trim())
 
 	const columnMappings = {}
 
 	columns.forEach((column) => {
-		// Match alias expressions like 'TO_TIMESTAMP(s.start_date)::DATE AS "date_of_session"'
-		const aliasMatch = column.match(/(.*?)\s+AS\s+"(.*?)"/i)
+		// Match alias expressions like `COUNT(*) AS number_of_sessions`
+		const aliasMatch = column.match(/(.*?)\s+AS\s+"?(.*?)"?$/i)
 
 		if (aliasMatch) {
 			const original = aliasMatch[1].trim()
@@ -929,6 +939,7 @@ function extractColumnMappings(sqlQuery) {
 			} else {
 				columnMappings[alias] = original
 			}
+			//  columnMappings[alias] = original;
 		} else {
 			// Handle case where there is no alias (if any)
 			let cleanColumn = column.trim()
@@ -969,87 +980,94 @@ function applyDefaultFilters(filters, columnConfigs) {
 function getDynamicFilterCondition(filters, columnMappings, baseQuery, columnConfig) {
 	if (!filters || typeof filters !== 'object') {
 		console.log('Filters is not an object or is empty')
-		return '' // Early exit if filters are not valid
+		return baseQuery // Return the base query unchanged
 	}
 
 	const conditions = Object.entries(filters)
 		.map(([column, value]) => {
-			const mappedColumn = columnMappings[column]
+			let mappedColumn = columnMappings[column]
 			if (!mappedColumn) {
 				console.log(`No mapping found for column: ${column}`)
 				return null // Skip if no mapping is found for the column
 			}
 
-			// Find the filterType for the column from columnConfig
 			const columnConfigEntry = columnConfig.find((config) => config.key === column)
 			const filterType = columnConfigEntry ? columnConfigEntry.filterType || '=' : '=' // Default to '=' if not found
-			// Special case: Handle the column with ROUND(EXTRACT...) logic
-			if (mappedColumn.includes('ROUND(EXTRACT')) {
-				if (!Array.isArray(value) || !value.every((item) => typeof item === 'string')) {
-					console.error(
-						`Invalid filter value for column ${column}. Expected an array of strings but received ${typeof value}.`
-					)
-					return null
+
+			// Handle time filtering dynamically
+			if (column === 'hours_of_mentoring_sessions') {
+				if (typeof value === 'string' && value.includes(':')) {
+					// Convert HH:MM:SS to total seconds
+					const [hh, mm, ss] = value.split(':').map(Number)
+					const totalSeconds = hh * 3600 + mm * 60 + (ss || 0)
+					return `total_mentoring_seconds ${filterType} ${totalSeconds}`
+				} else if (typeof value === 'number') {
+					// If value is already in seconds, use it directly
+					return `total_mentoring_seconds ${filterType} ${value}`
 				}
-				return `${mappedColumn} ${filterType} '${value}'`
+				console.error(`Invalid time format for filtering ${column}`)
+				return null
 			}
 
 			if (value) {
 				if (Array.isArray(value)) {
-					// If value is an array, combine with OR for multiple values
-					const arrayConditions = value
+					if (
+						Array.isArray(value) &&
+						(mappedColumn.includes('categories') || mappedColumn.includes('recommended_for'))
+					) {
+						const conditions = value.map((val) => `'${val}' = ANY(${mappedColumn})`).join(' OR ')
+						return `(${conditions})` // Wrap in parentheses for clarity/precedence
+					}
+
+					return `(${value
 						.map((val) => {
 							if (val instanceof Date) {
-								// Handle Date objects
 								return `${mappedColumn} ${filterType} TO_TIMESTAMP('${val.toISOString()}', 'YYYY-MM-DD"T"HH24:MI:SS')`
 							} else if (typeof val === 'string' && isStrictValidDate(val)) {
-								// Handle string-based date values
 								return `${mappedColumn} ${filterType} TO_TIMESTAMP('${val}', 'YYYY-MM-DD')`
 							} else if (typeof val === 'number') {
-								// Handle numeric values
 								return `${mappedColumn} ${filterType} ${val}`
 							}
-							// Handle general string values
 							return `${mappedColumn} ${filterType} '${val}'`
 						})
-						.join(' OR ') // Join array conditions with OR
-					return `(${arrayConditions})`
+						.join(' OR ')})`
 				} else if (value instanceof Date) {
-					// Handle single Date object
 					return `${mappedColumn} ${filterType} TO_TIMESTAMP('${value.toISOString()}', 'YYYY-MM-DD"T"HH24:MI:SS')`
 				} else if (typeof value === 'string' && isStrictValidDate(value)) {
-					// Handle single string-based date values
 					return `${mappedColumn} ${filterType} TO_TIMESTAMP('${value}', 'YYYY-MM-DD')`
 				} else if (typeof value === 'number') {
-					// Handle single numeric values
 					return `${mappedColumn} ${filterType} ${value}`
 				}
-				// Handle other value types as strings
 				return `${mappedColumn} ${filterType} '${value}'`
 			}
 
-			return null // Return null if no valid value exists for the filter
+			return null
 		})
-		.filter(Boolean) // Remove null entries (where no condition was generated)
+		.filter(Boolean)
 
-	const conditionsString = conditions.join('\nAND ') // Join all conditions with AND
-
-	// Check if baseQuery already has WHERE conditions
-	const hasWhereClause = baseQuery.includes('WHERE')
-	const hasGroupBy = baseQuery.includes('GROUP BY')
-
-	// Append conditions to the query
+	const conditionsString = conditions.join(' AND ')
 	if (conditionsString) {
-		if (hasGroupBy) {
-			// Append before GROUP BY clause if it exists
-			return `${hasWhereClause ? 'WHERE' : 'AND'} ${conditionsString}`
-		} else {
-			// Standard WHERE clause logic
-			return `${hasWhereClause ? 'AND' : 'WHERE'} ${conditionsString}`
-		}
-	}
+		const hasWhereClause = /\bWHERE\b/i.test(baseQuery) // More robust WHERE check
+		const hasOrderBy = /\bORDER BY\b/i.test(baseQuery) // More robust ORDER BY check
 
-	// Return an empty string if no conditions were generated
+		let modifiedBaseQuery = baseQuery
+
+		if (hasOrderBy) {
+			const orderByMatch = baseQuery.match(/\bORDER BY\b.*$/is) // Match ORDER BY clause more precisely
+			if (orderByMatch) {
+				const whereClause = hasWhereClause ? ` AND ${conditionsString}` : ` WHERE ${conditionsString}`
+				modifiedBaseQuery = modifiedBaseQuery.replace(
+					orderByMatch[0],
+					`${whereClause} \n${orderByMatch[0].trimStart()}`
+				) // Trim leading whitespace
+			}
+		} else {
+			const whereClause = hasWhereClause ? ` AND ${conditionsString}` : ` WHERE ${conditionsString}`
+			modifiedBaseQuery = baseQuery + whereClause
+		}
+
+		return modifiedBaseQuery
+	}
 	return ''
 }
 
@@ -1145,22 +1163,29 @@ function getDynamicSearchCondition(search, columnMappings, baseQuery) {
 		})
 		.filter(Boolean) // Remove null entries
 
-	const conditionsString = conditions.join('\nAND ') // Join all conditions with AND
-
-	// Check if baseQuery already has WHERE conditions
-	const hasWhereClause = baseQuery.includes('WHERE')
-	const hasGroupBy = baseQuery.includes('GROUP BY')
-
-	// Append conditions to the query
+	const conditionsString = conditions.join(' AND ')
 	if (conditionsString) {
-		if (hasGroupBy === false) {
-			return `${hasWhereClause ? 'AND' : 'WHERE'} ${conditionsString}`
-		} else {
-			return `${hasWhereClause ? 'WHERE' : 'AND'} ${conditionsString}`
-		}
-	}
+		const hasWhereClause = /\bWHERE\b/i.test(baseQuery) // More robust WHERE check
+		const hasOrderBy = /\bORDER BY\b/i.test(baseQuery) // More robust ORDER BY check
 
-	// Return an empty string if no conditions were generated
+		let modifiedBaseQuery = baseQuery
+
+		if (hasOrderBy) {
+			const orderByMatch = baseQuery.match(/\bORDER BY\b.*$/is) // Match ORDER BY clause more precisely
+			if (orderByMatch) {
+				const whereClause = hasWhereClause ? ` AND ${conditionsString}` : ` WHERE ${conditionsString}`
+				modifiedBaseQuery = modifiedBaseQuery.replace(
+					orderByMatch[0],
+					`${whereClause} \n${orderByMatch[0].trimStart()}`
+				) // Trim leading whitespace
+			}
+		} else {
+			const whereClause = hasWhereClause ? ` AND ${conditionsString}` : ` WHERE ${conditionsString}`
+			modifiedBaseQuery = baseQuery + whereClause
+		}
+
+		return modifiedBaseQuery
+	}
 	return ''
 }
 
@@ -1203,7 +1228,10 @@ const mapEntityTypeToData = (data, entityTypes) => {
 
 			// If the key exists in the data item
 			if (newItem[key]) {
-				const values = newItem[key].split(',').map((val) => val.trim())
+				const values = newItem[key]
+					.toString()
+					.split(',')
+					.map((val) => val.trim())
 
 				// Map values to corresponding entity labels
 				const mappedValues = values
