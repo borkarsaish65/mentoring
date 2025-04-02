@@ -384,6 +384,21 @@ const modelNameCollector = async (entityTypes) => {
 const refreshMaterializedView = async (modelName) => {
 	try {
 		const model = require('@database/models/index')[modelName]
+
+		// Check if a REFRESH MATERIALIZED VIEW query is already running
+		const [activeQueries] = await sequelize.query(`
+		SELECT * FROM pg_stat_activity
+		WHERE query LIKE 'REFRESH MATERIALIZED VIEW CONCURRENTLY ${common.materializedViewsPrefix}${model.tableName}%'
+		  AND state = 'active';
+	  `)
+
+		// If there are active refresh queries, skip refreshing the materialized view
+		if (activeQueries.length > 0) {
+			console.log('A materialized view refresh is already in progress. Skipping.')
+			return
+		}
+
+		// If no active refresh queries, proceed with refreshing the materialized view
 		const [result, metadata] = await sequelize.query(
 			`REFRESH MATERIALIZED VIEW CONCURRENTLY ${common.materializedViewsPrefix}${model.tableName}`
 		)
