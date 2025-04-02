@@ -8,6 +8,10 @@ volumes:
   redis_data:
   healthcheck-volume:
   portainer_data:
+  elasticsearch_data:
+  pgadmin_data:
+  prometheus_data:
+  grafana_data:
 
 services:
   portainer:
@@ -95,6 +99,7 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
     depends_on:
       - zookeeper
     networks:
@@ -137,25 +142,25 @@ services:
     networks:
       - elevate_net
 
-  whodb:
-    image: clidey/whodb
-    ports:
-      - '8081:8080'
-    environment:
-      WHODB_POSTGRES_1: '{"host":"citus_master_dev_mentoring","user":"postgres","password":"postgres","database":"postgres"}'
-      WHODB_REDIS_1: '{"host":"redis"}'
-      WHODB_ELASTICSEARCH_1: '{"host":"elasticsearch"}'
-    depends_on:
-      - redis
-      - elasticsearch
-    networks:
-      - elevate_net
+  # whodb:
+  #   image: clidey/whodb
+  #   ports:
+  #     - '8081:8080'
+  #   environment:
+  #     WHODB_POSTGRES_1: '{"host":"citus_master_dev_mentoring","user":"postgres","password":"postgres","database":"postgres"}'
+  #     WHODB_REDIS_1: '{"host":"redis"}'
+  #     WHODB_ELASTICSEARCH_1: '{"host":"elasticsearch"}'
+  #   depends_on:
+  #     - redis
+  #     - elasticsearch
+  #   networks:
+  #     - elevate_net
 
   kafka-ui:
     container_name: kafka-ui
     image: provectuslabs/kafka-ui:latest
     ports:
-      - '8080:8080'
+      - '8081:8080'
     environment:
       DYNAMIC_CONFIG_ENABLED: 'true'
       KAFKA_CLUSTERS_0_NAME: mentorEd
@@ -163,6 +168,8 @@ services:
     depends_on:
       kafka:
         condition: service_healthy
+    logging:
+      driver: none
     networks:
       - elevate_net
 
@@ -184,6 +191,8 @@ services:
       - 'ES_JAVA_OPTS=-Xms1g -Xmx1g'
       - 'discovery.type=single-node'
       - 'xpack.security.enabled=false'
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
     logging:
       driver: none
     networks:
@@ -312,24 +321,25 @@ services:
         condition: service_started
     networks:
       - elevate_net
-  # communications:
-  #   build: '../chat-communications/'
-  #   image: elevate/chat-communications:1.0
-  #   volumes:
-  #     - ../chat-communications/src/:/var/src
-  #   ports:
-  #     - '3123:3123'
-  #   command: ['nodemon', '--trace-warnings', 'app.js']
-  #   environment:
-  #     - CHAT_PLATFORM_URL=http://rocketchat:3969
-  #     - REDIS_HOST=redis://redis:6379
-  #     - DEV_DATABASE_URL=postgres://postgres:postgres@citus_master_dev_mentoring:5432/communications-local
-  #     - SCHEDULER_SERVICE_HOST=http://scheduler:4000
-  #   depends_on:
-  #     - kafka
-  #     - redis
-  #   networks:
-  #     - elevate_net
+
+  communications:
+    build: '../chat-communications/'
+    image: elevate/chat-communications:1.0
+    volumes:
+      - ../chat-communications/src/:/var/src
+    ports:
+      - '3123:3123'
+    command: ['nodemon', '--trace-warnings', 'app.js']
+    environment:
+      - CHAT_PLATFORM_URL=http://rocketchat:3969
+      - REDIS_HOST=redis://redis:6379
+      - DEV_DATABASE_URL=postgres://postgres:postgres@citus_master_dev_mentoring:5432/communications-local
+      - SCHEDULER_SERVICE_HOST=http://scheduler:4000
+    depends_on:
+      - kafka
+      - redis
+    networks:
+      - elevate_net
 
   notification:
     build: '../notification/'
@@ -407,9 +417,56 @@ services:
     environment:
       - PGADMIN_DEFAULT_EMAIL=user@shikshalokam.org
       - PGADMIN_DEFAULT_PASSWORD=password
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
     networks:
       - elevate_net
+  # prometheus:
+  #   image: prom/prometheus:latest
+  #   container_name: prometheus
+  #   volumes:
+  #     - ./prometheus.yml:/etc/prometheus/prometheus.yml
+  #     - prometheus_data:/prometheus
+  #   ports:
+  #     - '9090:9090'
+  #   networks:
+  #     - elevate_net
 
+  # grafana:
+  #   image: grafana/grafana:latest
+  #   container_name: grafana
+  #   volumes:
+  #     - grafana_data:/var/lib/grafana
+  #   ports:
+  #     - '4001:3000'
+  #   depends_on:
+  #     - prometheus
+  #   networks:
+  #     - elevate_net
+
+  # postgres-exporter:
+  #   image: prometheuscommunity/postgres-exporter:latest
+  #   container_name: postgres-exporter
+  #   environment:
+  #     DATA_SOURCE_NAME: 'postgresql://postgres:postgres@citus_master_dev_mentoring:5432/postgres?sslmode=disable'
+  #   ports:
+  #     - '9187:9187'
+  #   depends_on:
+  #     - citus
+  #   networks:
+  #     - elevate_net
+
+  # kafka-exporter:
+  #   image: danielqsj/kafka-exporter:latest
+  #   container_name: kafka-exporter
+  #   command: ['--kafka.server=kafka:9092']
+  #   ports:
+  #     - '9308:9308'
+  #   depends_on:
+  #     kafka:
+  #       condition: service_healthy
+  #   networks:
+  #     - elevate_net
 networks:
   elevate_net:
     external: false

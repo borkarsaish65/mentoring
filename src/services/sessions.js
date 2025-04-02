@@ -1396,6 +1396,52 @@ module.exports = class SessionsHelper {
 		}
 	}
 
+	static async enrollExternalUser(sessionId, userId, name, email, phone, timezone) {
+		try {
+			// Fetch session details
+			const session = await sessionQueries.findById(sessionId)
+
+			if (!session) {
+				return responses.failureResponse({
+					message: 'SESSION_NOT_FOUND',
+					statusCode: httpStatusCode.bad_request,
+					responseCode: 'CLIENT_ERROR',
+				})
+			}
+
+			// Check if the session has available seats
+			if (session.seats_remaining <= 0) {
+				return responses.failureResponse({
+					message: 'SESSION_SEAT_FULL',
+					statusCode: httpStatusCode.bad_request,
+					responseCode: 'CLIENT_ERROR',
+				})
+			}
+
+			// Create attendee object for external user
+			const attendee = {
+				session_id: sessionId,
+				mentee_id: userId,
+				time_zone: timezone || 'IND',
+				type: common.EXTERNAL, // Indicate that this is an external user
+			}
+
+			// Save the external user attendee
+			let res = await sessionAttendeesQueries.create(attendee)
+			console.log('res', res)
+			await sessionEnrollmentQueries.create(_.omit(attendee, 'time_zone'))
+
+			// Update the session enrollment count
+			await sessionQueries.updateEnrollmentCount(sessionId, false)
+
+			return responses.successResponse({
+				statusCode: httpStatusCode.created,
+				message: 'EXTERNAL_USER_ENROLLED_SUCCESSFULLY',
+			})
+		} catch (error) {
+			throw error
+		}
+	}
 	/**
 	 * UnEnroll Session.
 	 * @method

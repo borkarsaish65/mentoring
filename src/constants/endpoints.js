@@ -26,4 +26,5 @@ module.exports = {
 	COMMUNICATION_UPDATE_AVATAR: 'v1/communication/updateAvatar',
 	COMMUNICATION_UPDATE_USER: 'v1/communication/updateUser',
 	DOWNLOAD_IMAGE_URL: 'v1/cloud-services/file/getDownloadableUrl',
+	GET_USERS_INTERNAL: '/internal/users ',
 }

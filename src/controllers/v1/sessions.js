@@ -170,6 +170,25 @@ module.exports = class Sessions {
 		}
 	}
 
+	async enrollExternalUser(req) {
+		try {
+			const { session_id, user_id, name, email, phone, timezone } = req.body
+
+			const enrolledSession = await sessionService.enrollExternalUser(
+				session_id,
+				user_id,
+				name,
+				email,
+				phone,
+				timezone
+			)
+
+			return enrolledSession
+		} catch (error) {
+			return error
+		}
+	}
+
 	/**
 	 * UnEnroll Session
 	 * @method
