@@ -98,6 +98,16 @@ module.exports = class MenteesHelper {
 			communications,
 		}
 
+		if (!menteeDetails.data.result.organization) {
+			const orgDetails = await organisationExtensionQueries.findOne(
+				{ organization_id: orgId },
+				{ attributes: ['name'] }
+			)
+			menteeDetails.data.result['organization'] = {
+				id: orgId,
+				name: orgDetails.name,
+			}
+		}
 		return responses.successResponse({
 			statusCode: httpStatusCode.ok,
 			message: 'PROFILE_FTECHED_SUCCESSFULLY',
