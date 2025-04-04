@@ -40,7 +40,7 @@ module.exports = {
 		defaultOrgId: defaultOrgId,
 		pool: {
 			max: parseInt(process.env.DB_POOL_MAX_CONNECTIONS), // Max number of connections in the pool (default to 5)
-			min: parseInt(process.env.DB_POOL_MIN_CONNECTIONS), // Min number of connections in the pool (default to 0)
+			//	min: parseInt(process.env.DB_POOL_MIN_CONNECTIONS), // Min number of connections in the pool (default to 0)
 			idle: parseInt(process.env.DB_POOL_IDLE_TIMEOUT), // Idle timeout in milliseconds (default to 10 seconds)
 			acquire: parseInt(process.env.DB_POOL_ACQUIRE_TIMEOUT), // Acquire timeout in milliseconds (default to 30 seconds)
 		},
