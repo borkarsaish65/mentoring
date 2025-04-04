@@ -523,12 +523,12 @@ module.exports = {
                 TO_CHAR(
                     INTERVAL '1 second' * FLOOR(SUM(CASE WHEN Session.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END)),
                     'HH24:MI:SS'
-                ) AS public_hours,
+                ) AS total_public_hours,
             
                 TO_CHAR(
                     INTERVAL '1 second' * FLOOR(SUM(CASE WHEN Session.type = 'PRIVATE' THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END)),
                     'HH24:MI:SS'
-                ) AS private_hours
+                ) AS total_private_hours
             
             FROM
                 (SELECT * FROM public.sessions 
@@ -539,12 +539,13 @@ module.exports = {
                 (SELECT *
                  FROM public.session_ownerships 
                  WHERE public.session_ownerships.user_id = :userId 
-                   AND public.session_ownerships.type = 'MENTOR') AS so 
+                   AND public.session_ownerships.type = 'CREATOR') AS so 
             ON Session.id = so.session_id
             WHERE
+                -- Simplified the CASE logic for filtering session types
                 (
-                    CASE
-                        WHEN :session_type = 'All' THEN Session.type IN ('PUBLIC', 'PRIVATE')
+                    CASE 
+                        WHEN :session_type = 'All' THEN TRUE
                         WHEN :session_type = 'PUBLIC' THEN Session.type = 'PUBLIC'
                         WHEN :session_type = 'PRIVATE' THEN Session.type = 'PRIVATE'
                         ELSE TRUE
