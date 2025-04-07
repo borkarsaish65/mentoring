@@ -424,11 +424,6 @@ let enviromentVariables = {
 		optional: true,
 		default: 15,
 	},
-	DB_POOL_MIN_CONNECTIONS: {
-		message: 'Required DB Pool Min number of connections',
-		optional: true,
-		default: 0,
-	},
 	DB_POOL_IDLE_TIMEOUT: {
 		message: 'Required DB Pool Idle timeout in milliseconds',
 		optional: true,
