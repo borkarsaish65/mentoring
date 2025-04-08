@@ -157,3 +157,16 @@ exports.updateUser = async (userId, name) => {
 		throw err
 	}
 }
+
+exports.getUserId = async (userId) => {
+	try {
+		const url = apiEndpoints.COMMUNICATION_GET_USER_ID
+		const body = { external_user_id: userId }
+
+		const response = await apiClient.post(url, body)
+		return response.data
+	} catch (err) {
+		console.error('getUserId error:', err.message)
+		throw err
+	}
+}

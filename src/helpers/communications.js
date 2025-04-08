@@ -195,3 +195,18 @@ exports.createChatRoom = async (recipientUserId, initiatorUserId, initialMessage
 		throw error
 	}
 }
+
+exports.resolve = async (userId) => {
+	try {
+		const userIdResponse = await communicationRequests.getUserId(userId)
+
+		return {
+			user_id: userIdResponse.result.user_id,
+		}
+	} catch (error) {
+		if (error.message === common.COMMUNICATION.UNAUTHORIZED) {
+			console.error('Error: Unauthorized access during resolve. Please check your tokens.')
+		}
+		throw error
+	}
+}

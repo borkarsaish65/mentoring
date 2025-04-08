@@ -1566,4 +1566,24 @@ module.exports = class MenteesHelper {
 			return error
 		}
 	}
+
+	static async externalMapping(body) {
+		try {
+			const userId = await communicationHelper.resolve(body.external_user_id)
+
+			return responses.successResponse({
+				statusCode: httpStatusCode.ok,
+				message: 'COMMUNICATION_TOKEN_FETCHED_SUCCESSFULLY',
+				result: userId,
+			})
+		} catch (error) {
+			if (error.message == 'unauthorized') {
+				return responses.failureResponse({
+					statusCode: httpStatusCode.not_found,
+					message: 'COMMUNICATION_TOKEN_NOT_FOUND',
+					responseCode: 'CLIENT_ERROR',
+				})
+			}
+		}
+	}
 }
