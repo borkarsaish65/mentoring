@@ -3678,7 +3678,7 @@
 			]
 		},
 		{
-			"sourceRoute": "/mentoring/v1/profile/externalMapping",
+			"sourceRoute": "/mentoring/v1/profile/externalIdMapping",
 			"type": "POST",
 			"priority": "MUST_HAVE",
 			"inSequence": false,
