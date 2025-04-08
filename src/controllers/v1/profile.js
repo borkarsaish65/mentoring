@@ -146,6 +146,14 @@ module.exports = class Mentees {
 		}
 	}
 
+	async externalIdMapping(req) {
+		try {
+			return await menteesService.externalMapping(req.body)
+		} catch (error) {
+			return error
+		}
+	}
+
 	/**
 	 * Logs out a mentee by terminating their session.
 	 *

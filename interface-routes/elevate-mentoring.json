@@ -3678,6 +3678,19 @@
 			]
 		},
 		{
+			"sourceRoute": "/mentoring/v1/profile/externalIdMapping",
+			"type": "POST",
+			"priority": "MUST_HAVE",
+			"inSequence": false,
+			"orchestrated": false,
+			"targetPackages": [
+				{
+					"basePackageName": "mentoring",
+					"packageName": "elevate-mentoring"
+				}
+			]
+		},
+		{
 			"sourceRoute": "/mentoring/v1/profile/getCommunicationToken",
 			"type": "GET",
 			"priority": "MUST_HAVE",
