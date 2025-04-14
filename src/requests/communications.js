@@ -158,6 +158,20 @@ exports.updateUser = async (userId, name) => {
 	}
 }
 
+/**
+ * Sends a POST request to the communication service to fetch the internal user ID
+ * corresponding to the provided external user ID.
+ *
+ * @async
+ * @function getUserId
+ * @param {string} userId - The external user ID to be resolved.
+ * @returns {Promise<Object>} The response data containing the internal user ID.
+ * @throws {Error} Throws the error if the API request fails.
+ *
+ * @example
+ * const data = await getUserId('external-user-123');
+ * // data => { result: { user_id: 'internal-user-456' }, ... }
+ */
 exports.getUserId = async (userId) => {
 	try {
 		const url = apiEndpoints.COMMUNICATION_GET_USER_ID
