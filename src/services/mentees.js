@@ -5,8 +5,6 @@ const httpStatusCode = require('@generics/http-status')
 const feedbackHelper = require('./feedback')
 const utils = require('@generics/utils')
 
-const { successResponse } = require('@constants/common')
-const rolePermissionMappingQueries = require('@database/queries/role-permission-mapping')
 const { UniqueConstraintError } = require('sequelize')
 const menteeQueries = require('@database/queries/userExtension')
 const sessionAttendeesQueries = require('@database/queries/sessionAttendees')
@@ -21,16 +19,19 @@ const { getDefaultOrgId } = require('@helpers/getDefaultOrgId')
 const { Op } = require('sequelize')
 const { removeDefaultOrgEntityTypes } = require('@generics/utils')
 const entityTypeService = require('@services/entity-type')
-const entityType = require('@database/models/entityType')
 const { getEnrolledMentees } = require('@helpers/getEnrolledMentees')
 const responses = require('@helpers/responses')
 const permissions = require('@helpers/getPermissions')
 const { buildSearchFilter } = require('@helpers/search')
-const { defaultRulesFilter } = require('@helpers/defaultRules')
+const { defaultRulesFilter, validateDefaultRulesFilter } = require('@helpers/defaultRules')
 
 const searchConfig = require('@configs/search.json')
 const emailEncryption = require('@utils/emailEncryption')
+const communicationHelper = require('@helpers/communications')
 const menteeExtensionQueries = require('@database/queries/userExtension')
+const { checkIfUserIsAccessible } = require('@helpers/saasUserAccessibility')
+const connectionQueries = require('@database/queries/connection')
+const getOrgIdAndEntityTypes = require('@helpers/getOrgIdAndEntityTypewithEntitiesBasedOnPolicy')
 
 module.exports = class MenteesHelper {
 	/**
@@ -81,6 +82,32 @@ module.exports = class MenteesHelper {
 		const profileMandatoryFields = await utils.validateProfileData(processDbResponse, validationData)
 		menteeDetails.data.result.profile_mandatory_fields = profileMandatoryFields
 
+		let communications = null
+
+		if (mentee?.meta?.communications_user_id) {
+			try {
+				const chat = await communicationHelper.login(id)
+				communications = chat
+			} catch (error) {
+				console.error('Failed to log in to communication service:', error)
+			}
+		}
+
+		processDbResponse.meta = {
+			...processDbResponse.meta,
+			communications,
+		}
+
+		if (!menteeDetails.data.result.organization) {
+			const orgDetails = await organisationExtensionQueries.findOne(
+				{ organization_id: orgId },
+				{ attributes: ['name'] }
+			)
+			menteeDetails.data.result['organization'] = {
+				id: orgId,
+				name: orgDetails.name,
+			}
+		}
 		return responses.successResponse({
 			statusCode: httpStatusCode.ok,
 			message: 'PROFILE_FTECHED_SUCCESSFULLY',
@@ -752,16 +779,19 @@ module.exports = class MenteesHelper {
 	 * Update a mentee extension.
 	 * @method
 	 * @name updateMenteeExtension
-	 * @param {String} userId - User ID of the mentee.
 	 * @param {Object} data - Updated mentee extension data excluding user_id.
+	 * @param {String} userId - User ID of the mentee.
+	 * @param {String} orgId - Organization ID for validation.
 	 * @returns {Promise<Object>} - Updated mentee extension details.
 	 */
 	static async updateMenteeExtension(data, userId, orgId) {
 		try {
+			// Encrypt email if provided
 			if (data.email) data.email = emailEncryption.encrypt(data.email.toLowerCase())
 
-			let skipValidation = data.skipValidation ? data.skipValidation : false
-			// Remove certain data in case it is getting passed
+			let skipValidation = data.skipValidation || false
+
+			// Remove unnecessary data keys
 			const dataToRemove = [
 				'user_id',
 				'mentor_visibility',
@@ -771,31 +801,34 @@ module.exports = class MenteesHelper {
 				'external_mentee_visibility',
 				'mentee_visibility',
 			]
+			dataToRemove.forEach((key) => delete data[key])
 
-			dataToRemove.forEach((key) => {
-				if (data[key]) {
-					delete data[key]
-				}
-			})
+			// Fetch current mentee extension data
+			const currentUser = await menteeQueries.getMenteeExtension(userId)
+			if (!currentUser) {
+				return responses.failureResponse({
+					statusCode: httpStatusCode.not_found,
+					message: 'MENTEE_EXTENSION_NOT_FOUND',
+				})
+			}
 
+			// Perform validation
 			const defaultOrgId = await getDefaultOrgId()
-			if (!defaultOrgId)
+			if (!defaultOrgId) {
 				return responses.failureResponse({
 					message: 'DEFAULT_ORG_ID_NOT_SET',
 					statusCode: httpStatusCode.bad_request,
 					responseCode: 'CLIENT_ERROR',
 				})
+			}
 			const userExtensionsModelName = await menteeQueries.getModelName()
 			const filter = {
 				status: 'ACTIVE',
-				organization_id: {
-					[Op.in]: [orgId, defaultOrgId],
-				},
+				organization_id: { [Op.in]: [orgId, defaultOrgId] },
 				model_names: { [Op.contains]: [userExtensionsModelName] },
 			}
 			let entityTypes = await entityTypeQueries.findUserEntityTypesAndEntities(filter)
 
-			//validationData = utils.removeParentEntityTypes(JSON.parse(JSON.stringify(validationData)))
 			const validationData = removeDefaultOrgEntityTypes(entityTypes, orgId)
 			let res = utils.validateInput(data, validationData, userExtensionsModelName, skipValidation)
 			if (!res.success) {
@@ -807,10 +840,11 @@ module.exports = class MenteesHelper {
 				})
 			}
 
+			// Restructure the data
 			let userExtensionModel = await menteeQueries.getColumns()
-
 			data = utils.restructureBody(data, validationData, userExtensionModel)
 
+			// Handle organization update logic if organization data is provided
 			if (data?.organization?.id) {
 				//Do a org policy update for the user only if the data object explicitly includes an
 				//organization.id. This is added for the users/update workflow where
@@ -834,14 +868,29 @@ module.exports = class MenteesHelper {
 					new Set([...userOrgDetails.data.result.related_orgs, data.organization.id])
 				)
 			}
+
+			// Update the database
 			const [updateCount, updatedUser] = await menteeQueries.updateMenteeExtension(userId, data, {
 				returning: true,
 				raw: true,
 			})
 
+			if (currentUser?.meta?.communications_user_id) {
+				const promises = []
+				if (data.name && data.name !== currentUser.name) {
+					promises.push(communicationHelper.updateUser(userId, data.name))
+				}
+
+				if (data.image && data.image !== currentUser.image) {
+					const downloadableUrl = (await userRequests.getDownloadableUrl(data.image))?.result
+					promises.push(communicationHelper.updateAvatar(userId, downloadableUrl))
+				}
+
+				await Promise.all(promises)
+			}
+
 			if (updateCount === 0) {
 				const fallbackUpdatedUser = await menteeQueries.getMenteeExtension(userId)
-				console.log(fallbackUpdatedUser)
 				if (!fallbackUpdatedUser) {
 					return responses.failureResponse({
 						statusCode: httpStatusCode.not_found,
@@ -857,8 +906,8 @@ module.exports = class MenteesHelper {
 				})
 			}
 
+			// Return updated data
 			const processDbResponse = utils.processDbResponse(updatedUser[0], validationData)
-
 			return responses.successResponse({
 				statusCode: httpStatusCode.ok,
 				message: 'MENTEE_EXTENSION_UPDATED',
@@ -961,7 +1010,7 @@ module.exports = class MenteesHelper {
 			const filter_type = filterType !== '' ? filterType : common.MENTOR_ROLE
 
 			let organization_ids = []
-			const organizations = await this.getOrganizationIdBasedOnPolicy(
+			const organizations = await getOrgIdAndEntityTypes.getOrganizationIdBasedOnPolicy(
 				tokenInformation.id,
 				tokenInformation.organization_id,
 				filter_type
@@ -992,7 +1041,7 @@ module.exports = class MenteesHelper {
 						modelName.push(modelNameResult)
 					}
 					// get entity type with entities list
-					const getEntityTypesWithEntities = await this.getEntityTypeWithEntitiesBasedOnOrg(
+					const getEntityTypesWithEntities = await getOrgIdAndEntityTypes.getEntityTypeWithEntitiesBasedOnOrg(
 						organization_ids,
 						entity_type,
 						defaultOrgId ? defaultOrgId : '',
@@ -1002,12 +1051,12 @@ module.exports = class MenteesHelper {
 					if (getEntityTypesWithEntities.success && getEntityTypesWithEntities.result) {
 						let entityTypesWithEntities = getEntityTypesWithEntities.result
 						if (entityTypesWithEntities.length > 0) {
-							let convertedData = convertEntitiesForFilter(entityTypesWithEntities)
+							let convertedData = utils.convertEntitiesForFilter(entityTypesWithEntities)
 							let doNotRemoveDefaultOrg = false
 							if (organization_ids.includes(defaultOrgId)) {
 								doNotRemoveDefaultOrg = true
 							}
-							result.entity_types = filterEntitiesBasedOnParent(
+							result.entity_types = utils.filterEntitiesBasedOnParent(
 								convertedData,
 								defaultOrgId,
 								doNotRemoveDefaultOrg
@@ -1028,215 +1077,6 @@ module.exports = class MenteesHelper {
 			})
 		} catch (error) {
 			return error
-		}
-	}
-
-	static async getOrganizationIdBasedOnPolicy(userId, organization_id, filterType) {
-		try {
-			let organizationIds = []
-			filterType = filterType.toLowerCase()
-
-			let visibilityPolicies = []
-			let orgVisibilityPolicies = []
-
-			const policyMap = {
-				[common.MENTEE_ROLE]: ['organization_id', 'external_mentee_visibility_policy'],
-				[common.SESSION]: ['organization_id', 'external_session_visibility_policy'],
-				[common.MENTOR_ROLE]: ['organization_id', 'external_mentor_visibility_policy'],
-			}
-			visibilityPolicies = policyMap[filterType] || []
-			const attributes = visibilityPolicies
-
-			const orgExtension = await organisationExtensionQueries.findOne(
-				{ organization_id },
-				{
-					attributes: attributes,
-				}
-			)
-
-			const orgPolicyMap = {
-				[common.MENTEE_ROLE]: orgExtension.external_mentee_visibility_policy,
-				[common.SESSION]: orgExtension.external_session_visibility_policy,
-				[common.MENTOR_ROLE]: orgExtension.external_mentor_visibility_policy,
-			}
-			orgVisibilityPolicies = orgPolicyMap[filterType] || []
-			const visibilityPolicy = orgVisibilityPolicies
-
-			if (orgExtension?.organization_id) {
-				if (visibilityPolicy === common.CURRENT) {
-					organizationIds.push(orgExtension.organization_id)
-				} else if (visibilityPolicy === common.ASSOCIATED || visibilityPolicy === common.ALL) {
-					organizationIds.push(orgExtension.organization_id)
-					let relatedOrgs = []
-					let userOrgDetails = await userRequests.fetchOrgDetails({
-						organizationId: orgExtension.organization_id,
-					})
-					if (userOrgDetails.success && userOrgDetails.data?.result?.related_orgs?.length > 0) {
-						relatedOrgs = userOrgDetails.data.result.related_orgs
-					}
-					if (visibilityPolicy === common.ASSOCIATED) {
-						const associatedAdditionalFilter =
-							filterType == common.MENTEE_ROLE
-								? {
-										mentee_visibility_policy: {
-											[Op.ne]: 'CURRENT',
-										},
-								  }
-								: filterType == common.SESSION
-								? {
-										session_visibility_policy: {
-											[Op.ne]: 'CURRENT',
-										},
-								  }
-								: {
-										mentor_visibility_policy: {
-											[Op.ne]: 'CURRENT',
-										},
-								  }
-
-						const organizationExtension = await organisationExtensionQueries.findAll(
-							{
-								[Op.and]: [
-									{
-										organization_id: {
-											[Op.in]: [...relatedOrgs],
-										},
-									},
-									associatedAdditionalFilter,
-								],
-							},
-							{
-								attributes: ['organization_id'],
-							}
-						)
-						organizationIds.push(orgExtension.organization_id)
-						if (organizationExtension) {
-							const organizationIdsFromOrgExtension = organizationExtension.map(
-								(orgExt) => orgExt.organization_id
-							)
-							organizationIds.push(...organizationIdsFromOrgExtension)
-						}
-					} else {
-						// filter out the organizations
-						// CASE 1 : in case of mentee listing filterout organizations with external_mentee_visibility_policy = ALL
-						// CASE 2 : in case of session listing filterout organizations with session_visibility_policy = ALL
-						// CASE 3 : in case of mentor listing filterout organizations with mentor_visibility_policy = ALL
-						const filterQuery =
-							filterType == common.MENTEE_ROLE
-								? {
-										mentee_visibility_policy: common.ALL, //1
-								  }
-								: filterType == common.SESSION
-								? {
-										session_visibility_policy: common.ALL, //2
-								  }
-								: {
-										mentor_visibility_policy: common.ALL, //3
-								  }
-
-						// this filter is applied for the below condition
-						// SM mentee_visibility_policy (in case of mentee list) or external_mentor_visibility policy (in case of mentor list) = ALL
-						//  and CASE 1 (mentee list) : Mentees is related to the SM org but external_mentee_visibility is CURRENT (exclude these mentees)
-						//  CASE 2 : (session list) : Sessions is related to the SM org but session_visibility is CURRENT (exclude these sessions)
-						//  CASE 3 : (mentor list) : Mentors is related to SM Org but mentor_visibility set to CURRENT  (exclude these mentors)
-						const additionalFilter =
-							filterType == common.MENTEE_ROLE
-								? {
-										mentee_visibility_policy: {
-											//1
-											[Op.ne]: 'CURRENT',
-										},
-								  }
-								: filterType == common.SESSION
-								? {
-										session_visibility_policy: {
-											//2
-											[Op.ne]: 'CURRENT',
-										},
-								  }
-								: {
-										mentor_visibility_policy: {
-											//3
-											[Op.ne]: 'CURRENT',
-										},
-								  }
-						const organizationExtension = await organisationExtensionQueries.findAll(
-							{
-								[Op.or]: [
-									filterQuery,
-									{
-										[Op.and]: [
-											{
-												organization_id: {
-													[Op.in]: [...relatedOrgs],
-												},
-											},
-											additionalFilter,
-										],
-									},
-								],
-							},
-							{
-								attributes: ['organization_id'],
-							}
-						)
-						organizationIds.push(orgExtension.organization_id)
-						if (organizationExtension) {
-							const organizationIdsFromOrgExtension = organizationExtension.map(
-								(orgExt) => orgExt.organization_id
-							)
-							organizationIds.push(...organizationIdsFromOrgExtension)
-						}
-					}
-				}
-			}
-
-			return {
-				success: true,
-				result: organizationIds,
-			}
-		} catch (error) {
-			return {
-				success: false,
-				message: error.message,
-			}
-		}
-	}
-
-	static async getEntityTypeWithEntitiesBasedOnOrg(organization_ids, entity_types, defaultOrgId = '', modelName) {
-		try {
-			let filter = {
-				status: common.ACTIVE_STATUS,
-				allow_filtering: true,
-				has_entities: true,
-				organization_id: {
-					[Op.in]: defaultOrgId ? [...organization_ids, defaultOrgId] : organization_ids,
-				},
-			}
-
-			let entityTypes = []
-			if (entity_types) {
-				entityTypes = entity_types.split(',')
-				filter.value = {
-					[Op.in]: entityTypes,
-				}
-			}
-
-			if (modelName) {
-				filter.model_names = { [Op.contains]: [modelName] }
-			}
-			//fetch entity types and entities
-			let entityTypesWithEntities = await entityTypeQueries.findUserEntityTypesAndEntities(filter)
-
-			return {
-				success: true,
-				result: entityTypesWithEntities,
-			}
-		} catch (error) {
-			return {
-				success: false,
-				message: error.message,
-			}
 		}
 	}
 
@@ -1535,50 +1375,231 @@ module.exports = class MenteesHelper {
 			return error
 		}
 	}
-}
 
-function convertEntitiesForFilter(entityTypes) {
-	const result = {}
+	/**
+	 * Retrieves a communication token for the logged in user.
+	 *
+	 * This asynchronous method logs in a user using their unique identifier (`id`)
+	 * to obtain a communication token and other relevant details, then returns a
+	 * standardized success response with the token, user ID, and metadata.
+	 *
+	 * @async
+	 * @function getCommunicationToken
+	 * @param {string} id - The unique identifier of the user for whom the communication token is to be retrieved.
+	 * @returns {Promise<Object>} A promise that resolves to an object containing the response code, message, result data,
+	 * and additional metadata.
+	 *
+	 * @throws {Error} If the communicationHelper login process fails, this method may throw an error.
+	 *
+	 * @example
+	 * const response = await getCommunicationToken(123);
+	 * console.log(response);
+	 * // {
+	 * //   responseCode: "OK",
+	 * //   message: "Communication token fetched successfully!",
+	 * //   result: {
+	 * //     auth_token: "_GTFHENH422lGlLcgYQfu2GnnWO8bg6zY8ZHrXkcNmN",
+	 * //     user_id: "Q9hz3jbPXkk3fXQoL"
+	 * //   },
+	 * //   meta: {
+	 * //     correlation: "69893cb9-8b0c-44f9-945e-1bff2174af0d",
+	 * //     meetingPlatform: "BBB"
+	 * //   }
+	 * // }
+	 */
+	static async getCommunicationToken(id) {
+		try {
+			const token = await communicationHelper.login(id)
 
-	entityTypes.forEach((entityType) => {
-		const key = entityType.value
-
-		if (!result[key]) {
-			result[key] = []
-		}
-
-		const newObj = {
-			id: entityType.id,
-			label: entityType.label,
-			value: entityType.value,
-			parent_id: entityType.parent_id,
-			organization_id: entityType.organization_id,
-			entities: entityType.entities || [],
-		}
-
-		result[key].push(newObj)
-	})
-	return result
-}
-
-function filterEntitiesBasedOnParent(data, defaultOrgId, doNotRemoveDefaultOrg) {
-	let result = {}
-
-	for (let key in data) {
-		let countWithParentId = 0
-		let countOfEachKey = data[key].length
-		data[key].forEach((obj) => {
-			if (obj.parent_id !== null && obj.organization_id != defaultOrgId) {
-				countWithParentId++
+			return responses.successResponse({
+				statusCode: httpStatusCode.ok,
+				message: 'COMMUNICATION_TOKEN_FETCHED_SUCCESSFULLY',
+				result: token,
+			})
+		} catch (error) {
+			if (error.message == 'unauthorized') {
+				return responses.failureResponse({
+					statusCode: httpStatusCode.not_found,
+					message: 'COMMUNICATION_TOKEN_NOT_FOUND',
+					responseCode: 'CLIENT_ERROR',
+				})
 			}
-		})
-
-		let outputArray = data[key]
-		if (countOfEachKey > 1 && countWithParentId == countOfEachKey - 1 && !doNotRemoveDefaultOrg) {
-			outputArray = data[key].filter((obj) => !(obj.organization_id === defaultOrgId && obj.parent_id === null))
 		}
-
-		result[key] = outputArray
 	}
-	return result
+
+	/**
+	 * Logs out a user by invoking the `communicationHelper.logout` function and
+	 * returns a success response upon successful logout. If the logout fails due to
+	 * an unauthorized error, returns a failure response indicating that the communication
+	 * token was not found.
+	 *
+	 * @async
+	 * @function logout
+	 * @param {string} id - The ID of the user to be logged out.
+	 * @returns {Promise<Object>} Resolves with a success response object if the logout is successful,
+	 * or a failure response object if an unauthorized error occurs.
+	 *
+	 * @throws {Error} If an error other than 'unauthorized' occurs, it will not be caught here and may be handled upstream.
+	 */
+	static async logout(id) {
+		try {
+			const response = await communicationHelper.logout(id)
+
+			return responses.successResponse({
+				statusCode: httpStatusCode.ok,
+				message: 'USER_LOGGED_OUT',
+				result: response,
+			})
+		} catch (error) {
+			if (error.message === 'unauthorized') {
+				return responses.failureResponse({
+					statusCode: httpStatusCode.not_found,
+					message: 'COMMUNICATION_TOKEN_NOT_FOUND',
+					responseCode: 'CLIENT_ERROR',
+				})
+			}
+			throw error // rethrow other errors to be handled by a higher-level error handler
+		}
+	}
+
+	static async details(id, orgId, userId = '', isAMentor = '', roles = '') {
+		try {
+			let requestedUserExtension = await menteeQueries.getMenteeExtension(id)
+
+			if (!requestedUserExtension || (!isAMentor && requestedUserExtension.is_mentor == false)) {
+				return responses.failureResponse({
+					statusCode: httpStatusCode.not_found,
+					message: 'USER_NOT_FOUND',
+					responseCode: 'CLIENT_ERROR',
+				})
+			}
+			if (requestedUserExtension.is_mentor == true) {
+				// Get mentor visibility and org id
+				const validateDefaultRules = await validateDefaultRulesFilter({
+					ruleType: common.DEFAULT_RULES.MENTOR_TYPE,
+					requesterId: userId,
+					roles: roles,
+					requesterOrganizationId: orgId,
+					data: requestedUserExtension,
+				})
+				if (validateDefaultRules.error && validateDefaultRules.error.missingField) {
+					return responses.failureResponse({
+						message: 'PROFILE_NOT_UPDATED',
+						statusCode: httpStatusCode.bad_request,
+						responseCode: 'CLIENT_ERROR',
+					})
+				}
+				if (!validateDefaultRules) {
+					return responses.failureResponse({
+						message: 'USER_NOT_FOUND',
+						statusCode: httpStatusCode.bad_request,
+						responseCode: 'CLIENT_ERROR',
+					})
+				}
+			}
+			// Check for accessibility for reading shared mentor profile
+			const isAccessible = await checkIfUserIsAccessible(userId, requestedUserExtension)
+
+			// Throw access error
+			if (!isAccessible) {
+				return responses.failureResponse({
+					statusCode: httpStatusCode.not_found,
+					message: 'PROFILE_RESTRICTED',
+				})
+			}
+
+			let mentorExtension
+			if (requestedUserExtension) mentorExtension = requestedUserExtension
+			else mentorExtension = await mentorQueries.getMentorExtension(id)
+
+			mentorExtension = utils.deleteProperties(mentorExtension, [
+				'user_id',
+				'visible_to_organizations',
+				'image',
+				'email',
+				'phone',
+				'settings',
+			])
+
+			const defaultOrgId = await getDefaultOrgId()
+			if (!defaultOrgId)
+				return responses.failureResponse({
+					message: 'DEFAULT_ORG_ID_NOT_SET',
+					statusCode: httpStatusCode.bad_request,
+					responseCode: 'CLIENT_ERROR',
+				})
+			const menteeExtensionsModelName = await menteeQueries.getModelName()
+
+			let entityTypes = await entityTypeQueries.findUserEntityTypesAndEntities({
+				status: 'ACTIVE',
+				organization_id: {
+					[Op.in]: [orgId, defaultOrgId],
+				},
+				model_names: { [Op.contains]: [menteeExtensionsModelName] },
+			})
+
+			// validationData = utils.removeParentEntityTypes(JSON.parse(JSON.stringify(validationData)))
+			const validationData = removeDefaultOrgEntityTypes(entityTypes, orgId)
+			const processDbResponse = utils.processDbResponse(mentorExtension, validationData)
+
+			const profileMandatoryFields = await utils.validateProfileData(processDbResponse, validationData)
+
+			processDbResponse.profile_mandatory_fields = profileMandatoryFields
+
+			const connection = await connectionQueries.getConnection(userId, id)
+
+			processDbResponse.is_connected = Boolean(connection)
+
+			if (processDbResponse.is_connected) {
+				processDbResponse.connection_details = connection.meta
+			}
+
+			return responses.successResponse({
+				statusCode: httpStatusCode.ok,
+				message: 'PROFILE_FTECHED_SUCCESSFULLY',
+				result: {
+					...processDbResponse,
+				},
+			})
+		} catch (error) {
+			console.error(error)
+			return error
+		}
+	}
+
+	/**
+	 * Resolves an external user ID to an internal user ID using the communication helper.
+	 * Returns a success response with the resolved user ID if successful,
+	 * or a failure response if the token is unauthorized or not found.
+	 *
+	 * @async
+	 * @static
+	 * @function externalMapping
+	 * @param {Object} body - The request payload containing the external user ID.
+	 * @param {string} body.external_user_id - The external user identifier to resolve.
+	 * @returns {Promise<Object>} A standardized success or failure response object.
+	 *
+	 * @example
+	 * const response = await ClassName.externalMapping({ external_user_id: 'abc-123' });
+	 * // response => { statusCode: 200, message: 'COMMUNICATION_TOKEN_FETCHED_SUCCESSFULLY', result: 'internal-user-id' }
+	 */
+	static async externalMapping(body) {
+		try {
+			const userId = await communicationHelper.resolve(body.external_user_id)
+
+			return responses.successResponse({
+				statusCode: httpStatusCode.ok,
+				message: 'COMMUNICATION_MAPPING_FETCHED_SUCCESSFULLY',
+				result: userId,
+			})
+		} catch (error) {
+			if (error.message == 'unauthorized') {
+				return responses.failureResponse({
+					statusCode: httpStatusCode.not_found,
+					message: 'COMMUNICATION_TOKEN_NOT_FOUND',
+					responseCode: 'CLIENT_ERROR',
+				})
+			}
+		}
+	}
 }
