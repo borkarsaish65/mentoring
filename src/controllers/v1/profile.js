@@ -146,6 +146,15 @@ module.exports = class Mentees {
 		}
 	}
 
+	/**
+	 * Returns the mapping of external IDs to internal ID by delegating the task to the menteesService.
+	 *
+	 * @async
+	 * @function externalIdMapping
+	 * @param {Object} req - The Express request object.
+	 * @param {Object} req.body - The request payload containing mapping data.
+	 * @returns {Promise<*>} The result of the external mapping operation or the error if it fails.
+	 */
 	async externalIdMapping(req) {
 		try {
 			return await menteesService.externalMapping(req.body)

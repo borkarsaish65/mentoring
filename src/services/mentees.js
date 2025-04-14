@@ -1567,13 +1567,29 @@ module.exports = class MenteesHelper {
 		}
 	}
 
+	/**
+	 * Resolves an external user ID to an internal user ID using the communication helper.
+	 * Returns a success response with the resolved user ID if successful,
+	 * or a failure response if the token is unauthorized or not found.
+	 *
+	 * @async
+	 * @static
+	 * @function externalMapping
+	 * @param {Object} body - The request payload containing the external user ID.
+	 * @param {string} body.external_user_id - The external user identifier to resolve.
+	 * @returns {Promise<Object>} A standardized success or failure response object.
+	 *
+	 * @example
+	 * const response = await ClassName.externalMapping({ external_user_id: 'abc-123' });
+	 * // response => { statusCode: 200, message: 'COMMUNICATION_TOKEN_FETCHED_SUCCESSFULLY', result: 'internal-user-id' }
+	 */
 	static async externalMapping(body) {
 		try {
 			const userId = await communicationHelper.resolve(body.external_user_id)
 
 			return responses.successResponse({
 				statusCode: httpStatusCode.ok,
-				message: 'COMMUNICATION_TOKEN_FETCHED_SUCCESSFULLY',
+				message: 'COMMUNICATION_MAPPING_FETCHED_SUCCESSFULLY',
 				result: userId,
 			})
 		} catch (error) {
