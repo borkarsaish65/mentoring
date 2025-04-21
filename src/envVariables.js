@@ -420,9 +420,14 @@ let enviromentVariables = {
 		default: 'internalmentoring',
 	},
 	POST_RESOURCE_EMAIL_TEMPLATE_CODE: {
-		message: 'Required resource update email template code',
+		message: 'Required post resource update email template code',
 		optional: true,
 		default: 'post_session_resource_email',
+	},
+	PRE_RESOURCE_EMAIL_TEMPLATE_CODE: {
+		message: 'Required pre resource update email template code',
+		optional: true,
+		default: 'pre_session_resource_email',
 	},
 	RESOURCE_ADD_EMAIL_TEMPLATE_CODE: {
 		message: 'Required resource add email template code',

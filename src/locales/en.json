@@ -206,5 +206,6 @@
 	"USER_LOGGED_OUT": "User has been logged out successfully.",
 	"USER_DETAILS_FETCHED_SUCCESSFULLY": "User details fetched successfully.",
 	"ORGANIZATION_FETCHED_SUCCESSFULLY": "Organization fetched successfully.",
-	"ORG_THEME_FETCHED_SUCCESSFULLY": "Organization theme fetched successfully."
+	"ORG_THEME_FETCHED_SUCCESSFULLY": "Organization theme fetched successfully.",
+	"SESSION_RESOURCE_CANT_UPDATE": "Session Resources can't be updated"
 }
