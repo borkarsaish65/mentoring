@@ -747,6 +747,16 @@ module.exports = class MentorsHelper {
 				...processDbResponse.meta,
 				communications,
 			}
+			if (!mentorProfile.organization) {
+				const orgDetails = await organisationExtensionQueries.findOne(
+					{ organization_id: orgId },
+					{ attributes: ['name'] }
+				)
+				mentorProfile['organization'] = {
+					id: orgId,
+					name: orgDetails.name,
+				}
+			}
 
 			return responses.successResponse({
 				statusCode: httpStatusCode.ok,

@@ -55,7 +55,7 @@
 		"p-each-series": "^2.1.0",
 		"pg": "^8.11.0",
 		"pg-hstore": "^2.3.4",
-		"redoc-cli": "^0.13.15",
+		"redoc-cli": "^0.13.21",
 		"redoc-express": "^1.0.0",
 		"request": "^2.88.2",
 		"require-all": "^3.0.0",

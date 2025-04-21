@@ -139,7 +139,7 @@ module.exports = class ConnectionHelper {
 					message: 'USER_NOT_FOUND',
 				})
 			}
-			userDetails.image = (await userRequests.getDownloadableUrl(userDetails.image))?.result
+			userDetails.image &&= (await userRequests.getDownloadableUrl(userDetails.image))?.result
 
 			// Fetch entity types associated with the user
 			let entityTypes = await entityTypeQueries.findUserEntityTypesAndEntities({
