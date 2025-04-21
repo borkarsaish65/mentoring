@@ -3106,31 +3106,6 @@ module.exports = class SessionsHelper {
 			return []
 		}
 	}
-
-	/**
-	 * This function used to find menteeIds to enroll and unEnroll based on the arrays passed
-	 * @method
-	 * @name filterMenteesToAddAndRemove
-	 * @param {Array} existingMentees 				- mentee_ids enrolled to a session.
-	 * @param {Array} updatedMentees				- latest mentee ids to update
-	 * @returns {Object} 							- mentees to enroll and unenroll
-	 */
-
-	static async filterMenteesToAddAndRemove(existingMentees, updatedMentees) {
-		// Find the intersection
-		const intersection = _.intersection(existingMentees, updatedMentees)
-
-		// Find mentees to remove (unenroll)
-		const menteesToRemove = _.difference(existingMentees, intersection)
-
-		// Find mentees to add (enroll)
-		const menteesToAdd = _.difference(updatedMentees, intersection)
-
-		return {
-			menteesToRemove,
-			menteesToAdd,
-		}
-	}
 }
 
 class MentorError extends Error {
