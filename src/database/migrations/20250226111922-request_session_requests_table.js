@@ -25,6 +25,10 @@ module.exports = {
 			meta: {
 				type: Sequelize.JSON,
 			},
+			title: {
+				type: Sequelize.STRING,
+				allowNull: false,
+			},
 			agenda: {
 				type: Sequelize.STRING,
 				allowNull: true,
@@ -35,10 +39,12 @@ module.exports = {
 			end_date: {
 				type: Sequelize.INTEGER,
 			},
+			medium: {
+				type: Sequelize.ARRAY(Sequelize.STRING),
+				allowNull: false,
+			},
 			session_id: {
 				type: Sequelize.STRING,
-				allowNull: true,
-				primaryKey: true,
 			},
 			updated_by: {
 				type: Sequelize.STRING,
@@ -91,7 +97,6 @@ module.exports = {
 		)
 		await queryInterface.removeIndex('request_session_requests', 'index_created_by_request_session_requests')
 		await queryInterface.removeIndex('request_session_requests', 'index_session_id_request_session_requests')
-
 		await queryInterface.dropTable('request_session_requests')
 	},
 }

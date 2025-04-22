@@ -7,33 +7,37 @@ const common = require('@constants/common')
 const MenteeExtension = require('@database/models/index').UserExtension
 const { QueryTypes } = require('sequelize')
 
-exports.addSessionRequest = async (userId, friendId, Agenda, startDate, endDate) => {
+exports.addSessionRequest = async (userId, friendId, Agenda, startDate, endDate, Title, Medium) => {
 	try {
 		const result = await sequelize.transaction(async (t) => {
 			const SessionRequestData = [
 				{
 					user_id: userId,
 					friend_id: friendId,
-					status: common.SESSION_REQUEST_STATUS.REQUESTED,
+					status: common.CONNECTIONS_STATUS.REQUESTED,
+					title: Title,
 					agenda: Agenda,
 					start_date: startDate,
 					end_date: endDate,
-					created_by: friendId,
+					medium: Medium,
+					created_by: userId,
 					updated_by: userId,
 				},
 				{
 					user_id: friendId,
 					friend_id: userId,
-					status: common.SESSION_REQUEST_STATUS.REQUESTED,
+					status: common.CONNECTIONS_STATUS.REQUESTED,
+					title: Title,
 					agenda: Agenda,
 					start_date: startDate,
 					end_date: endDate,
-					created_by: friendId,
+					medium: Medium,
+					created_by: userId,
 					updated_by: userId,
 				},
 			]
 
-			const requests = await requestSession.bulkCreate(SessionRequestData, { transaction: t })
+			const requests = await requestSessionRequests.bulkCreate(SessionRequestData, { transaction: t })
 
 			return requests[0].get({ plain: true })
 		})
@@ -44,19 +48,111 @@ exports.addSessionRequest = async (userId, friendId, Agenda, startDate, endDate)
 	}
 }
 
-exports.getPendingRequests = async (userId, page, pageSize) => {
+// exports.getRequests = async (userId, page, pageSize) => {
+// 	try {
+// 		const currentPage = Number.isInteger(page) && page > 0 ? page : 1
+// 		const limit = Number.isInteger(pageSize) && pageSize > 0 ? pageSize : 10
+// 		const offset = (currentPage - 1) * limit
+
+// 		const result = await requestSessionRequests.findAndCountAll({
+// 			where: {
+// 				user_id: userId,
+// 				status: {
+// 					[Op.or]: [common.CONNECTIONS_STATUS.ACCEPTED, common.CONNECTIONS_STATUS.REQUESTED]
+// 				},
+// 			},
+// 			raw: true,
+// 			limit,
+// 			offset,
+// 		})
+
+// 		return result
+// 	} catch (error) {
+// 		throw error
+// 	}
+// }
+
+exports.getAllRequests = async (userId, page, pageSize) => {
 	try {
-		// This will retrieve send and received request
+		const currentPage = Number.isInteger(page) && page > 0 ? page : 1
+		const limit = Number.isInteger(pageSize) && pageSize > 0 ? pageSize : 10
+		const offset = (currentPage - 1) * limit
+
+		// 1. Get accepted requests from requestSession
+		const accepted = await requestSession.findAll({
+			where: {
+				user_id: userId,
+				status: common.CONNECTIONS_STATUS.ACCEPTED,
+			},
+			raw: true,
+		})
+
+		// 2. Get requested + accepted (non-deleted) from requestSessionRequests
+		const requestedAccepted = await requestSessionRequests.findAll({
+			where: {
+				user_id: userId,
+				status: {
+					[Op.in]: [common.CONNECTIONS_STATUS.REQUESTED, common.CONNECTIONS_STATUS.ACCEPTED],
+				},
+				deleted_at: null,
+			},
+			raw: true,
+		})
+
+		// 3. Get rejected (deleted) from requestSessionRequests
+		const rejected = await requestSessionRequests.findAll({
+			where: {
+				user_id: userId,
+				status: common.CONNECTIONS_STATUS.REJECTED,
+				deleted_at: {
+					[Op.not]: null,
+				},
+			},
+			paranoid: false, // allows soft-deleted entries to be queried
+			raw: true,
+		})
+
+		// Merge all results
+		const merged = [...accepted, ...requestedAccepted, ...rejected]
+
+		// Deduplicate based on `id`, `session_id`, or (user_id + friend_id)
+		// Assuming `id` is unique across both tables:
+		const uniqueMerged = Object.values(
+			merged.reduce((acc, row) => {
+				acc[row.id] = row
+				return acc
+			}, {})
+		)
+
+		// Manual pagination (after deduplication)
+		const paginatedRows = uniqueMerged.slice(offset, offset + limit)
+
+		return {
+			count: uniqueMerged.length,
+			rows: paginatedRows,
+		}
+	} catch (error) {
+		console.error('Error in getAllRequests:', error)
+		throw error
+	}
+}
+
+exports.getpendingRequests = async (userId, page, pageSize) => {
+	try {
+		const currentPage = Number.isInteger(page) && page > 0 ? page : 1
+		const limit = Number.isInteger(pageSize) && pageSize > 0 ? pageSize : 10
+		const offset = (currentPage - 1) * limit
 
 		const result = await requestSessionRequests.findAndCountAll({
 			where: {
 				user_id: userId,
-				status: common.SESSION_REQUEST_STATUS.REQUESTED,
+				status: common.CONNECTIONS_STATUS.REQUESTED,
 			},
 			raw: true,
-			limit: pageSize,
-			offset: (page - 1) * pageSize,
+			limit,
+			offset,
 		})
+
 		return result
 	} catch (error) {
 		throw error
@@ -69,7 +165,7 @@ exports.getRejectedSessionRequest = async (userId, friendId) => {
 			where: {
 				user_id: userId,
 				friend_id: friendId,
-				status: common.SESSION_REQUEST_STATUS.REJECTED,
+				status: common.CONNECTIONS_STATUS.REJECTED,
 				created_by: friendId,
 			},
 			paranoid: false,
@@ -83,7 +179,7 @@ exports.getRejectedSessionRequest = async (userId, friendId) => {
 	}
 }
 
-exports.approveRequest = async (userId, friendId, Agenda, startDate, endDate) => {
+exports.approveRequest = async (userId, friendId, Agenda, startDate, endDate, Title, Medium, sessionId) => {
 	try {
 		const requests = await sequelize.transaction(async (t) => {
 			const deletedCount = await requestSessionRequests.destroy({
@@ -92,34 +188,40 @@ exports.approveRequest = async (userId, friendId, Agenda, startDate, endDate) =>
 						{ user_id: userId, friend_id: friendId },
 						{ user_id: friendId, friend_id: userId },
 					],
-					status: common.SESSION_REQUEST_STATUS.REQUESTED,
+					status: common.CONNECTIONS_STATUS.REQUESTED,
 					created_by: friendId,
 				},
 				individualHooks: true,
 				transaction: t,
 			})
 			if (deletedCount != 2) {
-				throw new Error('Error while deleting from "ConnectionRequest"')
+				throw new Error('Error while deleting from "RequestSessions"')
 			}
 
 			const SessionRequestData = [
 				{
 					user_id: userId,
 					friend_id: friendId,
-					status: common.SESSION_REQUEST_STATUS.ACCEPTED,
+					status: common.CONNECTIONS_STATUS.ACCEPTED,
+					title: Title,
 					agenda: Agenda,
 					start_date: startDate,
 					end_date: endDate,
+					medium: Medium,
+					session_id: sessionId,
 					created_by: friendId,
 					updated_by: userId,
 				},
 				{
 					user_id: friendId,
 					friend_id: userId,
-					status: common.SESSION_REQUEST_STATUS.ACCEPTED,
+					status: common.CONNECTIONS_STATUS.ACCEPTED,
+					title: Title,
 					agenda: Agenda,
 					start_date: startDate,
 					end_date: endDate,
+					medium: Medium,
+					session_id: sessionId,
 					created_by: friendId,
 					updated_by: userId,
 				},
@@ -141,14 +243,14 @@ exports.approveRequest = async (userId, friendId, Agenda, startDate, endDate) =>
 exports.rejectRequest = async (userId, friendId) => {
 	try {
 		const updateData = {
-			status: common.SESSION_REQUEST_STATUS.REJECTED,
+			status: common.CONNECTIONS_STATUS.REJECTED,
 			updated_by: userId,
 			deleted_at: Date.now(),
 		}
 
 		return await requestSessionRequests.update(updateData, {
 			where: {
-				status: common.SESSION_REQUEST_STATUS.REQUESTED,
+				status: common.CONNECTIONS_STATUS.REQUESTED,
 				[Op.or]: [
 					{ user_id: userId, friend_id: friendId },
 					{ user_id: friendId, friend_id: userId },
@@ -169,7 +271,7 @@ exports.findOneRequest = async (userId, friendId) => {
 					{ user_id: userId, friend_id: friendId },
 					{ user_id: friendId, friend_id: userId },
 				],
-				status: common.SESSION_REQUEST_STATUS.REQUESTED,
+				status: common.CONNECTIONS_STATUS.REQUESTED,
 				created_by: friendId,
 			},
 			raw: true,
@@ -183,13 +285,12 @@ exports.findOneRequest = async (userId, friendId) => {
 
 exports.checkPendingRequest = async (userId, friendId) => {
 	try {
-		const result = await requestSessionRequests.findOne({
+		const result = await requestSessionRequests.findAndCountAll({
 			where: {
 				user_id: userId,
 				friend_id: friendId,
-				status: common.SESSION_REQUEST_STATUS.REQUESTED,
+				status: common.CONNECTIONS_STATUS.REQUESTED,
 			},
-			raw: true,
 		})
 		return result
 	} catch (error) {
@@ -202,7 +303,7 @@ exports.getSentAndReceivedRequests = async (userId) => {
 		const result = await requestSession.findAll({
 			where: {
 				[Op.or]: [{ user_id: userId }, { friend_id: userId }],
-				status: common.SESSION_REQUEST_STATUS.REQUESTED,
+				status: common.CONNECTIONS_STATUS.REQUESTED,
 			},
 			raw: true,
 		})
@@ -212,14 +313,14 @@ exports.getSentAndReceivedRequests = async (userId) => {
 	}
 }
 
-exports.getConnection = async (userId, friendId) => {
+exports.getRequestSessions = async (userId, friendId) => {
 	try {
-		const result = await requestSession.findOne({
+		const result = await requestSessionRequests.findOne({
 			where: {
 				user_id: userId,
 				friend_id: friendId,
 				status: {
-					[Op.or]: [common.SESSION_REQUEST_STATUS.ACCEPTED, common.SESSION_REQUEST_STATUS.BLOCKED],
+					[Op.or]: [common.CONNECTIONS_STATUS.ACCEPTED, common.CONNECTIONS_STATUS.BLOCKED],
 				},
 			},
 			raw: true,
@@ -240,7 +341,7 @@ exports.getSessionRequestByUserIds = async (userId, friendIds, projection) => {
 				friend_id: {
 					[Op.in]: friendIds,
 				},
-				status: common.SESSION_REQUEST_STATUS.ACCEPTED,
+				status: common.CONNECTIONS_STATUS.ACCEPTED,
 			},
 			attributes: projection || defaultProjection,
 			raw: true,
@@ -363,7 +464,7 @@ exports.getConnectionsDetails = async (
 	}
 }
 
-exports.updateConnection = async (userId, friendId, updateBody) => {
+exports.updateRequestSession = async (userId, friendId, updateBody) => {
 	try {
 		const [rowsUpdated, updatedConnections] = await Connection.update(updateBody, {
 			where: {

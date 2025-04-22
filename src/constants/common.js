@@ -223,6 +223,7 @@ module.exports = {
 		REQUESTED: 'REQUESTED',
 		BLOCKED: 'BLOCKED',
 	},
+	CONNECTIONS_DEFAULT_MESSAGE: 'Hi, I would like to connect with you.',
 	COMMUNICATION: {
 		UNAUTHORIZED: 'Unauthorized',
 	},

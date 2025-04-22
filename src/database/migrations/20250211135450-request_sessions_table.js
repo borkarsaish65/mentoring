@@ -25,9 +25,13 @@ module.exports = {
 			meta: {
 				type: Sequelize.JSON,
 			},
+			title: {
+				type: Sequelize.STRING,
+				allowNull: false,
+			},
 			agenda: {
 				type: Sequelize.STRING,
-				allowNull: true,
+				allowNull: false,
 			},
 			start_date: {
 				type: Sequelize.INTEGER,
@@ -35,10 +39,12 @@ module.exports = {
 			end_date: {
 				type: Sequelize.INTEGER,
 			},
+			medium: {
+				type: Sequelize.ARRAY(Sequelize.STRING),
+				allowNull: false,
+			},
 			session_id: {
 				type: Sequelize.STRING,
-				allowNull: true,
-				primaryKey: true,
 			},
 			updated_by: {
 				type: Sequelize.STRING,

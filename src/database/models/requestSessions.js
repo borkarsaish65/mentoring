@@ -24,7 +24,10 @@ module.exports = (sequelize, DataTypes) => {
 			meta: {
 				type: DataTypes.JSON,
 			},
-			agend: {
+			title: {
+				type: DataTypes.STRING,
+			},
+			agenda: {
 				type: DataTypes.STRING,
 			},
 			start_date: {
@@ -33,9 +36,12 @@ module.exports = (sequelize, DataTypes) => {
 			end_date: {
 				type: DataTypes.INTEGER,
 			},
+			medium: {
+				type: DataTypes.ARRAY(DataTypes.STRING),
+				allowNull: false,
+			},
 			session_id: {
 				type: DataTypes.STRING,
-				allowNull: true,
 			},
 			updated_by: {
 				type: DataTypes.STRING,

@@ -209,14 +209,25 @@ module.exports = class SessionsHelper {
 					responseCode: 'CLIENT_ERROR',
 				})
 			const sessionModelName = await sessionQueries.getModelName()
-
-			let entityTypes = await entityTypeQueries.findUserEntityTypesAndEntities({
-				status: 'ACTIVE',
-				organization_id: {
-					[Op.in]: [orgId, defaultOrgId],
-				},
-				model_names: { [Op.contains]: [sessionModelName] },
-			})
+			let entityTypes
+			if ((bodyData.requestSession = true)) {
+				entityTypes = await entityTypeQueries.findUserEntityTypesAndEntities({
+					status: 'ACTIVE',
+					organization_id: {
+						[Op.in]: [orgId, defaultOrgId],
+					},
+					model_names: { [Op.contains]: [sessionModelName] },
+					request_session: true,
+				})
+			} else {
+				entityTypes = await entityTypeQueries.findUserEntityTypesAndEntities({
+					status: 'ACTIVE',
+					organization_id: {
+						[Op.in]: [orgId, defaultOrgId],
+					},
+					model_names: { [Op.contains]: [sessionModelName] },
+				})
+			}
 
 			//validationData = utils.removeParentEntityTypes(JSON.parse(JSON.stringify(validationData)))
 			const validationData = removeDefaultOrgEntityTypes(entityTypes, orgId)
@@ -274,7 +285,6 @@ module.exports = class SessionsHelper {
 				bodyData.mentor_feedback_question_set = organisationPolicy.mentor_feedback_question_set
 
 			// Create session
-
 			const data = await sessionQueries.create(bodyData)
 
 			if (!data?.id) {
