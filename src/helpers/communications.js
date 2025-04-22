@@ -195,3 +195,32 @@ exports.createChatRoom = async (recipientUserId, initiatorUserId, initialMessage
 		throw error
 	}
 }
+
+/**
+ * Resolves an external user ID by fetching the corresponding internal user ID
+ * via a communication request. Logs an error message if unauthorized.
+ *
+ * @async
+ * @function resolve
+ * @param {string} userId - The external user ID to be resolved.
+ * @returns {Promise<Object>} An object containing the resolved internal user ID.
+ * @throws {Error} Throws the original error if the request fails.
+ *
+ * @example
+ * const result = await resolve('external-user-123');
+ * // result => { user_id: 'internal-user-456' }
+ */
+exports.resolve = async (userId) => {
+	try {
+		const userIdResponse = await communicationRequests.getUserId(userId)
+
+		return {
+			user_id: userIdResponse.result.user_id,
+		}
+	} catch (error) {
+		if (error.message === common.COMMUNICATION.UNAUTHORIZED) {
+			console.error('Error: Unauthorized access during resolve. Please check your tokens.')
+		}
+		throw error
+	}
+}
