@@ -25,5 +25,6 @@ module.exports = {
 	COMMUNICATION_CREATE_CHAT_ROOM: 'v1/communication/createRoom',
 	COMMUNICATION_UPDATE_AVATAR: 'v1/communication/updateAvatar',
 	COMMUNICATION_UPDATE_USER: 'v1/communication/updateUser',
+	COMMUNICATION_GET_USER_ID: 'v1/communication/userMapping',
 	DOWNLOAD_IMAGE_URL: 'v1/cloud-services/file/getDownloadableUrl',
 }

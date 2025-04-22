@@ -42,7 +42,8 @@ module.exports = {
                         WHEN :session_type = 'Private' THEN Session.type = 'PRIVATE'
                         ELSE TRUE
                     END
-                );`,
+                )
+                DYNAMIC_AND_CLAUSE;`,
 				organization_id: defaultOrgId,
 				status: 'ACTIVE',
 				created_at: Sequelize.literal('CURRENT_TIMESTAMP'),
@@ -50,51 +51,55 @@ module.exports = {
 			},
 			{
 				report_code: 'total_hours_of_learning',
-				query: `SELECT 
+				query: `SELECT
                 TO_CHAR(
-    INTERVAL '1 hour' * FLOOR(SUM(
-        CASE WHEN Session.type IN ('PUBLIC', 'PRIVATE') THEN EXTRACT(EPOCH FROM (Session.completed_at - Session.started_at)) ELSE 0 END
-    ) / 3600) +
-    INTERVAL '1 minute' * FLOOR(SUM(
-        CASE WHEN Session.type IN ('PUBLIC', 'PRIVATE') THEN EXTRACT(EPOCH FROM (Session.completed_at - Session.started_at)) ELSE 0 END
-    ) / 60 % 60) +
-    INTERVAL '1 second' * FLOOR(SUM(
-        CASE WHEN Session.type IN ('PUBLIC', 'PRIVATE') THEN EXTRACT(EPOCH FROM (Session.completed_at - Session.started_at)) ELSE 0 END
-    ) % 60),
-    'HH24:MI:SS'
-) AS total_hours
-, -- Total duration of all sessions
-            TO_CHAR(
-                INTERVAL '1 hour' * FLOOR(SUM(CASE WHEN Session.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (Session.completed_at - Session.started_at)) / 3600 ELSE 0 END)) +
-                INTERVAL '1 minute' * FLOOR(SUM(CASE WHEN Session.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (Session.completed_at - Session.started_at)) / 60 ELSE 0 END) % 60) +
-                INTERVAL '1 second' * FLOOR(SUM(CASE WHEN Session.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (Session.completed_at - Session.started_at)) % 60 ELSE 0 END)),
-                'HH24:MI:SS'
-            ) AS public_hours, -- Total duration of public sessions
-            TO_CHAR(
-                INTERVAL '1 hour' * FLOOR(SUM(CASE WHEN Session.type = 'PRIVATE' THEN EXTRACT(EPOCH FROM (Session.completed_at - Session.started_at)) / 3600 ELSE 0 END)) +
-                INTERVAL '1 minute' * FLOOR(SUM(CASE WHEN Session.type = 'PRIVATE' THEN EXTRACT(EPOCH FROM (Session.completed_at - Session.started_at)) / 60 ELSE 0 END) % 60) +
-                INTERVAL '1 second' * FLOOR(SUM(CASE WHEN Session.type = 'PRIVATE' THEN EXTRACT(EPOCH FROM (Session.completed_at - Session.started_at)) % 60 ELSE 0 END)),
-                'HH24:MI:SS'
-            ) AS private_hours
-            FROM 
-                public.session_attendees AS sa
-            JOIN 
-                public.sessions AS Session
-            ON 
-                sa.session_id = Session.id
-            WHERE 
-                (CASE WHEN :userId IS NOT NULL THEN sa.mentee_id = :userId ELSE TRUE END)
-                AND sa.joined_at IS NOT NULL 
-                AND (CASE WHEN :start_date IS NOT NULL THEN Session.start_date > :start_date ELSE TRUE END)
-                AND (CASE WHEN :end_date IS NOT NULL THEN Session.end_date < :end_date ELSE TRUE END)
-                AND (
-                    CASE 
-                        WHEN :session_type = 'All' THEN Session.type IN ('PUBLIC', 'PRIVATE')
-                        WHEN :session_type = 'Public' THEN Session.type = 'PUBLIC'
-                        WHEN :session_type = 'Private' THEN Session.type = 'PRIVATE'
-                        ELSE TRUE
-                    END
-                );`,
+                    INTERVAL '1 hour' * FLOOR(SUM(duration) / 3600) +
+                    INTERVAL '1 minute' * FLOOR((SUM(duration) / 60)::BIGINT % 60) +
+                    INTERVAL '1 second' * FLOOR(SUM(duration)::BIGINT % 60),
+                    'HH24:MI:SS'
+                ) AS total_hours,  -- Total duration of all sessions
+            
+                TO_CHAR(
+                    INTERVAL '1 hour' * FLOOR(SUM(CASE WHEN type = 'PUBLIC' THEN duration ELSE 0 END) / 3600) +
+                    INTERVAL '1 minute' * FLOOR((SUM(CASE WHEN type = 'PUBLIC' THEN duration ELSE 0 END) / 60)::BIGINT % 60) +
+                    INTERVAL '1 second' * FLOOR(SUM(CASE WHEN type = 'PUBLIC' THEN duration ELSE 0 END)::BIGINT % 60),
+                    'HH24:MI:SS'
+                ) AS public_hours,  -- Total duration of public sessions
+            
+                TO_CHAR(
+                    INTERVAL '1 hour' * FLOOR(SUM(CASE WHEN type = 'PRIVATE' THEN duration ELSE 0 END) / 3600) +
+                    INTERVAL '1 minute' * FLOOR((SUM(CASE WHEN type = 'PRIVATE' THEN duration ELSE 0 END) / 60)::BIGINT % 60) +
+                    INTERVAL '1 second' * FLOOR(SUM(CASE WHEN type = 'PRIVATE' THEN duration ELSE 0 END)::BIGINT % 60),
+                    'HH24:MI:SS'
+                ) AS private_hours  -- Total duration of private sessions
+            
+            FROM (
+                SELECT
+                    sa.session_id,
+                    EXTRACT(EPOCH FROM (Session.completed_at - Session.started_at)) AS duration,
+                    Session.type
+                FROM
+                    public.session_attendees AS sa
+                JOIN
+                    public.sessions AS Session
+                ON
+                    sa.session_id = Session.id
+                WHERE
+                    (CASE WHEN :userId IS NOT NULL THEN sa.mentee_id = :userId ELSE TRUE END)
+                            AND sa.joined_at IS NOT NULL
+                            AND (CASE WHEN :start_date IS NOT NULL THEN Session.start_date > :start_date ELSE TRUE END)
+                            AND (CASE WHEN :end_date IS NOT NULL THEN Session.end_date < :end_date ELSE TRUE END)
+                            AND (
+                                CASE 
+                                    WHEN :session_type = 'All' THEN Session.type IN ('PUBLIC', 'PRIVATE')
+                                    WHEN :session_type = 'Public' THEN Session.type = 'PUBLIC'
+                                    WHEN :session_type = 'Private' THEN Session.type = 'PRIVATE'
+                                    ELSE TRUE
+                                END
+                            )
+                            DYNAMIC_AND_CLAUSE
+            ) AS session_durations
+            `,
 				organization_id: defaultOrgId,
 				status: 'ACTIVE',
 				created_at: Sequelize.literal('CURRENT_TIMESTAMP'),
@@ -150,7 +155,8 @@ module.exports = {
             WHERE 
             (CASE WHEN :userId IS NOT NULL THEN sa.mentee_id = :userId ELSE TRUE END)
             AND (CASE WHEN :start_date IS NOT NULL THEN Session.start_date > :start_date ELSE TRUE END)
-            AND (CASE WHEN :end_date IS NOT NULL THEN Session.end_date < :end_date ELSE TRUE END);`,
+            AND (CASE WHEN :end_date IS NOT NULL THEN Session.end_date < :end_date ELSE TRUE END)
+            DYNAMIC_AND_CLAUSE;`,
 				organization_id: defaultOrgId,
 				status: 'ACTIVE',
 				created_at: Sequelize.literal('CURRENT_TIMESTAMP'),
@@ -158,45 +164,61 @@ module.exports = {
 			},
 			{
 				report_code: 'mentee_session_details',
-				query: `SELECT
-                Session.title AS "sessions_title",
-                ue.name AS "sessions_created_by",
-                Session.mentor_name AS "mentor_name",
-                TO_TIMESTAMP(Session.start_date)::DATE AS "date_of_session",
-                Session.type AS "session_type",
-                ARRAY_TO_STRING(Session.categories, ', ') AS "categories",
-                ARRAY_TO_STRING(Session.recommended_for, ', ') AS "recommended_for",
-                CASE
-                    WHEN sa.joined_at IS NOT NULL THEN 'Yes'
-                    ELSE 'No'
-                END AS "session_attended",
-                ROUND(EXTRACT(EPOCH FROM (TO_TIMESTAMP(Session.end_date) - TO_TIMESTAMP(Session.start_date))) / 60) AS "duration_of_sessions_attended_in_minutes"
-            FROM (
-                SELECT *
-                FROM public.sessions
-            ) AS Session -- Alias defined in the subquery
-            LEFT JOIN -- Moved this JOIN before the JOIN with session_attendees
-                public.user_extensions AS ue
-                ON Session.created_by = ue.user_id
-            JOIN  -- This JOIN is now after the LEFT JOIN
-                public.session_attendees AS sa
-                ON sa.session_id = Session.id    
-            WHERE
-                -- Filter by mentee ID if provided
-                (:userId IS NULL OR sa.mentee_id = :userId)
-            
-                -- Filter by start date if provided
-                AND (:start_date IS NULL OR Session.start_date > :start_date)
-            
-                -- Filter by end date if provided
-                AND (:end_date IS NULL OR Session.end_date < :end_date)
-            
-                -- Filter by session type
-                AND (
-                    :session_type = 'All' AND Session.type IN ('PUBLIC', 'PRIVATE')
-                    OR :session_type = 'PUBLIC' AND Session.type = 'PUBLIC'
-                    OR :session_type = 'PRIVATE' AND Session.type = 'PRIVATE'
-                );`,
+				query: `WITH Session AS (
+                    SELECT
+                        id,
+                        title,
+                        created_by,
+                        mentor_name,
+                        start_date,
+                        end_date,
+                        type,
+                        categories,
+                        recommended_for
+                    FROM
+                        public.sessions
+                ),
+                UserExtensions AS (
+                    SELECT
+                        user_id,
+                        name
+                    FROM
+                        public.user_extensions
+                ),
+                SessionAttendees AS (
+                    SELECT
+                        session_id,
+                        mentee_id,
+                        joined_at
+                    FROM
+                        public.session_attendees
+                )
+                SELECT
+                    Session.title AS "sessions_title",
+                    ue.name AS "sessions_created_by",
+                    Session.mentor_name AS "mentor_name",
+                    TO_TIMESTAMP(Session.start_date)::DATE AS "date_of_session",
+                    Session.type AS "session_type",
+                    Session.categories AS "categories",
+                    Session.recommended_for AS "recommended_for",
+                    CASE WHEN sa.joined_at IS NOT NULL THEN 'Yes' ELSE 'No' END AS "session_attended",
+                    ROUND(EXTRACT(EPOCH FROM (TO_TIMESTAMP(Session.end_date)-TO_TIMESTAMP(Session.start_date)))/60) AS "duration_of_sessions_attended_in_minutes"
+                FROM
+                    Session
+                LEFT JOIN
+                    UserExtensions AS ue ON Session.created_by = ue.user_id
+                JOIN
+                    SessionAttendees AS sa ON sa.session_id = Session.id
+                WHERE
+                    (:userId IS NULL OR sa.mentee_id = :userId)
+                    AND (:start_date IS NULL OR Session.start_date > :start_date)
+                    AND (:end_date IS NULL OR Session.end_date < :end_date)
+                    AND (
+                        :session_type = 'All' AND Session.type IN ('PUBLIC', 'PRIVATE')
+                        OR :session_type = 'PUBLIC' AND Session.type = 'PUBLIC'
+                        OR :session_type = 'PRIVATE' AND Session.type = 'PRIVATE'
+                    )
+                    DYNAMIC_AND_CLAUSE;`,
 				organization_id: defaultOrgId,
 				status: 'ACTIVE',
 				created_at: Sequelize.literal('CURRENT_TIMESTAMP'),
@@ -230,7 +252,8 @@ module.exports = {
                 public.session_ownerships AS so ON so.session_id = Session.id
             WHERE
                 so.user_id = :userId
-                AND ('MENTOR' IS NULL OR so.type = 'MENTOR');`,
+                AND ('MENTOR' IS NULL OR so.type = 'MENTOR')
+                DYNAMIC_AND_CLAUSE;`,
 				organization_id: defaultOrgId,
 				status: 'ACTIVE',
 				created_at: Sequelize.literal('CURRENT_TIMESTAMP'),
@@ -239,28 +262,38 @@ module.exports = {
 			{
 				report_code: 'total_hours_of_mentoring_conducted',
 				query: `WITH filtered_ownerships AS (
-                    SELECT 
-                        so.session_id
-                    FROM 
-                        public.session_ownerships so
+                    SELECT so.session_id
+                    FROM public.session_ownerships so
                     WHERE 
-                        so.user_id = :userId 
-                        AND so.type = 'MENTOR'
- -- Filter based on the user_id
+                    so.user_id = :userId 
+                    AND so.type = 'MENTOR'
                 )
+                
                 SELECT 
                     -- Total duration (sum of both public and private sessions)
                     COALESCE(
                         TO_CHAR(
                             INTERVAL '1 hour' * FLOOR(SUM(
-                                CASE WHEN session.type IN ('PUBLIC', 'PRIVATE') THEN EXTRACT(EPOCH FROM (session.completed_at - session.started_at)) ELSE 0 END
+                                CASE 
+                                    WHEN Session.type IN ('PUBLIC', 'PRIVATE') 
+                                    THEN EXTRACT(EPOCH FROM (Session.completed_at - Session.started_at)) 
+                                    ELSE 0 
+                                END
                             ) / 3600) +
-                            INTERVAL '1 minute' * FLOOR(SUM(
-                                CASE WHEN session.type IN ('PUBLIC', 'PRIVATE') THEN EXTRACT(EPOCH FROM (session.completed_at - session.started_at)) ELSE 0 END
-                            ) / 60 % 60) +
+                            INTERVAL '1 minute' * FLOOR((SUM(
+                                CASE 
+                                    WHEN Session.type IN ('PUBLIC', 'PRIVATE') 
+                                    THEN EXTRACT(EPOCH FROM (Session.completed_at - Session.started_at)) 
+                                    ELSE 0 
+                                END
+                            ) / 60)::BIGINT % 60) +
                             INTERVAL '1 second' * FLOOR(SUM(
-                                CASE WHEN session.type IN ('PUBLIC', 'PRIVATE') THEN EXTRACT(EPOCH FROM (session.completed_at - session.started_at)) ELSE 0 END
-                            ) % 60),
+                                CASE 
+                                    WHEN Session.type IN ('PUBLIC', 'PRIVATE') 
+                                    THEN EXTRACT(EPOCH FROM (Session.completed_at - Session.started_at)) 
+                                    ELSE 0 
+                                END
+                            )::BIGINT % 60),
                             'HH24:MI:SS'
                         ), 
                         '00:00:00'
@@ -270,14 +303,26 @@ module.exports = {
                     COALESCE(
                         TO_CHAR(
                             INTERVAL '1 hour' * FLOOR(SUM(
-                                CASE WHEN session.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (session.completed_at - session.started_at)) ELSE 0 END
+                                CASE 
+                                    WHEN Session.type = 'PUBLIC' 
+                                    THEN EXTRACT(EPOCH FROM (Session.completed_at - Session.started_at)) 
+                                    ELSE 0 
+                                END
                             ) / 3600) +
-                            INTERVAL '1 minute' * FLOOR(SUM(
-                                CASE WHEN session.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (session.completed_at - session.started_at)) ELSE 0 END
-                            ) / 60 % 60) +
+                            INTERVAL '1 minute' * FLOOR((SUM(
+                                CASE 
+                                    WHEN Session.type = 'PUBLIC' 
+                                    THEN EXTRACT(EPOCH FROM (Session.completed_at - Session.started_at)) 
+                                    ELSE 0 
+                                END
+                            ) / 60)::BIGINT % 60) +
                             INTERVAL '1 second' * FLOOR(SUM(
-                                CASE WHEN session.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (session.completed_at - session.started_at)) ELSE 0 END
-                            ) % 60),
+                                CASE 
+                                    WHEN Session.type = 'PUBLIC' 
+                                    THEN EXTRACT(EPOCH FROM (Session.completed_at - Session.started_at)) 
+                                    ELSE 0 
+                                END
+                            )::BIGINT % 60),
                             'HH24:MI:SS'
                         ), 
                         '00:00:00'
@@ -287,34 +332,45 @@ module.exports = {
                     COALESCE(
                         TO_CHAR(
                             INTERVAL '1 hour' * FLOOR(SUM(
-                                CASE WHEN session.type = 'PRIVATE' THEN EXTRACT(EPOCH FROM (session.completed_at - session.started_at)) ELSE 0 END
+                                CASE 
+                                    WHEN Session.type = 'PRIVATE' 
+                                    THEN EXTRACT(EPOCH FROM (Session.completed_at - Session.started_at)) 
+                                    ELSE 0 
+                                END
                             ) / 3600) +
-                            INTERVAL '1 minute' * FLOOR(SUM(
-                                CASE WHEN session.type = 'PRIVATE' THEN EXTRACT(EPOCH FROM (session.completed_at - session.started_at)) ELSE 0 END
-                            ) / 60 % 60) +
+                            INTERVAL '1 minute' * FLOOR((SUM(
+                                CASE 
+                                    WHEN Session.type = 'PRIVATE' 
+                                    THEN EXTRACT(EPOCH FROM (Session.completed_at - Session.started_at)) 
+                                    ELSE 0 
+                                END
+                            ) / 60)::BIGINT % 60) +
                             INTERVAL '1 second' * FLOOR(SUM(
-                                CASE WHEN session.type = 'PRIVATE' THEN EXTRACT(EPOCH FROM (session.completed_at - session.started_at)) ELSE 0 END
-                            ) % 60),
+                                CASE 
+                                    WHEN Session.type = 'PRIVATE' 
+                                    THEN EXTRACT(EPOCH FROM (Session.completed_at - Session.started_at)) 
+                                    ELSE 0 
+                                END
+                            )::BIGINT % 60),
                             'HH24:MI:SS'
                         ), 
                         '00:00:00'
                     ) AS private_hours
-                FROM 
-                    filtered_ownerships fo
-                JOIN 
-                    public.sessions session ON session.id = fo.session_id  -- Join with the sessions table based on session_id
-                WHERE 
-                    session.status = 'COMPLETED'
-                    AND session.start_date > :start_date  -- Start date filter
-                    AND session.end_date < :end_date    -- End date filter
-                    AND (
-                        CASE 
-                            WHEN :session_type = 'All' THEN session.type IN ('PUBLIC', 'PRIVATE')  -- If all types, include both
-                            WHEN :session_type = 'PUBLIC' THEN session.type = 'PUBLIC'  -- If PUBLIC, only include public
-                            WHEN :session_type = 'PRIVATE' THEN session.type = 'PRIVATE'  -- If PRIVATE, only include private
-                            ELSE TRUE  -- Default condition
-                        END
-                    );`,
+                
+                FROM filtered_ownerships fo
+                JOIN public.sessions Session ON Session.id = fo.session_id  -- Renamed alias from session to Session
+                WHERE Session.status = 'COMPLETED'
+                AND Session.start_date > :start_date  -- Start date filter
+                AND Session.end_date < :end_date    -- End date filter
+                AND (
+                                        CASE 
+                                            WHEN :session_type = 'All' THEN Session.type IN ('PUBLIC', 'PRIVATE')  -- If all types, include both
+                                            WHEN :session_type = 'PUBLIC' THEN Session.type = 'PUBLIC'  -- If PUBLIC, only include public
+                                            WHEN :session_type = 'PRIVATE' THEN Session.type = 'PRIVATE'  -- If PRIVATE, only include private
+                                            ELSE TRUE  -- Default condition
+                                        END
+                                    )
+                DYNAMIC_AND_CLAUSE;`,
 				organization_id: defaultOrgId,
 				status: 'ACTIVE',
 				created_at: Sequelize.literal('CURRENT_TIMESTAMP'),
@@ -419,7 +475,8 @@ module.exports = {
             JOIN
                 public.session_ownerships AS so ON so.session_id = session.id
             WHERE
-                (:userId IS NOT NULL AND so.user_id = :userId OR :userId IS NULL);`,
+                (:userId IS NOT NULL AND so.user_id = :userId OR :userId IS NULL)
+                 DYNAMIC_AND_CLAUSE;`,
 				organization_id: defaultOrgId,
 				status: 'ACTIVE',
 				created_at: Sequelize.literal('CURRENT_TIMESTAMP'),
@@ -430,13 +487,12 @@ module.exports = {
 				query: `SELECT
                 session.title AS "sessions_title",
                 ue.name AS "sessions_created_by",
-                session.seats_limit - session.seats_remaining AS "number_of_mentees",
+                session.seats_limit-session.seats_remaining AS "number_of_mentees",
                 TO_TIMESTAMP(session.start_date)::DATE AS "date_of_session",
                 session.type AS "session_type",
                 CASE WHEN session.started_at IS NOT NULL THEN 'Yes' ELSE 'No' END AS "session_conducted",
-                ROUND(EXTRACT(EPOCH FROM (TO_TIMESTAMP(session.end_date) - TO_TIMESTAMP(session.start_date))) / 60) AS "duration_of_sessions_attended_in_minutes"
-            FROM
-                (SELECT * FROM public.sessions WHERE start_date > :start_date AND end_date < :end_date) AS session
+                ROUND(EXTRACT(EPOCH FROM(TO_TIMESTAMP(session.end_date)-TO_TIMESTAMP(session.start_date)))/60) AS "duration_of_sessions_attended_in_minutes"
+            FROM (SELECT * FROM public.sessions WHERE start_date > :start_date AND end_date < :end_date) AS session
             JOIN
                 (SELECT * FROM public.session_ownerships WHERE user_id = :userId AND type = 'MENTOR') AS so ON session.id = so.session_id
             LEFT JOIN
@@ -449,7 +505,8 @@ module.exports = {
                         WHEN :session_type = 'PRIVATE' THEN session.type = 'PRIVATE'
                         ELSE TRUE
                     END
-                )`,
+                )
+                DYNAMIC_AND_CLAUSE`,
 				organization_id: defaultOrgId,
 				status: 'ACTIVE',
 				created_at: Sequelize.literal('CURRENT_TIMESTAMP'),
@@ -459,39 +516,42 @@ module.exports = {
 				report_code: 'total_hours_of_sessions_created_by_session_manager',
 				query: `SELECT
                 TO_CHAR(
-                    INTERVAL '1 hour' * FLOOR(SUM(EXTRACT(EPOCH FROM (TO_TIMESTAMP(Session.end_date) - TO_TIMESTAMP(Session.start_date))) / 60) / 60) +
-                    INTERVAL '1 minute' * FLOOR(SUM(EXTRACT(EPOCH FROM (TO_TIMESTAMP(Session.end_date) - TO_TIMESTAMP(Session.start_date))) / 60) % 60) +
-                    INTERVAL '1 second' * FLOOR(SUM(EXTRACT(EPOCH FROM (TO_TIMESTAMP(Session.end_date) - TO_TIMESTAMP(Session.start_date))) / 60) % 60),
+                    INTERVAL '1 second' * FLOOR(SUM(EXTRACT(EPOCH FROM (completed_at - started_at)))),
                     'HH24:MI:SS'
                 ) AS total_hours,
             
                 TO_CHAR(
-                    INTERVAL '1 hour' * FLOOR(SUM(CASE WHEN Session.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (TO_TIMESTAMP(Session.end_date) - TO_TIMESTAMP(Session.start_date))) / 60 ELSE 0 END) / 60) +
-                    INTERVAL '1 minute' * FLOOR(SUM(CASE WHEN Session.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (TO_TIMESTAMP(Session.end_date) - TO_TIMESTAMP(Session.start_date))) / 60 ELSE 0 END) % 60) +
-                    INTERVAL '1 second' * FLOOR(SUM(CASE WHEN Session.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (TO_TIMESTAMP(Session.end_date) - TO_TIMESTAMP(Session.start_date))) / 60 ELSE 0 END) % 60),
+                    INTERVAL '1 second' * FLOOR(SUM(CASE WHEN Session.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END)),
                     'HH24:MI:SS'
                 ) AS total_public_hours,
             
                 TO_CHAR(
-                    INTERVAL '1 hour' * FLOOR(SUM(CASE WHEN Session.type = 'PRIVATE' THEN EXTRACT(EPOCH FROM (TO_TIMESTAMP(Session.end_date) - TO_TIMESTAMP(Session.start_date))) / 60 ELSE 0 END) / 60) +
-                    INTERVAL '1 minute' * FLOOR(SUM(CASE WHEN Session.type = 'PRIVATE' THEN EXTRACT(EPOCH FROM (TO_TIMESTAMP(Session.end_date) - TO_TIMESTAMP(Session.start_date))) / 60 ELSE 0 END) % 60) +
-                    INTERVAL '1 second' * FLOOR(SUM(CASE WHEN Session.type = 'PRIVATE' THEN EXTRACT(EPOCH FROM (TO_TIMESTAMP(Session.end_date) - TO_TIMESTAMP(Session.start_date))) / 60 ELSE 0 END) % 60),
+                    INTERVAL '1 second' * FLOOR(SUM(CASE WHEN Session.type = 'PRIVATE' THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END)),
                     'HH24:MI:SS'
                 ) AS total_private_hours
             
             FROM
-                (SELECT * FROM public.sessions WHERE public.sessions.start_date > :start_date AND public.sessions.end_date < :end_date) AS Session
+                (SELECT * FROM public.sessions 
+                 WHERE public.sessions.status = 'COMPLETED' 
+                   AND public.sessions.start_date > :start_date 
+                   AND public.sessions.end_date < :end_date) AS Session
             JOIN
-                (SELECT * FROM public.session_ownerships WHERE public.session_ownerships.user_id = :userId AND public.session_ownerships.type = 'CREATOR') AS so ON Session.id = so.session_id
+                (SELECT *
+                 FROM public.session_ownerships 
+                 WHERE public.session_ownerships.user_id = :userId 
+                   AND public.session_ownerships.type = 'CREATOR') AS so 
+            ON Session.id = so.session_id
             WHERE
+                -- Simplified the CASE logic for filtering session types
                 (
-                    CASE
-                        WHEN :session_type = 'All' THEN Session.type IN ('PUBLIC', 'PRIVATE')
+                    CASE 
+                        WHEN :session_type = 'All' THEN TRUE
                         WHEN :session_type = 'PUBLIC' THEN Session.type = 'PUBLIC'
                         WHEN :session_type = 'PRIVATE' THEN Session.type = 'PRIVATE'
                         ELSE TRUE
                     END
-                );`,
+                )
+                DYNAMIC_AND_CLAUSE;`,
 				organization_id: defaultOrgId,
 				status: 'ACTIVE',
 				created_at: Sequelize.literal('CURRENT_TIMESTAMP'),
@@ -535,7 +595,8 @@ module.exports = {
                         WHEN :session_type = 'PRIVATE' THEN Session.type = 'PRIVATE'
                         ELSE TRUE
                     END
-                );`,
+                )
+                DYNAMIC_AND_CLAUSE;`,
 				organization_id: defaultOrgId,
 				status: 'ACTIVE',
 				created_at: Sequelize.literal('CURRENT_TIMESTAMP'),
@@ -613,8 +674,8 @@ module.exports = {
                     :session_type = 'All'
                     OR :session_type = 'Public'
                     OR :session_type = 'Private'
-                );
-            `,
+                )
+                DYNAMIC_AND_CLAUSE;`,
 				organization_id: defaultOrgId,
 				status: 'ACTIVE',
 				created_at: Sequelize.literal('CURRENT_TIMESTAMP'),
@@ -622,37 +683,30 @@ module.exports = {
 			},
 			{
 				report_code: 'session_manger_session_details',
-				query: `SELECT
-                subquery."mentor_name" ,
-                subquery."number_of_mentoring_sessions",
-                subquery."hours_of_mentoring_sessions",
-                subquery."avg_mentor_rating"
-            FROM (
-                SELECT
-                    session.mentor_name AS "mentor_name",
-                    COUNT(*) AS "number_of_mentoring_sessions",
-                    TO_CHAR( INTERVAL '1 second' * ROUND(SUM(EXTRACT(EPOCH FROM (session.completed_at - session.started_at)))),
-                    'HH24:MI:SS'
-                    ) AS "hours_of_mentoring_sessions",
-                    COALESCE(CAST(ue.rating ->> 'average' AS NUMERIC), 0) AS "avg_mentor_rating"
-                FROM
-                    (SELECT * FROM public.sessions WHERE public.sessions.created_by = :userId AND public.sessions.started_at IS NOT NULL AND public.sessions.completed_at IS NOT NULL AND public.sessions.start_date > :start_date AND public.sessions.end_date < :end_date AND (
-                        CASE
-                            WHEN :session_type = 'All' THEN public.sessions.type IN ('PUBLIC', 'PRIVATE')
-                            WHEN :session_type = 'Public' THEN public.sessions.type = 'PUBLIC'
-                            WHEN :session_type = 'Private' THEN public.sessions.type = 'PRIVATE'
-                            ELSE TRUE
-                        END
-                    )) AS session
-                JOIN (SELECT DISTINCT on (session_id,user_id) * FROM public.session_ownerships WHERE public.session_ownerships.type IN ('CREATOR', 'MENTOR')) AS so ON session.id = so.session_id                
-                LEFT JOIN
-                    public.user_extensions AS ue ON so.user_id = ue.user_id
-                GROUP BY
-                    so.user_id,
-                    session.created_by,
-                    session.mentor_name,
-                    COALESCE(CAST(ue.rating ->> 'average' AS NUMERIC), 0)
-            ) AS subquery ;`,
+				query: `WITH 
+                session_count AS (
+                SELECT session.mentor_id, session.mentor_name, COUNT(*) AS number_of_sessions,
+                TO_CHAR( INTERVAL '1 second' * ROUND(SUM(EXTRACT(EPOCH FROM (session.completed_at - session.started_at)))),
+                                'HH24:MI:SS'
+                                ) AS "hours_of_mentoring_sessions"
+                FROM public.sessions AS session WHERE session.created_by = :userId AND session.started_at IS NOT NULL AND session.completed_at IS NOT NULL AND session.start_date > :start_date AND session.end_date < :end_date AND (CASE
+                                        WHEN :session_type = 'All' THEN session.type IN ('PUBLIC', 'PRIVATE')
+                                        WHEN :session_type = 'Public' THEN session.type = 'PUBLIC'
+                                        WHEN :session_type = 'Private' THEN session.type = 'PRIVATE'
+                                        ELSE TRUE
+                                    END
+                                )
+                GROUP BY session.mentor_id, session.mentor_name
+            )
+            SELECT sc.mentor_name as mentor_name , 
+             sc.number_of_sessions as number_of_mentoring_sessions,
+             sc.hours_of_mentoring_sessions as hours_of_mentoring_sessions,
+             COALESCE(CAST(ue.rating ->>'average'AS NUMERIC),0) AS avg_mentor_rating
+            FROM session_count AS sc
+            JOIN public.user_extensions AS ue ON sc.mentor_id = ue.user_id
+            DYNAMIC_WHERE_CLAUSE
+            ORDER BY sc.mentor_name 
+            ;`,
 				organization_id: defaultOrgId,
 				status: 'ACTIVE',
 				created_at: Sequelize.literal('CURRENT_TIMESTAMP'),
