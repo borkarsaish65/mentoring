@@ -43,11 +43,11 @@ module.exports = {
 					permission_id: await POSTPermissionId(
 						'requestSessions',
 						['GET'],
-						'/mentoring/v1/requestSessions/listAll'
+						'/mentoring/v1/requestSessions/list'
 					),
 					module: 'requestSessions',
 					request_type: ['GET'],
-					api_path: '/mentoring/v1/requestSessions/listAll',
+					api_path: '/mentoring/v1/requestSessions/list',
 					created_at: new Date(),
 					updated_at: new Date(),
 					created_by: 0,
@@ -57,11 +57,11 @@ module.exports = {
 					permission_id: await POSTPermissionId(
 						'requestSessions',
 						['GET'],
-						'/mentoring/v1/requestSessions/listAll'
+						'/mentoring/v1/requestSessions/list'
 					),
 					module: 'requestSessions',
 					request_type: ['GET'],
-					api_path: '/mentoring/v1/requestSessions/listAll',
+					api_path: '/mentoring/v1/requestSessions/list',
 					created_at: new Date(),
 					updated_at: new Date(),
 					created_by: 0,
@@ -71,11 +71,11 @@ module.exports = {
 					permission_id: await POSTPermissionId(
 						'requestSessions',
 						['GET'],
-						'/mentoring/v1/requestSessions/listAll'
+						'/mentoring/v1/requestSessions/list'
 					),
 					module: 'requestSessions',
 					request_type: ['GET'],
-					api_path: '/mentoring/v1/requestSessions/listAll',
+					api_path: '/mentoring/v1/requestSessions/list',
 					created_at: new Date(),
 					updated_at: new Date(),
 					created_by: 0,
@@ -85,11 +85,11 @@ module.exports = {
 					permission_id: await POSTPermissionId(
 						'requestSessions',
 						['GET'],
-						'/mentoring/v1/requestSessions/listAll'
+						'/mentoring/v1/requestSessions/list'
 					),
 					module: 'requestSessions',
 					request_type: ['GET'],
-					api_path: '/mentoring/v1/requestSessions/listAll',
+					api_path: '/mentoring/v1/requestSessions/list',
 					created_at: new Date(),
 					updated_at: new Date(),
 					created_by: 0,

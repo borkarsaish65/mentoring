@@ -47,12 +47,6 @@ module.exports = {
 			.isInt()
 			.withMessage('end_date must be an integer')
 
-		req.checkBody('medium')
-			.notEmpty()
-			.withMessage('medium field is empty')
-			.isArray({ min: 1 })
-			.withMessage('medium must be an array')
-
 		req.checkBody('time_zone')
 			.optional()
 			.isString()

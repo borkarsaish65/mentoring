@@ -39,10 +39,6 @@ module.exports = {
 			end_date: {
 				type: Sequelize.INTEGER,
 			},
-			medium: {
-				type: Sequelize.ARRAY(Sequelize.STRING),
-				allowNull: false,
-			},
 			session_id: {
 				type: Sequelize.STRING,
 			},
@@ -65,13 +61,6 @@ module.exports = {
 			deleted_at: {
 				type: Sequelize.DATE,
 				allowNull: true,
-			},
-		})
-		await queryInterface.addIndex('request_sessions', ['user_id', 'friend_id'], {
-			unique: true,
-			name: 'unique_user_id_friend_id_request_sessions',
-			where: {
-				deleted_at: null,
 			},
 		})
 		await queryInterface.addIndex('request_sessions', ['friend_id'], {

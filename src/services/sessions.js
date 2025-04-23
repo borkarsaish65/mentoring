@@ -63,7 +63,7 @@ module.exports = class SessionsHelper {
 	 * @returns {JSON} 						- Create session data.
 	 */
 
-	static async create(bodyData, loggedInUserId, orgId, isAMentor, notifyUser) {
+	static async create(bodyData, loggedInUserId, orgId, isAMentor, notifyUser, skipValidation) {
 		try {
 			// check if session mentor is added in the mentee list
 			if (bodyData?.mentees?.includes(bodyData?.mentor_id)) {
@@ -209,30 +209,19 @@ module.exports = class SessionsHelper {
 					responseCode: 'CLIENT_ERROR',
 				})
 			const sessionModelName = await sessionQueries.getModelName()
-			let entityTypes
-			if ((bodyData.requestSession = true)) {
-				entityTypes = await entityTypeQueries.findUserEntityTypesAndEntities({
-					status: 'ACTIVE',
-					organization_id: {
-						[Op.in]: [orgId, defaultOrgId],
-					},
-					model_names: { [Op.contains]: [sessionModelName] },
-					request_session: true,
-				})
-			} else {
-				entityTypes = await entityTypeQueries.findUserEntityTypesAndEntities({
-					status: 'ACTIVE',
-					organization_id: {
-						[Op.in]: [orgId, defaultOrgId],
-					},
-					model_names: { [Op.contains]: [sessionModelName] },
-				})
-			}
+			const entityTypes = await entityTypeQueries.findUserEntityTypesAndEntities({
+				status: 'ACTIVE',
+				organization_id: {
+					[Op.in]: [orgId, defaultOrgId],
+				},
+				model_names: { [Op.contains]: [sessionModelName] },
+			})
 
 			//validationData = utils.removeParentEntityTypes(JSON.parse(JSON.stringify(validationData)))
 			const validationData = removeDefaultOrgEntityTypes(entityTypes, orgId)
 			bodyData.status = common.PUBLISHED_STATUS
-			let res = utils.validateInput(bodyData, validationData, sessionModelName)
+			let res = utils.validateInput(bodyData, validationData, sessionModelName, skipValidation)
+			console.log('resss===========', res)
 			if (!res.success) {
 				return responses.failureResponse({
 					message: 'SESSION_CREATION_FAILED',

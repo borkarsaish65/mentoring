@@ -7,7 +7,23 @@ const common = require('@constants/common')
 const MenteeExtension = require('@database/models/index').UserExtension
 const { QueryTypes } = require('sequelize')
 
-exports.addSessionRequest = async (userId, friendId, Agenda, startDate, endDate, Title, Medium) => {
+exports.getColumns = async () => {
+	try {
+		return await Object.keys(requestSessionRequests.rawAttributes)
+	} catch (error) {
+		return error
+	}
+}
+
+exports.getModelName = async () => {
+	try {
+		return await requestSession.name
+	} catch (error) {
+		return error
+	}
+}
+
+exports.addSessionRequest = async (userId, friendId, Agenda, startDate, endDate, Title, Meta) => {
 	try {
 		const result = await sequelize.transaction(async (t) => {
 			const SessionRequestData = [
@@ -19,9 +35,9 @@ exports.addSessionRequest = async (userId, friendId, Agenda, startDate, endDate,
 					agenda: Agenda,
 					start_date: startDate,
 					end_date: endDate,
-					medium: Medium,
 					created_by: userId,
 					updated_by: userId,
+					meta: Meta,
 				},
 				{
 					user_id: friendId,
@@ -31,9 +47,9 @@ exports.addSessionRequest = async (userId, friendId, Agenda, startDate, endDate,
 					agenda: Agenda,
 					start_date: startDate,
 					end_date: endDate,
-					medium: Medium,
 					created_by: userId,
 					updated_by: userId,
+					meta: Meta,
 				},
 			]
 
@@ -47,30 +63,6 @@ exports.addSessionRequest = async (userId, friendId, Agenda, startDate, endDate,
 		throw error
 	}
 }
-
-// exports.getRequests = async (userId, page, pageSize) => {
-// 	try {
-// 		const currentPage = Number.isInteger(page) && page > 0 ? page : 1
-// 		const limit = Number.isInteger(pageSize) && pageSize > 0 ? pageSize : 10
-// 		const offset = (currentPage - 1) * limit
-
-// 		const result = await requestSessionRequests.findAndCountAll({
-// 			where: {
-// 				user_id: userId,
-// 				status: {
-// 					[Op.or]: [common.CONNECTIONS_STATUS.ACCEPTED, common.CONNECTIONS_STATUS.REQUESTED]
-// 				},
-// 			},
-// 			raw: true,
-// 			limit,
-// 			offset,
-// 		})
-
-// 		return result
-// 	} catch (error) {
-// 		throw error
-// 	}
-// }
 
 exports.getAllRequests = async (userId, page, pageSize) => {
 	try {
@@ -179,7 +171,7 @@ exports.getRejectedSessionRequest = async (userId, friendId) => {
 	}
 }
 
-exports.approveRequest = async (userId, friendId, Agenda, startDate, endDate, Title, Medium, sessionId) => {
+exports.approveRequest = async (userId, friendId, Agenda, startDate, endDate, Title, sessionId, Meta) => {
 	try {
 		const requests = await sequelize.transaction(async (t) => {
 			const deletedCount = await requestSessionRequests.destroy({
@@ -207,10 +199,10 @@ exports.approveRequest = async (userId, friendId, Agenda, startDate, endDate, Ti
 					agenda: Agenda,
 					start_date: startDate,
 					end_date: endDate,
-					medium: Medium,
 					session_id: sessionId,
 					created_by: friendId,
 					updated_by: userId,
+					meta: Meta,
 				},
 				{
 					user_id: friendId,
@@ -220,10 +212,10 @@ exports.approveRequest = async (userId, friendId, Agenda, startDate, endDate, Ti
 					agenda: Agenda,
 					start_date: startDate,
 					end_date: endDate,
-					medium: Medium,
 					session_id: sessionId,
 					created_by: friendId,
 					updated_by: userId,
+					meta: Meta,
 				},
 			]
 
@@ -240,12 +232,16 @@ exports.approveRequest = async (userId, friendId, Agenda, startDate, endDate, Ti
 	}
 }
 
-exports.rejectRequest = async (userId, friendId) => {
+exports.rejectRequest = async (userId, friendId, rejectReason) => {
 	try {
-		const updateData = {
+		let updateData = {
 			status: common.CONNECTIONS_STATUS.REJECTED,
 			updated_by: userId,
 			deleted_at: Date.now(),
+		}
+
+		if (rejectReason) {
+			updateData.meta = { reason: rejectReason }
 		}
 
 		return await requestSessionRequests.update(updateData, {

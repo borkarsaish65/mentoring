@@ -11,7 +11,13 @@ module.exports = class requestsSessions {
 	 */
 	async create(req) {
 		try {
-			return await requestSessionsService.create(req.body, req.decodedToken.id, req.decodedToken.role)
+			const SkipValidation = req.SkipValidation ? req.SkipValidation : false
+			return await requestSessionsService.create(
+				req.body,
+				req.decodedToken.id,
+				req.decodedToken.organization_id,
+				SkipValidation
+			)
 		} catch (error) {
 			return error
 		}
@@ -24,9 +30,9 @@ module.exports = class requestsSessions {
 	 * @param {number} pageSize - The number of records per page.
 	 * @returns {Promise<Object>} The list of pending session requests.
 	 */
-	async listAll(req) {
+	async list(req) {
 		try {
-			const requestSessionDetails = await requestSessionsService.listAll(
+			const requestSessionDetails = await requestSessionsService.list(
 				req.decodedToken.id,
 				req.pageNo,
 				req.pageSize
@@ -103,6 +109,21 @@ module.exports = class requestsSessions {
 	async getDetails(req) {
 		try {
 			return await requestSessionsService.getInfo(req.body.user_id, req.decodedToken.id)
+		} catch (error) {
+			throw error
+		}
+	}
+
+	async userAvailability(req) {
+		try {
+			return await requestSessionsService.userAvailability(
+				req.decodedToken.id,
+				req.query.pageNo,
+				req.query.pageSize,
+				req.query.searchText,
+				req.query.status,
+				req.decodedToken.roles
+			)
 		} catch (error) {
 			throw error
 		}

@@ -36,10 +36,6 @@ module.exports = (sequelize, DataTypes) => {
 			end_date: {
 				type: DataTypes.INTEGER,
 			},
-			medium: {
-				type: DataTypes.ARRAY(DataTypes.STRING),
-				allowNull: false,
-			},
 			session_id: {
 				type: DataTypes.STRING,
 			},
@@ -72,14 +68,6 @@ module.exports = (sequelize, DataTypes) => {
 			freezeTableName: true,
 			paranoid: true,
 			indexes: [
-				{
-					fields: ['user_id', 'friend_id'],
-					unique: true,
-					name: 'unique_user_id_friend_id_request_session_requests',
-					where: {
-						deleted_at: null,
-					},
-				},
 				{
 					fields: ['friend_id'],
 					name: 'index_friend_id_request_session_requests',

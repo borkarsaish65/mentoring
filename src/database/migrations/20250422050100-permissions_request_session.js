@@ -18,7 +18,7 @@ module.exports = {
 					code: 'request_sessions_list_all_permission',
 					module: 'requestSessions',
 					request_type: ['GET'],
-					api_path: '/mentoring/v1/requestSessions/listAll',
+					api_path: '/mentoring/v1/requestSessions/list',
 					status: 'ACTIVE',
 					created_at: new Date(),
 					updated_at: new Date(),
