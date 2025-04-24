@@ -369,7 +369,8 @@ module.exports = class requestSessionsHelper {
 				getRequestSessionDetails.start_date,
 				getRequestSessionDetails.end_date,
 				getRequestSessionDetails.title,
-				sessionCreation.result.id
+				sessionCreation.result.id,
+				getRequestSessionDetails.meta ? getRequestSessionDetails.meta : null
 			)
 			if (
 				!approveSessionRequest.length ||
@@ -562,18 +563,40 @@ module.exports = class requestSessionsHelper {
 	 * @returns {Promise<Object>} The session information.
 	 * @throws Will throw an error if the request fails.
 	 */
-	static async getInfo(friendId, userId) {
+	static async getInfo(friendId, userId, startDate, endDate, status) {
 		try {
-			let requestSessions = await sessionRequestQueries.getRequestSessions(userId, friendId)
+			let requestSessions
 
-			if (!requestSessions) {
-				// If no connection is found, check for pending requests
-				requestSessions = await sessionRequestQueries.checkPendingRequest(userId, friendId)
-			}
+			switch (status) {
+				case common.CONNECTIONS_STATUS.ACCEPTED:
+					requestSessions = await sessionRequestQueries.getRequestSessions(
+						userId,
+						friendId,
+						startDate,
+						endDate
+					)
+					break
 
-			if (!requestSessions || requestSessions.count == 0) {
-				// If still no connection, check for the deleted request
-				requestSessions = await sessionRequestQueries.getRejectedSessionRequest(userId, friendId)
+				case common.CONNECTIONS_STATUS.REQUESTED:
+					requestSessions = await sessionRequestQueries.checkPendingRequest(
+						userId,
+						friendId,
+						startDate,
+						endDate
+					)
+					break
+
+				case common.CONNECTIONS_STATUS.REJECTED:
+					requestSessions = await sessionRequestQueries.getRejectedSessionRequest(
+						userId,
+						friendId,
+						startDate,
+						endDate
+					)
+					break
+
+				default:
+					requestSessions = null
 			}
 
 			const defaultOrgId = await getDefaultOrgId()

@@ -221,7 +221,6 @@ module.exports = class SessionsHelper {
 			const validationData = removeDefaultOrgEntityTypes(entityTypes, orgId)
 			bodyData.status = common.PUBLISHED_STATUS
 			let res = utils.validateInput(bodyData, validationData, sessionModelName, skipValidation)
-			console.log('resss===========', res)
 			if (!res.success) {
 				return responses.failureResponse({
 					message: 'SESSION_CREATION_FAILED',

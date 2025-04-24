@@ -108,7 +108,13 @@ module.exports = class requestsSessions {
 
 	async getDetails(req) {
 		try {
-			return await requestSessionsService.getInfo(req.body.user_id, req.decodedToken.id)
+			return await requestSessionsService.getInfo(
+				req.body.user_id,
+				req.decodedToken.id,
+				req.body.start_date,
+				req.body.end_date,
+				req.body.status
+			)
 		} catch (error) {
 			throw error
 		}
