@@ -39,6 +39,9 @@ module.exports = (sequelize, DataTypes) => {
 			session_id: {
 				type: DataTypes.STRING,
 			},
+			reject_reason: {
+				type: DataTypes.STRING,
+			},
 			updated_by: {
 				type: DataTypes.STRING,
 				allowNull: false,

@@ -1227,36 +1227,6 @@ function transformEntityTypes(input) {
 	return { entityTypes }
 }
 
-function createMentorAvailabilityResponse(data) {
-	const availability = {}
-
-	data.forEach((session) => {
-		const startDate = moment.unix(Number(session.start_date))
-		const endDate = moment.unix(Number(session.end_date))
-		const dateKey = startDate.format('YYYY-MM-DD')
-
-		const timeSlot = {
-			startTime: startDate.format('HH:mm:ss'),
-			endTime: endDate.format('HH:mm:ss'),
-		}
-
-		if (!availability[dateKey]) {
-			availability[dateKey] = []
-		}
-
-		availability[dateKey].push(timeSlot)
-	})
-
-	const resultData = Object.keys(availability).map((date) => ({
-		date,
-		bookedSlots: availability[date],
-	}))
-
-	return {
-		Message: 'mentor availibilty featched successfully',
-		result: resultData,
-	}
-}
 module.exports = {
 	hash: hash,
 	getCurrentMonthRange,
@@ -1318,5 +1288,4 @@ module.exports = {
 	mapEntityTypeToData,
 	getDynamicEntityCondition,
 	transformEntityTypes,
-	createMentorAvailabilityResponse,
 }

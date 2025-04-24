@@ -63,8 +63,9 @@ module.exports = class SessionsHelper {
 	 * @returns {JSON} 						- Create session data.
 	 */
 
-	static async create(bodyData, loggedInUserId, orgId, isAMentor, notifyUser, skipValidation) {
+	static async create(bodyData, loggedInUserId, orgId, isAMentor, notifyUser, skipValidations) {
 		try {
+			let skipValidation = skipValidations ? skipValidations : false
 			// check if session mentor is added in the mentee list
 			if (bodyData?.mentees?.includes(bodyData?.mentor_id)) {
 				return responses.failureResponse({

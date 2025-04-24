@@ -35,27 +35,8 @@ module.exports = class requestsSessions {
 			const requestSessionDetails = await requestSessionsService.list(
 				req.decodedToken.id,
 				req.pageNo,
-				req.pageSize
-			)
-			return requestSessionDetails
-		} catch (error) {
-			return error
-		}
-	}
-
-	/**
-	 * Get a list of pending session requests for a user.
-	 * @param {string} userId - The ID of the user.
-	 * @param {number} pageNo - The page number for pagination.
-	 * @param {number} pageSize - The number of records per page.
-	 * @returns {Promise<Object>} The list of pending session requests.
-	 */
-	async pendingList(req) {
-		try {
-			const requestSessionDetails = await requestSessionsService.pendingList(
-				req.decodedToken.id,
-				req.pageNo,
-				req.pageSize
+				req.pageSize,
+				req.status
 			)
 			return requestSessionDetails
 		} catch (error) {

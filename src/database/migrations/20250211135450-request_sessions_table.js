@@ -42,6 +42,9 @@ module.exports = {
 			session_id: {
 				type: Sequelize.STRING,
 			},
+			reject_reason: {
+				type: Sequelize.STRING,
+			},
 			updated_by: {
 				type: Sequelize.STRING,
 				allowNull: false,

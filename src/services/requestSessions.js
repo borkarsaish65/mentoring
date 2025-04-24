@@ -28,14 +28,6 @@ module.exports = class requestSessionsHelper {
 		return connectionRequest
 	}
 
-	static async checkSessionRequestExists(userId, targetUserId) {
-		const findSessionRequest = await sessionRequestQueries.findOneRequest(userId, targetUserId)
-		if (!findSessionRequest) {
-			return false
-		}
-		return findSessionRequest
-	}
-
 	/**
 	 * Initiates a session request between two users.
 	 * @param {Object} bodyData - The request body requesting session related information.
@@ -58,6 +50,13 @@ module.exports = class requestSessionsHelper {
 						message: 'SESSION_REQUEST_PENDING',
 					})
 				}
+			}
+
+			if (userId == bodyData.friend_id) {
+				return responses.failureResponse({
+					statusCode: httpStatusCode.bad_request,
+					responseCode: 'CLIENT_ERROR',
+				})
 			}
 
 			const mentorUserExists = await userExtensionQueries.getMenteeExtension(bodyData.friend_id)
@@ -150,56 +149,33 @@ module.exports = class requestSessionsHelper {
 	 * @param {number} pageSize - The number of records per page.
 	 * @returns {Promise<Object>} The list of pending session requests.
 	 */
-	static async list(userId, pageNo, pageSize) {
+	static async list(userId, pageNo, pageSize, status) {
 		try {
-			const pendingRequestSession = await sessionRequestQueries.getAllRequests(userId, pageNo, pageSize)
+			const allRequestSession = await sessionRequestQueries.getAllRequests(userId, pageNo, pageSize, status)
 
-			if (pendingRequestSession.count == 0 || pendingRequestSession.rows.length == 0) {
+			if (allRequestSession.count == 0 || allRequestSession.rows.length == 0) {
 				return responses.successResponse({
 					statusCode: httpStatusCode.ok,
 					message: 'SESSION_REQUESTS_LIST',
 					result: {
 						data: [],
-						count: pendingRequestSession.count,
+						count: allRequestSession.count,
 					},
 				})
 			}
 
 			// Map friend details by user IDs
-			const friendIds = pendingRequestSession.rows.map((requestSession) => requestSession.friend_id)
+			const friendIds = allRequestSession.rows.map((requestSession) => requestSession.friend_id)
 			let friendDetails = await userExtensionQueries.getUsersByUserIds(friendIds, {
-				attributes: [
-					'name',
-					'user_id',
-					'mentee_visibility',
-					'organization_id',
-					'designation',
-					'area_of_expertise',
-					'education_qualification',
-					'custom_entity_text',
-					'meta',
-					'experience',
-					'is_mentor',
-					'image',
-				],
+				attributes: ['user_id', 'image'],
 			})
-
-			const userExtensionsModelName = await userExtensionQueries.getModelName()
-
-			const uniqueOrgIds = [...new Set(friendDetails.map((obj) => obj.organization_id))]
-			friendDetails = await entityTypeService.processEntityTypesToAddValueLabels(
-				friendDetails,
-				uniqueOrgIds,
-				userExtensionsModelName,
-				'organization_id'
-			)
 
 			const friendDetailsMap = friendDetails.reduce((acc, friend) => {
 				acc[friend.user_id] = friend
 				return acc
 			}, {})
 
-			let requestSessionWithDetails = pendingRequestSession.rows.map((requestSession) => {
+			let requestSessionWithDetails = allRequestSession.rows.map((requestSession) => {
 				return {
 					...requestSession,
 					user_details: friendDetailsMap[requestSession.friend_id] || null,
@@ -223,95 +199,7 @@ module.exports = class requestSessionsHelper {
 			return responses.successResponse({
 				statusCode: httpStatusCode.ok,
 				message: 'SESSION_REQUESTS_LIST',
-				result: { data: requestSessionWithDetails, count: pendingRequestSession.count },
-			})
-		} catch (error) {
-			console.error(error)
-			throw error
-		}
-	}
-
-	/**
-	 * Get a list of pending session requests for a user.
-	 * @param {string} userId - The ID of the user.
-	 * @param {number} pageNo - The page number for pagination.
-	 * @param {number} pageSize - The number of records per page.
-	 * @returns {Promise<Object>} The list of pending session requests.
-	 */
-	static async pendingList(userId, pageNo, pageSize) {
-		try {
-			const pendingRequestSession = await sessionRequestQueries.getpendingRequests(userId, pageNo, pageSize)
-
-			if (pendingRequestSession.count == 0 || pendingRequestSession.rows.length == 0) {
-				return responses.successResponse({
-					statusCode: httpStatusCode.ok,
-					message: 'SESSION_REQUESTS_LIST',
-					result: {
-						data: [],
-						count: pendingRequestSession.count,
-					},
-				})
-			}
-
-			// Map friend details by user IDs
-			const friendIds = pendingRequestSession.rows.map((requestSession) => requestSession.friend_id)
-			let friendDetails = await userExtensionQueries.getUsersByUserIds(friendIds, {
-				attributes: [
-					'name',
-					'user_id',
-					'mentee_visibility',
-					'organization_id',
-					'designation',
-					'area_of_expertise',
-					'education_qualification',
-					'custom_entity_text',
-					'meta',
-					'experience',
-					'is_mentor',
-					'image',
-				],
-			})
-
-			const userExtensionsModelName = await userExtensionQueries.getModelName()
-
-			const uniqueOrgIds = [...new Set(friendDetails.map((obj) => obj.organization_id))]
-			friendDetails = await entityTypeService.processEntityTypesToAddValueLabels(
-				friendDetails,
-				uniqueOrgIds,
-				userExtensionsModelName,
-				'organization_id'
-			)
-
-			const friendDetailsMap = friendDetails.reduce((acc, friend) => {
-				acc[friend.user_id] = friend
-				return acc
-			}, {})
-
-			let requestSessionWithDetails = pendingRequestSession.rows.map((requestSession) => {
-				return {
-					...requestSession,
-					user_details: friendDetailsMap[requestSession.friend_id] || null,
-				}
-			})
-
-			const userIds = requestSessionWithDetails.map((item) => item.friend_id)
-			const userDetails = await userRequests.getListOfUserDetails(userIds, true)
-			const userDetailsMap = new Map(userDetails.result.map((userDetail) => [String(userDetail.id), userDetail]))
-			requestSessionWithDetails = requestSessionWithDetails.filter((requestSessionWithDetail) => {
-				const user_id = String(requestSessionWithDetail.friend_id)
-
-				if (userDetailsMap.has(user_id)) {
-					const userDetail = userDetailsMap.get(user_id)
-					requestSessionWithDetail.user_details.image = userDetail.image
-					return true
-				}
-				return false
-			})
-
-			return responses.successResponse({
-				statusCode: httpStatusCode.ok,
-				message: 'SESSION_REQUESTS_LIST',
-				result: { data: requestSessionWithDetails, count: pendingRequestSession.count },
+				result: { data: requestSessionWithDetails, count: allRequestSession.count },
 			})
 		} catch (error) {
 			console.error(error)
@@ -330,8 +218,12 @@ module.exports = class requestSessionsHelper {
 	static async accept(bodyData, mentorUserId, orgId, isMentor, notifyUser) {
 		try {
 			const skipValidation = true
-			const getRequestSessionDetails = await sessionRequestQueries.findOneRequest(mentorUserId, bodyData.user_id)
-			console.log('getRequestSessionDetails.agenda', getRequestSessionDetails, typeof getRequestSessionDetails)
+			const getRequestSessionDetails = await sessionRequestQueries.findOneRequest(
+				mentorUserId,
+				bodyData.user_id,
+				bodyData.start_date,
+				bodyData.end_date
+			)
 			Object.assign(bodyData, {
 				type: common.SESSION_TYPE.PRIVATE,
 				mentor_id: mentorUserId,
@@ -365,12 +257,9 @@ module.exports = class requestSessionsHelper {
 			const approveSessionRequest = await sessionRequestQueries.approveRequest(
 				mentorUserId,
 				bodyData.user_id,
-				getRequestSessionDetails.agenda,
 				getRequestSessionDetails.start_date,
 				getRequestSessionDetails.end_date,
-				getRequestSessionDetails.title,
-				sessionCreation.result.id,
-				getRequestSessionDetails.meta ? getRequestSessionDetails.meta : null
+				sessionCreation.result.id
 			)
 			if (
 				!approveSessionRequest.length ||
@@ -392,10 +281,10 @@ module.exports = class requestSessionsHelper {
 					})
 				}
 
-				const connectionRequest = await this.checkConnectionRequestExists(mentorUserId, bodyData.user_id)
 				const connectionExists = await connectionQueries.getConnection(mentorUserId, bodyData.user_id)
 
 				if (!connectionExists) {
+					const connectionRequest = await this.checkConnectionRequestExists(mentorUserId, bodyData.user_id)
 					// If there's no connection request, create one first
 					if (!connectionRequest) {
 						await connectionQueries.addFriendRequest(
@@ -442,38 +331,9 @@ module.exports = class requestSessionsHelper {
 				}
 			}
 
-			const menteeDetails = await userExtensionQueries.getUsersByUserIds(bodyData.user_id, {
-				attributes: ['name', 'email'],
-			})
+			const templateCode = process.env.MENTOR_ACCEPT_SESSION_REQUEST_EMAIL_TEMPLATE
 
-			const mentorDetails = await mentorExtensionQueries.getMentorExtension(mentorUserId, ['name'], true)
-
-			let emailTemplateCode
-
-			//assign template data
-			emailTemplateCode = process.env.MENTOR_ACCEPT_SESSION_REQUEST_EMAIL_TEMPLATE
-
-			// send mail to mentors on session creation if session created by manager
-			const templateData = await notificationQueries.findOneEmailTemplate(emailTemplateCode, orgId)
-
-			// If template data is available. create mail data and push to kafka
-			if (templateData) {
-				let name = menteeDetails.name
-				// Push successful enrollment to session in kafka
-				const payload = {
-					type: 'email',
-					email: {
-						to: menteeDetails.email,
-						subject: templateData.subject,
-						body: utils.composeEmailBody(templateData.body, {
-							name,
-							mentorName: mentorDetails.name,
-						}),
-					},
-				}
-				console.log('EMAIL PAYLOAD: ', payload)
-				await kafkaCommunication.pushEmailToKafka(payload)
-			}
+			emailForAcceptAndReject(templateCode, orgId)
 
 			return responses.successResponse({
 				statusCode: httpStatusCode.created,
@@ -499,7 +359,9 @@ module.exports = class requestSessionsHelper {
 			const [rejectedCount, rejectedData] = await sessionRequestQueries.rejectRequest(
 				userId,
 				bodyData.user_id,
-				bodyData.reason
+				bodyData.reason,
+				bodyData.start_date,
+				bodyData.end_date
 			)
 
 			if (rejectedCount == 0) {
@@ -510,38 +372,8 @@ module.exports = class requestSessionsHelper {
 				})
 			}
 
-			const menteeDetails = await userExtensionQueries.getUsersByUserIds(bodyData.user_id, {
-				attributes: ['name', 'email'],
-			})
-
-			const MentorDetails = await mentorExtensionQueries.getMentorExtension(userId, ['name'], true)
-
-			let emailTemplateCode
-
-			//assign template data
-			emailTemplateCode = process.env.MENTOR_REJECT_SESSION_REQUEST_EMAIL_TEMPLATE
-
-			// send mail to mentors on session creation if session created by manager
-			const templateData = await notificationQueries.findOneEmailTemplate(emailTemplateCode, orgId)
-
-			// If template data is available. create mail data and push to kafka
-			if (templateData) {
-				let name = menteeDetails.name
-				// Push successful enrollment to session in kafka
-				const payload = {
-					type: 'email',
-					email: {
-						to: menteeDetails.email,
-						subject: templateData.subject,
-						body: utils.composeEmailBody(templateData.body, {
-							name,
-							mentorName: MentorDetails.name,
-						}),
-					},
-				}
-				console.log('EMAIL PAYLOAD: ', payload)
-				await kafkaCommunication.pushEmailToKafka(payload)
-			}
+			const templateCode = process.env.MENTOR_REJECT_SESSION_REQUEST_EMAIL_TEMPLATE
+			emailForAcceptAndReject(templateCode, orgId)
 
 			return responses.successResponse({
 				statusCode: httpStatusCode.created,
@@ -565,39 +397,13 @@ module.exports = class requestSessionsHelper {
 	 */
 	static async getInfo(friendId, userId, startDate, endDate, status) {
 		try {
-			let requestSessions
-
-			switch (status) {
-				case common.CONNECTIONS_STATUS.ACCEPTED:
-					requestSessions = await sessionRequestQueries.getRequestSessions(
-						userId,
-						friendId,
-						startDate,
-						endDate
-					)
-					break
-
-				case common.CONNECTIONS_STATUS.REQUESTED:
-					requestSessions = await sessionRequestQueries.checkPendingRequest(
-						userId,
-						friendId,
-						startDate,
-						endDate
-					)
-					break
-
-				case common.CONNECTIONS_STATUS.REJECTED:
-					requestSessions = await sessionRequestQueries.getRejectedSessionRequest(
-						userId,
-						friendId,
-						startDate,
-						endDate
-					)
-					break
-
-				default:
-					requestSessions = null
-			}
+			const requestSessions = await sessionRequestQueries.getRequestSessions(
+				userId,
+				friendId,
+				startDate,
+				endDate,
+				status
+			)
 
 			const defaultOrgId = await getDefaultOrgId()
 			if (!defaultOrgId) {
@@ -678,7 +484,7 @@ module.exports = class requestSessionsHelper {
 			const allSessions = [...(mentoringSessions?.result?.data || []), ...(enrolledSessions?.rows || [])]
 
 			// Generate combined availability
-			const availability = await utils.createMentorAvailabilityResponse(allSessions)
+			const availability = await createMentorAvailabilityResponse(allSessions)
 
 			return responses.successResponse({
 				statusCode: httpStatusCode.created,
@@ -688,5 +494,71 @@ module.exports = class requestSessionsHelper {
 		} catch (error) {
 			return error
 		}
+	}
+}
+
+function createMentorAvailabilityResponse(data) {
+	const availability = {}
+
+	data.forEach((session) => {
+		const startDate = moment.unix(Number(session.start_date))
+		const endDate = moment.unix(Number(session.end_date))
+		const dateKey = startDate.format('YYYY-MM-DD')
+
+		const timeSlot = {
+			startTime: startDate.format('HH:mm:ss'),
+			endTime: endDate.format('HH:mm:ss'),
+		}
+
+		if (!availability[dateKey]) {
+			availability[dateKey] = []
+		}
+
+		availability[dateKey].push(timeSlot)
+	})
+
+	const resultData = Object.keys(availability).map((date) => ({
+		date,
+		bookedSlots: availability[date],
+	}))
+
+	return {
+		Message: 'mentor availibilty featched successfully',
+		result: resultData,
+	}
+}
+
+async function emailForAcceptAndReject(templateCode, orgId) {
+	const menteeDetails = await userExtensionQueries.getUsersByUserIds(bodyData.user_id, {
+		attributes: ['name', 'email'],
+	})
+
+	const mentorDetails = await mentorExtensionQueries.getMentorExtension(mentorUserId, ['name'], true)
+
+	let emailTemplateCode
+
+	//assign template data
+	emailTemplateCode = templateCode
+
+	// send mail to mentors on session creation if session created by manager
+	const templateData = await notificationQueries.findOneEmailTemplate(emailTemplateCode, orgId)
+
+	// If template data is available. create mail data and push to kafka
+	if (templateData) {
+		let name = menteeDetails.name
+		// Push successful enrollment to session in kafka
+		const payload = {
+			type: 'email',
+			email: {
+				to: menteeDetails.email,
+				subject: templateData.subject,
+				body: utils.composeEmailBody(templateData.body, {
+					name,
+					mentorName: mentorDetails.name,
+				}),
+			},
+		}
+		console.log('EMAIL PAYLOAD: ', payload)
+		await kafkaCommunication.pushEmailToKafka(payload)
 	}
 }
