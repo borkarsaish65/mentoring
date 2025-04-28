@@ -99,62 +99,6 @@ module.exports = {
 					permission_id: await POSTPermissionId(
 						'requestSessions',
 						['GET'],
-						'/mentoring/v1/requestSessions/pendingList'
-					),
-					module: 'requestSessions',
-					request_type: ['GET'],
-					api_path: '/mentoring/v1/requestSessions/pendingList',
-					created_at: new Date(),
-					updated_at: new Date(),
-					created_by: 0,
-				},
-				{
-					role_title: common.MENTOR_ROLE,
-					permission_id: await POSTPermissionId(
-						'requestSessions',
-						['GET'],
-						'/mentoring/v1/requestSessions/pendingList'
-					),
-					module: 'requestSessions',
-					request_type: ['GET'],
-					api_path: '/mentoring/v1/requestSessions/pendingList',
-					created_at: new Date(),
-					updated_at: new Date(),
-					created_by: 0,
-				},
-				{
-					role_title: common.SESSION_MANAGER_ROLE,
-					permission_id: await POSTPermissionId(
-						'requestSessions',
-						['GET'],
-						'/mentoring/v1/requestSessions/pendingList'
-					),
-					module: 'requestSessions',
-					request_type: ['GET'],
-					api_path: '/mentoring/v1/requestSessions/pendingList',
-					created_at: new Date(),
-					updated_at: new Date(),
-					created_by: 0,
-				},
-				{
-					role_title: common.ORG_ADMIN_ROLE,
-					permission_id: await POSTPermissionId(
-						'requestSessions',
-						['GET'],
-						'/mentoring/v1/requestSessions/pendingList'
-					),
-					module: 'requestSessions',
-					request_type: ['GET'],
-					api_path: '/mentoring/v1/requestSessions/pendingList',
-					created_at: new Date(),
-					updated_at: new Date(),
-					created_by: 0,
-				},
-				{
-					role_title: common.MENTEE_ROLE,
-					permission_id: await POSTPermissionId(
-						'requestSessions',
-						['GET'],
 						'/mentoring/v1/requestSessions/getDetails'
 					),
 					module: 'requestSessions',
@@ -230,6 +174,34 @@ module.exports = {
 					module: 'requestSessions',
 					request_type: ['POST'],
 					api_path: '/mentoring/v1/requestSessions/reject',
+					created_at: new Date(),
+					updated_at: new Date(),
+					created_by: 0,
+				},
+				{
+					role_title: common.MENTEE_ROLE,
+					permission_id: await POSTPermissionId(
+						'requestSessions',
+						['GET'],
+						'/mentoring/v1/requestSessions/userAvailability'
+					),
+					module: 'requestSessions',
+					request_type: ['GET'],
+					api_path: '/mentoring/v1/requestSessions/userAvailability',
+					created_at: new Date(),
+					updated_at: new Date(),
+					created_by: 0,
+				},
+				{
+					role_title: common.MENTOR_ROLE,
+					permission_id: await POSTPermissionId(
+						'requestSessions',
+						['GET'],
+						'/mentoring/v1/requestSessions/userAvailability'
+					),
+					module: 'requestSessions',
+					request_type: ['GET'],
+					api_path: '/mentoring/v1/requestSessions/userAvailability',
 					created_at: new Date(),
 					updated_at: new Date(),
 					created_by: 0,

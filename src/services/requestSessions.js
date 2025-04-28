@@ -31,19 +31,27 @@ module.exports = class requestSessionsHelper {
 	/**
 	 * Initiates a session request between two users.
 	 * @param {Object} bodyData - The request body requesting session related information.
-	 * @param {string} bodyData.friend_id - The ID of the target user.
+	 * @param {string} bodyData.requestee_id - The ID of the target user.
 	 * @param {string} userId - The ID of the user initiating the request.
 	 * @returns {Promise<Object>} A success or failure response.
 	 */
 
 	static async create(bodyData, userId, orgId, skipValidation) {
 		try {
+			const mentorUserExists = await userExtensionQueries.getMenteeExtension(bodyData.requestee_id)
+			if (!mentorUserExists) {
+				return responses.failureResponse({
+					statusCode: httpStatusCode.not_found,
+					message: 'USER_NOT_FOUND',
+				})
+			}
+
 			// Check if a connection already exists between the users
-			const connectionExists = await connectionQueries.getConnection(userId, bodyData.friend_id)
+			const connectionExists = await connectionQueries.getConnection(userId, bodyData.requestee_id)
 
 			// If not connected, restrict mentee to a single pending request
 			if (!connectionExists) {
-				const pendingRequest = await sessionRequestQueries.checkPendingRequest(userId, bodyData.friend_id)
+				const pendingRequest = await sessionRequestQueries.checkPendingRequest(userId, bodyData.requestee_id)
 				if (pendingRequest.count > 0) {
 					return responses.failureResponse({
 						statusCode: httpStatusCode.bad_request,
@@ -52,18 +60,11 @@ module.exports = class requestSessionsHelper {
 				}
 			}
 
-			if (userId == bodyData.friend_id) {
+			if (userId == bodyData.requestee_id) {
 				return responses.failureResponse({
 					statusCode: httpStatusCode.bad_request,
 					responseCode: 'CLIENT_ERROR',
-				})
-			}
-
-			const mentorUserExists = await userExtensionQueries.getMenteeExtension(bodyData.friend_id)
-			if (!mentorUserExists) {
-				return responses.failureResponse({
-					statusCode: httpStatusCode.not_found,
-					message: 'USER_NOT_FOUND',
+					message: 'USER_MENTOR',
 				})
 			}
 
@@ -123,7 +124,7 @@ module.exports = class requestSessionsHelper {
 			// Create a new session request
 			const SessionRequestResult = await sessionRequestQueries.addSessionRequest(
 				userId,
-				bodyData.friend_id,
+				bodyData.requestee_id,
 				bodyData.agenda,
 				bodyData.start_date,
 				bodyData.end_date,
@@ -152,7 +153,6 @@ module.exports = class requestSessionsHelper {
 	static async list(userId, pageNo, pageSize, status) {
 		try {
 			const allRequestSession = await sessionRequestQueries.getAllRequests(userId, pageNo, pageSize, status)
-
 			if (allRequestSession.count == 0 || allRequestSession.rows.length == 0) {
 				return responses.successResponse({
 					statusCode: httpStatusCode.ok,
@@ -165,7 +165,7 @@ module.exports = class requestSessionsHelper {
 			}
 
 			// Map friend details by user IDs
-			const friendIds = allRequestSession.rows.map((requestSession) => requestSession.friend_id)
+			const friendIds = allRequestSession.rows.map((requestSession) => requestSession.requestee_id)
 			let friendDetails = await userExtensionQueries.getUsersByUserIds(friendIds, {
 				attributes: ['user_id', 'image'],
 			})
@@ -178,15 +178,15 @@ module.exports = class requestSessionsHelper {
 			let requestSessionWithDetails = allRequestSession.rows.map((requestSession) => {
 				return {
 					...requestSession,
-					user_details: friendDetailsMap[requestSession.friend_id] || null,
+					user_details: friendDetailsMap[requestSession.requestee_id] || null,
 				}
 			})
 
-			const userIds = requestSessionWithDetails.map((item) => item.friend_id)
+			const userIds = requestSessionWithDetails.map((item) => item.requestee_id)
 			const userDetails = await userRequests.getListOfUserDetails(userIds, true)
 			const userDetailsMap = new Map(userDetails.result.map((userDetail) => [String(userDetail.id), userDetail]))
 			requestSessionWithDetails = requestSessionWithDetails.filter((requestSessionWithDetail) => {
-				const user_id = String(requestSessionWithDetail.friend_id)
+				const user_id = String(requestSessionWithDetail.requestee_id)
 
 				if (userDetailsMap.has(user_id)) {
 					const userDetail = userDetailsMap.get(user_id)
@@ -215,25 +215,42 @@ module.exports = class requestSessionsHelper {
 	 * @param {string} organization_id - the ID of the user organization.
 	 * @returns {Promise<Object>} A success response indicating the request was accepted.
 	 */
-	static async accept(bodyData, mentorUserId, orgId, isMentor, notifyUser) {
+	static async accept(bodyData, mentorUserId, orgId, isMentor, notifyUser, skipValidation) {
 		try {
-			const skipValidation = true
-			const getRequestSessionDetails = await sessionRequestQueries.findOneRequest(
-				mentorUserId,
-				bodyData.user_id,
-				bodyData.start_date,
-				bodyData.end_date
-			)
+			// Fetch session request details
+			const getRequestSessionDetails = await sessionRequestQueries.findOneRequest(bodyData.request_session_id)
+
+			// If no session request found
+			if (!getRequestSessionDetails) {
+				return responses.failureResponse({
+					statusCode: httpStatusCode.not_found,
+					responseCode: 'CLIENT_ERROR',
+					message: 'SESSION_REQUEST_NOT_FOUND',
+				})
+			}
+
+			// Prevent mentor accepting their own session request
+			if (mentorUserId == getRequestSessionDetails.requestor_id) {
+				return responses.failureResponse({
+					statusCode: httpStatusCode.bad_request,
+					responseCode: 'CLIENT_ERROR',
+					message: 'MENTOR_CANNOT_ACCEPT_OWN_REQUEST',
+				})
+			}
+
+			// Map session data
 			Object.assign(bodyData, {
 				type: common.SESSION_TYPE.PRIVATE,
 				mentor_id: mentorUserId,
-				mentees: [bodyData.user_id],
+				mentees: [getRequestSessionDetails.requestor_id],
 				description: getRequestSessionDetails.agenda,
 				title: getRequestSessionDetails.title,
 				start_date: getRequestSessionDetails.start_date,
 				end_date: getRequestSessionDetails.end_date,
-				meta: getRequestSessionDetails.meta ? getRequestSessionDetails.meta : null,
+				meta: getRequestSessionDetails.meta || null,
 			})
+
+			// Create session
 			const sessionCreation = await sessionService.create(
 				bodyData,
 				mentorUserId,
@@ -243,8 +260,8 @@ module.exports = class requestSessionsHelper {
 				skipValidation
 			)
 
-			// If the session creation fails, return the actual error message
-			if (sessionCreation.statusCode != httpStatusCode.created) {
+			// If session creation fails
+			if (sessionCreation.statusCode !== httpStatusCode.created) {
 				return responses.failureResponse({
 					statusCode: sessionCreation.statusCode || httpStatusCode.bad_request,
 					message: sessionCreation.message || 'SESSION_CREATION_FAILED',
@@ -252,16 +269,16 @@ module.exports = class requestSessionsHelper {
 				})
 			}
 
-			const connectionExists = await connectionQueries.getConnection(mentorUserId, bodyData.user_id)
-
+			// Approve session request
 			const approveSessionRequest = await sessionRequestQueries.approveRequest(
 				mentorUserId,
-				bodyData.user_id,
-				getRequestSessionDetails.start_date,
-				getRequestSessionDetails.end_date,
+				bodyData.request_session_id,
 				sessionCreation.result.id
 			)
+
+			// If approval failed
 			if (
+				!Array.isArray(approveSessionRequest) ||
 				!approveSessionRequest.length ||
 				approveSessionRequest[0]?.dataValues?.status !== common.CONNECTIONS_STATUS.ACCEPTED
 			) {
@@ -272,69 +289,91 @@ module.exports = class requestSessionsHelper {
 				})
 			}
 
-			if (approveSessionRequest[0]?.dataValues?.status == common.CONNECTIONS_STATUS.ACCEPTED) {
-				const userExists = await userExtensionQueries.getMenteeExtension(bodyData.user_id)
-				if (!userExists) {
-					return responses.failureResponse({
-						statusCode: httpStatusCode.not_found,
-						message: 'USER_NOT_FOUND',
-					})
-				}
-
-				const connectionExists = await connectionQueries.getConnection(mentorUserId, bodyData.user_id)
-
-				if (!connectionExists) {
-					const connectionRequest = await this.checkConnectionRequestExists(mentorUserId, bodyData.user_id)
-					// If there's no connection request, create one first
-					if (!connectionRequest) {
-						await connectionQueries.addFriendRequest(
-							bodyData.user_id,
-							mentorUserId,
-							common.CONNECTIONS_DEFAULT_MESSAGE
-						)
-					}
-
-					// Approve the connection request (if newly created or already exists)
-					await connectionQueries.approveRequest(mentorUserId, bodyData.user_id, connectionRequest?.meta)
-
-					// Fetch user chat settings
-					const userDetails = await userExtensionQueries.getUsersByUserIds(
-						[mentorUserId, bodyData.user_id],
-						{
-							attributes: ['settings', 'user_id'],
-						},
-						true
-					)
-
-					let chatRoom
-					const bothChatEnabled =
-						userDetails.length === 2 &&
-						userDetails[0]?.settings?.chat_enabled === true &&
-						userDetails[1]?.settings?.chat_enabled === true
-
-					if (bothChatEnabled) {
-						chatRoom = await communicationHelper.createChatRoom(
-							mentorUserId,
-							bodyData.user_id,
-							connectionRequest?.meta?.message
-						)
-					}
-
-					// Update connection meta if chat room was created
-					const updatedMeta = chatRoom
-						? { ...connectionRequest?.meta, room_id: chatRoom.result.room.room_id }
-						: connectionRequest?.meta
-
-					await connectionQueries.updateConnection(bodyData.user_id, mentorUserId, {
-						meta: updatedMeta,
-					})
-				}
+			// Check if mentee user exists
+			const userExists = await userExtensionQueries.getMenteeExtension(getRequestSessionDetails.requestor_id)
+			if (!userExists) {
+				return responses.failureResponse({
+					statusCode: httpStatusCode.not_found,
+					message: 'USER_NOT_FOUND',
+				})
 			}
 
+			// Check if connection already exists
+			let connectionExists = await connectionQueries.getConnection(
+				mentorUserId,
+				getRequestSessionDetails.requestor_id
+			)
+
+			// If no connection, create one
+			if (!connectionExists) {
+				// Check for pending connection request
+				let connectionRequest = await this.checkConnectionRequestExists(
+					mentorUserId,
+					getRequestSessionDetails.requestor_id
+				)
+
+				// If no pending request, send a new request
+				if (!connectionRequest) {
+					await connectionQueries.addFriendRequest(
+						getRequestSessionDetails.requestor_id,
+						mentorUserId,
+						common.CONNECTIONS_DEFAULT_MESSAGE
+					)
+
+					// Re-check connection request after creating
+					connectionRequest = await this.checkConnectionRequestExists(
+						mentorUserId,
+						getRequestSessionDetails.requestor_id
+					)
+				}
+
+				// Approve connection request
+				await connectionQueries.approveRequest(
+					mentorUserId,
+					getRequestSessionDetails.requestor_id,
+					connectionRequest?.meta
+				)
+
+				// Fetch user chat settings
+				const userDetails = await userExtensionQueries.getUsersByUserIds(
+					[mentorUserId, getRequestSessionDetails.requestor_id],
+					{ attributes: ['settings', 'user_id'] },
+					true
+				)
+
+				const bothChatEnabled =
+					userDetails.length === 2 &&
+					userDetails[0]?.settings?.chat_enabled === true &&
+					userDetails[1]?.settings?.chat_enabled === true
+
+				let chatRoom = null
+
+				// If both users have chat enabled, create chat room
+				if (bothChatEnabled) {
+					chatRoom = await communicationHelper.createChatRoom(
+						mentorUserId,
+						getRequestSessionDetails.requestor_id,
+						connectionRequest?.meta?.message
+					)
+				}
+
+				// Update connection with chat room ID if created
+				const updatedMeta = chatRoom
+					? { ...connectionRequest?.meta, room_id: chatRoom.result.room.room_id }
+					: connectionRequest?.meta
+
+				await connectionQueries.updateConnection(getRequestSessionDetails.requestor_id, mentorUserId, {
+					meta: updatedMeta,
+				})
+			}
+
+			// Send Email
 			const templateCode = process.env.MENTOR_ACCEPT_SESSION_REQUEST_EMAIL_TEMPLATE
+			if (templateCode) {
+				emailForAcceptAndReject(templateCode, orgId, getRequestSessionDetails.requestor_id, mentorUserId)
+			}
 
-			emailForAcceptAndReject(templateCode, orgId)
-
+			// Return Success
 			return responses.successResponse({
 				statusCode: httpStatusCode.created,
 				message: !connectionExists ? 'SESSION_REQUEST_APPROVED_AND_CONNECTED' : 'SESSION_REQUEST_APPROVED',
@@ -358,10 +397,8 @@ module.exports = class requestSessionsHelper {
 		try {
 			const [rejectedCount, rejectedData] = await sessionRequestQueries.rejectRequest(
 				userId,
-				bodyData.user_id,
-				bodyData.reason,
-				bodyData.start_date,
-				bodyData.end_date
+				bodyData.request_session_id,
+				bodyData.reason
 			)
 
 			if (rejectedCount == 0) {
@@ -373,7 +410,7 @@ module.exports = class requestSessionsHelper {
 			}
 
 			const templateCode = process.env.MENTOR_REJECT_SESSION_REQUEST_EMAIL_TEMPLATE
-			emailForAcceptAndReject(templateCode, orgId)
+			emailForAcceptAndReject(templateCode, orgId, userId, rejectedData[0].dataValues.requestor_id)
 
 			return responses.successResponse({
 				statusCode: httpStatusCode.created,
@@ -395,15 +432,9 @@ module.exports = class requestSessionsHelper {
 	 * @returns {Promise<Object>} The session information.
 	 * @throws Will throw an error if the request fails.
 	 */
-	static async getInfo(friendId, userId, startDate, endDate, status) {
+	static async getInfo(requestSessionId) {
 		try {
-			const requestSessions = await sessionRequestQueries.getRequestSessions(
-				userId,
-				friendId,
-				startDate,
-				endDate,
-				status
-			)
+			const requestSessions = await sessionRequestQueries.getRequestSessions(requestSessionId)
 
 			const defaultOrgId = await getDefaultOrgId()
 			if (!defaultOrgId) {
@@ -416,7 +447,7 @@ module.exports = class requestSessionsHelper {
 
 			const [userExtensionsModelName, userDetails] = await Promise.all([
 				userExtensionQueries.getModelName(),
-				userExtensionQueries.getMenteeExtension(friendId, [
+				userExtensionQueries.getMenteeExtension(requestSessions.requestee_id, [
 					'name',
 					'user_id',
 					'mentee_visibility',
@@ -528,8 +559,8 @@ function createMentorAvailabilityResponse(data) {
 	}
 }
 
-async function emailForAcceptAndReject(templateCode, orgId) {
-	const menteeDetails = await userExtensionQueries.getUsersByUserIds(bodyData.user_id, {
+async function emailForAcceptAndReject(templateCode, orgId, requestor_id, mentorUserId) {
+	const menteeDetails = await userExtensionQueries.getUsersByUserIds(requestor_id, {
 		attributes: ['name', 'email'],
 	})
 

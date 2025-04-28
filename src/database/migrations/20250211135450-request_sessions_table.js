@@ -2,18 +2,18 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
 	async up(queryInterface, Sequelize) {
-		await queryInterface.createTable('request_sessions', {
+		await queryInterface.createTable('session_request', {
 			id: {
 				type: Sequelize.INTEGER,
 				autoIncrement: true,
 				primaryKey: true,
 			},
-			user_id: {
+			requestor_id: {
 				type: Sequelize.STRING,
 				allowNull: false,
 				primaryKey: true,
 			},
-			friend_id: {
+			requestee_id: {
 				type: Sequelize.STRING,
 				allowNull: false,
 				primaryKey: true,
@@ -66,27 +66,30 @@ module.exports = {
 				allowNull: true,
 			},
 		})
-		await queryInterface.addIndex('request_sessions', ['friend_id'], {
-			name: 'index_friend_id_request_sessions',
+		await queryInterface.addIndex('session_request', ['requestor_id'], {
+			name: 'index_requestor_id_session_request',
 		})
-		await queryInterface.addIndex('request_sessions', ['status'], {
-			name: 'index_status_request_sessions',
+		await queryInterface.addIndex('session_request', ['requestee_id'], {
+			name: 'index_requestee_id_session_request',
 		})
-		await queryInterface.addIndex('request_sessions', ['created_by'], {
-			name: 'index_created_by_request_sessions',
+		await queryInterface.addIndex('session_request', ['status'], {
+			name: 'index_status_session_request',
 		})
-		await queryInterface.addIndex('request_sessions', ['session_id'], {
-			name: 'index_session_id_request_sessions',
+		await queryInterface.addIndex('session_request', ['created_by'], {
+			name: 'index_created_by_session_request',
+		})
+		await queryInterface.addIndex('session_request', ['session_id'], {
+			name: 'index_session_id_session_request',
 		})
 	},
 
 	async down(queryInterface, Sequelize) {
-		await queryInterface.removeIndex('request_sessions', 'index_friend_id_request_sessions')
-		await queryInterface.removeIndex('request_sessions', 'index_status_request_sessions')
-		await queryInterface.removeIndex('request_sessions', 'unique_user_id_friend_id_request_sessions')
-		await queryInterface.removeIndex('request_sessions', 'index_created_by_request_sessions')
-		await queryInterface.removeIndex('request_sessions', 'index_session_id_request_sessions')
+		await queryInterface.removeIndex('session_request', 'index_requestee_id_session_request')
+		await queryInterface.removeIndex('session_request', 'index_status_session_request')
+		await queryInterface.removeIndex('session_request', 'index_created_by_session_request')
+		await queryInterface.removeIndex('session_request', 'index_session_id_session_request')
+		await queryInterface.removeIndex('session_request', 'index_requestor_id_request_sessions')
 
-		await queryInterface.dropTable('request_sessions')
+		await queryInterface.dropTable('session_request')
 	},
 }

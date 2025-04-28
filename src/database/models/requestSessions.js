@@ -9,11 +9,11 @@ module.exports = (sequelize, DataTypes) => {
 				primaryKey: true,
 				type: DataTypes.INTEGER,
 			},
-			user_id: {
+			requestor_id: {
 				type: DataTypes.STRING,
 				allowNull: false,
 			},
-			friend_id: {
+			requestee_id: {
 				type: DataTypes.STRING,
 				allowNull: false,
 			},
@@ -26,9 +26,11 @@ module.exports = (sequelize, DataTypes) => {
 			},
 			title: {
 				type: DataTypes.STRING,
+				allowNull: false,
 			},
 			agenda: {
 				type: DataTypes.STRING,
+				allowNull: false,
 			},
 			start_date: {
 				type: DataTypes.INTEGER,
@@ -67,25 +69,29 @@ module.exports = (sequelize, DataTypes) => {
 		{
 			sequelize,
 			modelName: 'RequestSession',
-			tableName: 'request_sessions',
+			tableName: 'session_request',
 			freezeTableName: true,
 			paranoid: true,
 			indexes: [
 				{
-					fields: ['friend_id'],
-					name: 'index_friend_id_request_sessions',
+					fields: ['requestor_id'],
+					name: 'index_requestor_id_session_request',
+				},
+				{
+					fields: ['requestee_id'],
+					name: 'index_requestee_id_session_request',
 				},
 				{
 					fields: ['status'],
-					name: 'index_status_request_sessions',
+					name: 'index_status_session_request',
 				},
 				{
 					fields: ['created_by'],
-					name: 'index_created_by_request_sessions',
+					name: 'index_created_by_session_request',
 				},
 				{
 					fields: ['session_id'],
-					name: 'index_session_id_request_sessions',
+					name: 'index_session_id_session_request',
 				},
 			],
 		}

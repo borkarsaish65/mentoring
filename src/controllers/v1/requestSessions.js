@@ -1,5 +1,6 @@
 const requestSessionsService = require('@services/requestSessions')
 const { isAMentor } = require('@generics/utils')
+const common = require('@constants/common')
 
 module.exports = class requestsSessions {
 	/**
@@ -34,9 +35,9 @@ module.exports = class requestsSessions {
 		try {
 			const requestSessionDetails = await requestSessionsService.list(
 				req.decodedToken.id,
-				req.pageNo,
-				req.pageSize,
-				req.status
+				req.query.pageNo,
+				req.query.pageSize,
+				req.query.status ? req.query.status : common.CONNECTIONS_STATUS.REQUESTED
 			)
 			return requestSessionDetails
 		} catch (error) {
@@ -58,12 +59,14 @@ module.exports = class requestsSessions {
 			if (req.headers.timezone) {
 				req.body['time_zone'] = req.headers.timezone
 			}
+			const SkipValidation = req.SkipValidation ? req.SkipValidation : false
 			const acceptRequestSession = await requestSessionsService.accept(
 				req.body,
 				req.decodedToken.id,
 				req.decodedToken.organization_id,
 				isAMentor(req.decodedToken.roles),
-				notifyUser
+				notifyUser,
+				SkipValidation
 			)
 			return acceptRequestSession
 		} catch (error) {
@@ -89,13 +92,7 @@ module.exports = class requestsSessions {
 
 	async getDetails(req) {
 		try {
-			return await requestSessionsService.getInfo(
-				req.body.user_id,
-				req.decodedToken.id,
-				req.body.start_date,
-				req.body.end_date,
-				req.body.status
-			)
+			return await requestSessionsService.getInfo(req.body.request_session_id)
 		} catch (error) {
 			throw error
 		}

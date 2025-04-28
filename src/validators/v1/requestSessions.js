@@ -1,10 +1,10 @@
 module.exports = {
 	create: (req) => {
-		req.checkBody('friend_id')
+		req.checkBody('requestee_id')
 			.notEmpty()
-			.withMessage('friend_id is required')
+			.withMessage('requestee_id is required')
 			.isString()
-			.withMessage('friend_id must be a string')
+			.withMessage('requestee_id must be a string')
 
 		req.checkBody('title')
 			.notEmpty()
@@ -57,29 +57,65 @@ module.exports = {
 
 	pendingList: (req) => {},
 
-	listAll: (req) => {},
+	list: (req) => {
+		req.checkQuery('status')
+			.optional()
+			.custom((value) => {
+				const allowedStatuses = ['REQUESTED', 'ACCEPTED', 'REJECTED']
+
+				// Allow comma-separated values
+				const statuses = value.split(',').map((status) => status.trim())
+
+				// Check if every status provided is valid
+				const isValid = statuses.every((status) => allowedStatuses.includes(status))
+				if (!isValid) {
+					throw new Error('Status must be one or more of REQUESTED, ACCEPTED, or REJECTED')
+				}
+
+				return true
+			})
+	},
 
 	getDetails: (req) => {
-		req.checkBody('user_id')
+		req.checkBody('request_session_id')
 			.notEmpty()
-			.withMessage('user_id is required')
+			.withMessage('request_session_id is required')
 			.isString()
-			.withMessage('user_id must be a string')
+			.withMessage('request_session_id must be a string')
 	},
 
 	accept: (req) => {
-		req.checkBody('user_id')
+		req.checkBody('request_session_id')
 			.notEmpty()
-			.withMessage('user_id is required')
+			.withMessage('request_session_id is required')
 			.isString()
-			.withMessage('user_id must be a string')
+			.withMessage('request_session_id must be a string')
 	},
 
 	reject: (req) => {
-		req.checkBody('user_id')
+		req.checkBody('request_session_id')
 			.notEmpty()
-			.withMessage('user_id is required')
+			.withMessage('request_session_id is required')
 			.isString()
-			.withMessage('user_id must be a string')
+			.withMessage('request_session_id must be a string')
+	},
+
+	userAvailability: (req) => {
+		req.checkQuery('status')
+			.optional()
+			.custom((value) => {
+				const allowedStatuses = ['PUBLISHED', 'COMPLETED', 'LIVE']
+
+				// Allow comma-separated values
+				const statuses = value.split(',').map((status) => status.trim())
+
+				// Check if every status provided is valid
+				const isValid = statuses.every((status) => allowedStatuses.includes(status))
+				if (!isValid) {
+					throw new Error('Status must be one or more of PUBLISHED, COMPLETED, or LIVE')
+				}
+
+				return true
+			})
 	},
 }

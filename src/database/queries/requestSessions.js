@@ -1,4 +1,5 @@
 const requestSession = require('@database/models/index').RequestSession
+const requestSessionMapping = require('@database/models/index').SessionRequestMapping
 const { Op } = require('sequelize')
 const sequelize = require('@database/models/index').sequelize
 
@@ -22,38 +23,36 @@ exports.getModelName = async () => {
 	}
 }
 
-exports.addSessionRequest = async (userId, friendId, Agenda, startDate, endDate, Title, Meta) => {
+exports.addSessionRequest = async (requestorId, requesteeId, Agenda, startDate, endDate, Title, Meta) => {
 	try {
 		const result = await sequelize.transaction(async (t) => {
 			const SessionRequestData = [
 				{
-					user_id: userId,
-					friend_id: friendId,
+					requestor_id: requestorId,
+					requestee_id: requesteeId,
 					status: common.CONNECTIONS_STATUS.REQUESTED,
 					title: Title,
 					agenda: Agenda,
 					start_date: startDate,
 					end_date: endDate,
-					created_by: userId,
-					updated_by: userId,
-					meta: Meta,
-				},
-				{
-					user_id: friendId,
-					friend_id: userId,
-					status: common.CONNECTIONS_STATUS.REQUESTED,
-					title: Title,
-					agenda: Agenda,
-					start_date: startDate,
-					end_date: endDate,
-					created_by: userId,
-					updated_by: userId,
+					created_by: requestorId,
+					updated_by: requestorId,
 					meta: Meta,
 				},
 			]
 
 			const requests = await requestSession.bulkCreate(SessionRequestData, { transaction: t })
+			const requestResult = requests[0].get({ plain: true })
 
+			const SessionRequestMappingData = [
+				{
+					requestee_id: requesteeId,
+					session_request_id: requestResult.id,
+				},
+			]
+			const requestsMapping = await requestSessionMapping.bulkCreate(SessionRequestMappingData, {
+				transaction: t,
+			})
 			return requests[0].get({ plain: true })
 		})
 
@@ -69,39 +68,48 @@ exports.getAllRequests = async (userId, page, pageSize, status) => {
 		const limit = Number.isInteger(pageSize) && pageSize > 0 ? pageSize : 10
 		const offset = (currentPage - 1) * limit
 
-		const whereClause = {
-			user_id: userId,
-		}
+		// Prepare status filter
+		const statusFilter =
+			status != ''
+				? status
+				: {
+						[Op.in]: [
+							common.CONNECTIONS_STATUS.ACCEPTED,
+							common.CONNECTIONS_STATUS.REQUESTED,
+							common.CONNECTIONS_STATUS.REJECTED,
+						],
+				  }
 
-		// If status is passed, add it to the where clause
-		if (status) {
-			whereClause.status = status
-		} else {
-			// else fetch all the main statuses
-			whereClause.status = {
-				[Op.in]: [
-					common.CONNECTIONS_STATUS.ACCEPTED,
-					common.CONNECTIONS_STATUS.REQUESTED,
-					common.CONNECTIONS_STATUS.REJECTED,
-				],
-			}
-		}
-
-		const results = await requestSession.findAll({
-			where: whereClause,
-			offset,
-			limit,
-			raw: true,
+		const sessionRequest = await requestSession.findAll({
+			where: {
+				requestor_id: userId,
+				status: statusFilter,
+			},
 		})
 
-		// Get total count without pagination
-		const totalCount = await requestSession.count({
-			where: whereClause,
+		const sessionRequestData = sessionRequest.map((session) => session.dataValues)
+
+		const sessionRequestMapping = await requestSessionMapping.findAll({
+			where: {
+				requestee_id: userId,
+			},
 		})
 
+		const sessionRequestIds = sessionRequestMapping.map((session) => session.dataValues.session_request_id)
+
+		const sessionMappingDetails = await requestSession.findAll({
+			where: {
+				id: {
+					[Op.in]: sessionRequestIds, // Using Sequelize.Op.in to filter by multiple ids
+				},
+				status: statusFilter, // Your status filter
+			},
+		})
+		const sessionMappingDetailsData = sessionMappingDetails.map((session) => session.dataValues)
+		const combinedData = [...sessionRequestData, ...sessionMappingDetailsData]
 		return {
-			count: totalCount,
-			rows: results,
+			count: combinedData.length,
+			rows: combinedData,
 		}
 	} catch (error) {
 		console.error('Error in getAllRequests:', error)
@@ -131,61 +139,45 @@ exports.getpendingRequests = async (userId, page, pageSize) => {
 	}
 }
 
-exports.approveRequest = async (userId, friendId, startDate, endDate, sessionId) => {
+exports.approveRequest = async (userId, requestSessionId, sessionId) => {
 	const t = await sequelize.transaction() // start transaction
 
 	try {
 		const updateData = {
 			status: common.CONNECTIONS_STATUS.ACCEPTED,
 			session_id: sessionId,
-			created_by: friendId,
 			updated_by: userId,
 		}
 
 		const requests = await requestSession.update(updateData, {
 			where: {
-				[Op.or]: [
-					{ user_id: userId, friend_id: friendId },
-					{ user_id: friendId, friend_id: userId },
-				],
 				status: common.CONNECTIONS_STATUS.REQUESTED,
-				created_by: friendId,
-				start_date: startDate,
-				end_date: endDate,
+				id: requestSessionId,
 			},
 			transaction: t,
 			individualHooks: true,
 		})
 
 		await t.commit()
-		return requests
+		return requests[1]
 	} catch (error) {
 		await t.rollback()
 		throw error
 	}
 }
 
-exports.rejectRequest = async (userId, friendId, rejectReason, startDate, endDate) => {
+exports.rejectRequest = async (userId, requestSessionId, rejectReason) => {
 	try {
 		let updateData = {
 			status: common.CONNECTIONS_STATUS.REJECTED,
 			updated_by: userId,
-		}
-
-		if (rejectReason) {
-			updateData.reject_reason = { reason: rejectReason }
+			reject_reason: rejectReason ? rejectReason : null,
 		}
 
 		return await requestSession.update(updateData, {
 			where: {
 				status: common.CONNECTIONS_STATUS.REQUESTED,
-				[Op.or]: [
-					{ user_id: userId, friend_id: friendId },
-					{ user_id: friendId, friend_id: userId },
-				],
-				created_by: friendId,
-				start_date: startDate,
-				end_date: endDate,
+				id: requestSessionId,
 			},
 			individualHooks: true,
 		})
@@ -193,18 +185,13 @@ exports.rejectRequest = async (userId, friendId, rejectReason, startDate, endDat
 		throw error
 	}
 }
-exports.findOneRequest = async (userId, friendId, startDate, endDate) => {
+
+exports.findOneRequest = async (requestSessionId) => {
 	try {
 		const sessionRequest = await requestSession.findOne({
 			where: {
-				[Op.or]: [
-					{ user_id: userId, friend_id: friendId },
-					{ user_id: friendId, friend_id: userId },
-				],
+				id: requestSessionId,
 				status: common.CONNECTIONS_STATUS.REQUESTED,
-				created_by: friendId,
-				start_date: startDate,
-				end_date: endDate,
 			},
 			raw: true,
 		})
@@ -215,12 +202,12 @@ exports.findOneRequest = async (userId, friendId, startDate, endDate) => {
 	}
 }
 
-exports.checkPendingRequest = async (userId, friendId) => {
+exports.checkPendingRequest = async (requestorId, requesteeId) => {
 	try {
 		const result = await requestSession.findAndCountAll({
 			where: {
-				user_id: userId,
-				friend_id: friendId,
+				requestor_id: requestorId,
+				requestee_id: requesteeId,
 				status: common.CONNECTIONS_STATUS.REQUESTED,
 			},
 		})
@@ -230,19 +217,11 @@ exports.checkPendingRequest = async (userId, friendId) => {
 	}
 }
 
-exports.getRequestSessions = async (userId, friendId, startDate, endDate, status) => {
+exports.getRequestSessions = async (requestSessionId) => {
 	try {
 		const whereClause = {
-			user_id: userId,
-			friend_id: friendId,
-			status: status,
+			id: requestSessionId,
 		}
-
-		if (startDate && endDate) {
-			whereClause.start_date = startDate
-			whereClause.end_date = endDate
-		}
-
 		return await requestSession.findOne({
 			where: whereClause,
 			raw: true,
