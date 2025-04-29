@@ -12,7 +12,7 @@ module.exports = class requestsSessions {
 	 */
 	async create(req) {
 		try {
-			const SkipValidation = req.SkipValidation ? req.SkipValidation : false
+			const SkipValidation = req.query.SkipValidation ? req.query.SkipValidation : false
 			return await requestSessionsService.create(
 				req.body,
 				req.decodedToken.id,
@@ -59,7 +59,7 @@ module.exports = class requestsSessions {
 			if (req.headers.timezone) {
 				req.body['time_zone'] = req.headers.timezone
 			}
-			const SkipValidation = req.SkipValidation ? req.SkipValidation : false
+			const SkipValidation = req.query.SkipValidation ? req.query.SkipValidation : false
 			const acceptRequestSession = await requestSessionsService.accept(
 				req.body,
 				req.decodedToken.id,
