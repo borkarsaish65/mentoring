@@ -637,7 +637,7 @@ module.exports = class OrgAdminService {
 		})
 	}
 
-	static async themeDeatils(orgId) {
+	static async themeDetails(orgId) {
 		let organizationDetails = await organisationExtensionQueries.getById(orgId)
 
 		if (!organizationDetails) {

@@ -183,12 +183,20 @@ module.exports = class OrgAdmin {
 		}
 	}
 
-	async themeDeatils(req) {
+	/**
+	 * Get the theme details for the organization based on the provided theme data.
+	 * @method
+	 * @name themeDetails
+	 * @param {Object} req.body - The theme data to be updated.
+	 * @param {String} req.decodedToken.organization_id - The organization ID extracted from the decoded token.
+	 * @returns {Object} - The result of the theme update, either success or error details.
+	 */
+	async themeDetails(req) {
 		try {
-			const themeDatails = await orgAdminService.themeDeatils(
-				req.params.id ? req.params.id : req.decodedToken.organization_id
+			const themeDetails = await orgAdminService.themeDetails(
+				req.query.organizationId ? req.query.organizationId : req.decodedToken.organization_id
 			)
-			return themeDatails
+			return themeDetails
 		} catch (error) {
 			return error
 		}

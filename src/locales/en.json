@@ -208,5 +208,6 @@
 	"ORGANIZATION_FETCHED_SUCCESSFULLY": "Organization fetched successfully.",
 	"ORG_THEME_FETCHED_SUCCESSFULLY": "Organization theme fetched successfully.",
 	"SESSION_RESOURCE_CANT_UPDATE": "Session Resources can't be updated",
-	"COMMUNICATION_MAPPING_FETCHED_SUCCESSFULLY": "Communication ID mapping retrieved successfully."
+	"COMMUNICATION_MAPPING_FETCHED_SUCCESSFULLY": "Communication ID mapping retrieved successfully.",
+	"ORG_THEME_UPDATED_SUCCESSFULLY": "Organization theme updated successfully."
 }
