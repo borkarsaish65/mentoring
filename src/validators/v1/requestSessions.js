@@ -77,7 +77,7 @@ module.exports = {
 	},
 
 	getDetails: (req) => {
-		req.checkBody('request_session_id')
+		req.checkQuery('request_session_id')
 			.notEmpty()
 			.withMessage('request_session_id is required')
 			.isString()
