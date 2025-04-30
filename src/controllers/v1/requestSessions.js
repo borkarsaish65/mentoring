@@ -92,7 +92,7 @@ module.exports = class requestsSessions {
 
 	async getDetails(req) {
 		try {
-			return await requestSessionsService.getInfo(req.body.request_session_id)
+			return await requestSessionsService.getInfo(req.query.request_session_id)
 		} catch (error) {
 			throw error
 		}
