@@ -275,8 +275,12 @@ async function keycloakPublicKeyAuthentication(token) {
 			data: {
 				id: externalUserId,
 				roles: roles,
-				name: getTokenField(verifiedClaims, 'name', 'TOKEN_KEY_NAME'),
-				organization_id: getTokenField(verifiedClaims, 'org', 'TOKEN_KEY_ORGANIZATION_ID'),
+				name: getTokenField(verifiedClaims, common.DEFAULT_TOKEN_NAME_PATH, common.TOKEN_KEY_NAME),
+				organization_id: getTokenField(
+					verifiedClaims,
+					common.DEFAULT_TOKEN_ORG_PATH,
+					common.TOKEN_KEY_ORGANIZATION_ID
+				),
 			},
 		}
 	} catch (err) {
