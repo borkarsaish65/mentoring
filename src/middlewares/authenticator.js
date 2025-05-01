@@ -56,7 +56,7 @@ module.exports = async function (req, res, next) {
 				console.error('Error parsing config.json:', error)
 			}
 		} else {
-			// If file doesn't exist, set defaultTokenExtraction to false
+			// If file doesn't exist, set defaultTokenExtraction to true
 			defaultTokenExtraction = true
 		}
 
@@ -67,7 +67,6 @@ module.exports = async function (req, res, next) {
 			}
 		} else {
 			// Iterate through each key in the config object
-			console.log(decodedToken, configData, 'configData')
 			for (let key in configData) {
 				if (configData.hasOwnProperty(key)) {
 					let keyValue = getNestedValue(decodedToken, configData[key])
@@ -338,10 +337,4 @@ async function verifyKeycloakToken(token, cert) {
 		console.error(err)
 		throw createUnauthorizedResponse()
 	}
-}
-
-const getTokenField = (claims, defaultPath, envKeyName) => {
-	const useCustom = process.env.USE_CUSTOM_TOKEN_KEYS === 'true'
-	const path = useCustom ? process.env[envKeyName] : defaultPath
-	return utils.getValueFromPath(claims, path) || null
 }
