@@ -8,6 +8,7 @@ const responses = require('@helpers/responses')
 const { Op } = require('sequelize')
 const fs = require('fs')
 const MenteeExtensionQueries = require('@database/queries/userExtension')
+const utils = require('@generics/utils')
 
 module.exports = async function (req, res, next) {
 	try {
@@ -246,13 +247,24 @@ async function keycloakPublicKeyAuthentication(token) {
 		let roles = []
 
 		if (verifiedClaims.user_roles) {
-			roles = verifiedClaims.user_roles.reduce((acc, role) => {
-				role = role.toLowerCase()
-				if (validRoles.has(role)) {
+			const rawRoles = Array.isArray(verifiedClaims.user_roles)
+				? verifiedClaims.user_roles
+				: [verifiedClaims.user_roles] // wrap single string in array
+
+			roles = rawRoles.reduce((acc, item) => {
+				const role =
+					typeof item === 'string'
+						? item.toLowerCase()
+						: item && typeof item.role === 'string'
+						? item.role.toLowerCase()
+						: null
+
+				if (role && validRoles.has(role)) {
 					if (role === common.MENTOR_ROLE) isMentor = true
 					else if (role === common.MENTEE_ROLE) isMenteeRolePresent = true
 					acc.push({ title: role })
 				}
+
 				return acc
 			}, [])
 		}
@@ -263,8 +275,8 @@ async function keycloakPublicKeyAuthentication(token) {
 			data: {
 				id: externalUserId,
 				roles: roles,
-				name: verifiedClaims.name,
-				organization_id: verifiedClaims.org || null,
+				name: getTokenField(verifiedClaims, 'name', 'TOKEN_KEY_NAME'),
+				organization_id: getTokenField(verifiedClaims, 'org', 'TOKEN_KEY_ORGANIZATION_ID'),
 			},
 		}
 	} catch (err) {
@@ -284,4 +296,10 @@ async function verifyKeycloakToken(token, cert) {
 		console.error(err)
 		throw createUnauthorizedResponse()
 	}
+}
+
+const getTokenField = (claims, defaultPath, envKeyName) => {
+	const useCustom = process.env.USE_CUSTOM_TOKEN_KEYS === 'true'
+	const path = useCustom ? process.env[envKeyName] : defaultPath
+	return utils.getValueFromPath(claims, path) || null
 }

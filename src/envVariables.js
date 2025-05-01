@@ -429,6 +429,19 @@ let enviromentVariables = {
 		optional: true,
 		default: 30000,
 	},
+	USE_CUSTOM_TOKEN_KEYS: {
+		message: 'Required custom key replace from token',
+		optional: true,
+		default: false,
+	},
+	TOKEN_KEY_NAME: {
+		message: 'Required custom key for name from token',
+		optional: process.env.USE_CUSTOM_TOKEN_KEYS === true,
+	},
+	TOKEN_KEY_ORGANIZATION_ID: {
+		message: 'Required custom key for organization_id from token',
+		optional: process.env.USE_CUSTOM_TOKEN_KEYS === true,
+	},
 }
 
 let success = true

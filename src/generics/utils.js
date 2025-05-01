@@ -1227,6 +1227,22 @@ function transformEntityTypes(input) {
 	return { entityTypes }
 }
 
+function getValueFromPath(obj, path) {
+	if (!obj || !path) return null
+
+	const parts = path
+		.replace(/\[(\w+)\]/g, '.$1')
+		.replace(/^\./, '')
+		.split('.')
+
+	return parts.reduce((acc, key) => {
+		if (acc && Object.prototype.hasOwnProperty.call(acc, key)) {
+			return acc[key]
+		}
+		return null
+	}, obj)
+}
+
 module.exports = {
 	hash: hash,
 	getCurrentMonthRange,
@@ -1288,4 +1304,5 @@ module.exports = {
 	mapEntityTypeToData,
 	getDynamicEntityCondition,
 	transformEntityTypes,
+	getValueFromPath,
 }
