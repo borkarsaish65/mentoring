@@ -9,6 +9,7 @@ const { Op } = require('sequelize')
 const fs = require('fs')
 const MenteeExtensionQueries = require('@database/queries/userExtension')
 const utils = require('@generics/utils')
+const path = require('path')
 
 module.exports = async function (req, res, next) {
 	try {
@@ -33,6 +34,52 @@ module.exports = async function (req, res, next) {
 
 		const [decodedToken, skipFurtherChecks] = await authenticateUser(authHeader, req)
 
+		// Path to config.json
+		const configFilePath = path.resolve(__dirname, '../', 'config.json')
+
+		// Initialize variables
+		let configData = {}
+		let defaultTokenExtraction = false
+		req.decodedToken = {}
+
+		// Check if config.json exists
+		if (fs.existsSync(configFilePath)) {
+			// Read and parse the config.json file
+			const rawData = fs.readFileSync(configFilePath)
+			try {
+				configData = JSON.parse(rawData)
+				if (!configData.authTokenUserInformation) {
+					defaultTokenExtraction = true
+				}
+				configData = configData.authTokenUserInformation
+			} catch (error) {
+				console.error('Error parsing config.json:', error)
+			}
+		} else {
+			// If file doesn't exist, set defaultTokenExtraction to false
+			defaultTokenExtraction = true
+		}
+
+		// performing default token data extraction
+		if (defaultTokenExtraction) {
+			req.decodedToken = {
+				...decodedToken.data,
+			}
+		} else {
+			// Iterate through each key in the config object
+			console.log(decodedToken, configData, 'configData')
+			for (let key in configData) {
+				if (configData.hasOwnProperty(key)) {
+					let keyValue = getNestedValue(decodedToken, configData[key])
+					if (key === 'id' || key === 'organization_id') {
+						keyValue = keyValue?.toString()
+					}
+					// For each key in config, assign the corresponding value from decodedToken
+					req.decodedToken[key] = keyValue
+				}
+			}
+		}
+
 		if (adminHeader) {
 			if (adminHeader != process.env.ADMIN_ACCESS_TOKEN) throw createUnauthorizedResponse()
 			const organizationId = req.get(process.env.ORG_ID_HEADER_NAME)
@@ -50,8 +97,8 @@ module.exports = async function (req, res, next) {
 					responseCode: 'CLIENT_ERROR',
 				})
 			}
-			decodedToken.data.organization_id = organizationId.toString()
-			decodedToken.data.roles.push({ title: common.ADMIN_ROLE })
+			req.decodedToken.organization_id = organizationId.toString()
+			req.decodedToken.roles.push({ title: common.ADMIN_ROLE })
 		}
 
 		if (!skipFurtherChecks) {
@@ -67,23 +114,12 @@ module.exports = async function (req, res, next) {
 			}
 
 			const isPermissionValid = await checkPermissions(
-				decodedToken.data.roles.map((role) => role.title),
+				req.decodedToken.roles.map((role) => role.title),
 				req.path,
 				req.method
 			)
 
 			if (!isPermissionValid) throw createUnauthorizedResponse('PERMISSION_DENIED')
-		}
-
-		req.decodedToken = {
-			id: typeof decodedToken.data.id === 'number' ? decodedToken.data.id.toString() : decodedToken.data.id,
-			roles: decodedToken.data.roles,
-			name: decodedToken.data.name,
-			token: authHeader,
-			organization_id:
-				typeof decodedToken.data.organization_id === 'number'
-					? decodedToken.data.organization_id.toString()
-					: decodedToken.data.organization_id,
 		}
 
 		console.log('DECODED TOKEN:', req.decodedToken)
@@ -99,6 +135,11 @@ module.exports = async function (req, res, next) {
 		console.error(err)
 		next(err)
 	}
+}
+
+// Helper function to access nested properties
+function getNestedValue(obj, path) {
+	return path.split('.').reduce((acc, part) => acc && acc[part], obj)
 }
 
 function createUnauthorizedResponse(message = 'UNAUTHORIZED_REQUEST') {
@@ -201,8 +242,7 @@ async function authenticateUser(authHeader, req) {
 	else if (process.env.AUTH_METHOD === common.AUTH_METHOD.KEYCLOAK_PUBLIC_KEY)
 		decodedToken = await keycloakPublicKeyAuthentication(token)
 	if (!decodedToken) throw createUnauthorizedResponse()
-
-	if (decodedToken.data.roles && isAdminRole(decodedToken.data.roles)) {
+	if (decodedToken.data.user_roles && isAdminRole(decodedToken.data.user_roles)) {
 		req.decodedToken = decodedToken.data
 		return [decodedToken, true]
 	}
@@ -274,13 +314,10 @@ async function keycloakPublicKeyAuthentication(token) {
 		return {
 			data: {
 				id: externalUserId,
-				roles: roles,
-				name: getTokenField(verifiedClaims, common.DEFAULT_TOKEN_NAME_PATH, common.TOKEN_KEY_NAME),
-				organization_id: getTokenField(
-					verifiedClaims,
-					common.DEFAULT_TOKEN_ORG_PATH,
-					common.TOKEN_KEY_ORGANIZATION_ID
-				),
+				token: token,
+				user_roles: roles,
+				name: verifiedClaims.name,
+				organization_id: verifiedClaims.org || null,
 			},
 		}
 	} catch (err) {
