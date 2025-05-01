@@ -80,6 +80,8 @@ module.exports = async function (req, res, next) {
 			}
 		}
 
+		req.decodedToken.token = authHeader
+
 		if (adminHeader) {
 			if (adminHeader != process.env.ADMIN_ACCESS_TOKEN) throw createUnauthorizedResponse()
 			const organizationId = req.get(process.env.ORG_ID_HEADER_NAME)
@@ -314,7 +316,6 @@ async function keycloakPublicKeyAuthentication(token) {
 		return {
 			data: {
 				id: externalUserId,
-				token: token,
 				user_roles: roles,
 				name: verifiedClaims.name,
 				organization_id: verifiedClaims.org || null,
