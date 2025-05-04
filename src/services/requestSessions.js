@@ -1,5 +1,6 @@
 const connectionQueries = require('@database/queries/connection')
 const sessionRequestQueries = require('@database/queries/requestSessions')
+const sessionRequestMappingQueries = require('@database/queries/requestSessionMapping')
 const moment = require('moment-timezone')
 const userExtensionQueries = require('@database/queries/userExtension')
 const common = require('@constants/common')
@@ -64,7 +65,7 @@ module.exports = class requestSessionsHelper {
 				return responses.failureResponse({
 					statusCode: httpStatusCode.bad_request,
 					responseCode: 'CLIENT_ERROR',
-					message: 'USER_MENTOR',
+					message: 'SAME_USER_MENTOR',
 				})
 			}
 
@@ -164,21 +165,41 @@ module.exports = class requestSessionsHelper {
 				})
 			}
 
-			// Map friend details by user IDs
-			const friendIds = allRequestSession.rows.map((requestSession) => requestSession.requestee_id)
-			let friendDetails = await userExtensionQueries.getUsersByUserIds(friendIds, {
+			const sessionRequestData = allRequestSession.rows.map((session) => session)
+
+			const sessionRequestMapping = await sessionRequestMappingQueries.getSessionsMapping(userId)
+
+			const sessionRequestIds = sessionRequestMapping.map((session) => session.session_request_id)
+
+			const sessionMappingDetails = await sessionRequestQueries.getSessionMappingDetails(
+				sessionRequestIds,
+				status
+			)
+
+			const sessionMappingDetailsData = sessionMappingDetails.map((session) => session.dataValues)
+
+			const combinedData = [...sessionRequestData, ...sessionMappingDetailsData]
+
+			const allSessionRequest = {
+				count: combinedData.length,
+				rows: combinedData,
+			}
+
+			// Map requestee details by user IDs
+			const requesteeIds = allSessionRequest.rows.map((requestSession) => requestSession.requestee_id)
+			let requesteeDetails = await userExtensionQueries.getUsersByUserIds(requesteeIds, {
 				attributes: ['user_id', 'image'],
 			})
 
-			const friendDetailsMap = friendDetails.reduce((acc, friend) => {
-				acc[friend.user_id] = friend
+			const requesteeDetailsMap = requesteeDetails.reduce((acc, requestee) => {
+				acc[requestee.user_id] = requestee
 				return acc
 			}, {})
 
-			let requestSessionWithDetails = allRequestSession.rows.map((requestSession) => {
+			let requestSessionWithDetails = allSessionRequest.rows.map((requestSession) => {
 				return {
 					...requestSession,
-					user_details: friendDetailsMap[requestSession.requestee_id] || null,
+					user_details: requesteeDetailsMap[requestSession.requestee_id] || null,
 				}
 			})
 
@@ -199,7 +220,7 @@ module.exports = class requestSessionsHelper {
 			return responses.successResponse({
 				statusCode: httpStatusCode.ok,
 				message: 'SESSION_REQUESTS_LIST',
-				result: { data: requestSessionWithDetails, count: allRequestSession.count },
+				result: { data: requestSessionWithDetails, count: allSessionRequest.count },
 			})
 		} catch (error) {
 			console.error(error)
@@ -215,7 +236,7 @@ module.exports = class requestSessionsHelper {
 	 * @param {string} organization_id - the ID of the user organization.
 	 * @returns {Promise<Object>} A success response indicating the request was accepted.
 	 */
-	static async accept(bodyData, mentorUserId, orgId, isMentor, notifyUser, skipValidation) {
+	static async accept(bodyData, mentorUserId, orgId, isMentor) {
 		try {
 			// Fetch session request details
 			const getRequestSessionDetails = await sessionRequestQueries.findOneRequest(bodyData.request_session_id)
@@ -251,14 +272,7 @@ module.exports = class requestSessionsHelper {
 			})
 
 			// Create session
-			const sessionCreation = await sessionService.create(
-				bodyData,
-				mentorUserId,
-				orgId,
-				isMentor,
-				notifyUser,
-				skipValidation
-			)
+			const sessionCreation = await sessionService.create(bodyData, mentorUserId, orgId, isMentor, true, true)
 
 			// If session creation fails
 			if (sessionCreation.statusCode !== httpStatusCode.created) {
@@ -503,12 +517,12 @@ module.exports = class requestSessionsHelper {
 		}
 	}
 
-	static async userAvailability(userId, page, limit, search, status, roles) {
+	static async userAvailability(userId, page, limit, search, status, roles, startDate, endDate) {
 		try {
 			// Fetch both mentor and mentee sessions in parallel
 			const [enrolledSessions, mentoringSessions] = await Promise.all([
-				menteeServices.getMySessions(page, limit, search, userId),
-				mentorService.createdSessions(userId, page, limit, search, status, roles),
+				menteeServices.getMySessions(page, limit, search, userId, startDate, endDate),
+				mentorService.createdSessions(userId, page, limit, search, status, roles, startDate, endDate),
 			])
 
 			// Merge the two session arrays into one

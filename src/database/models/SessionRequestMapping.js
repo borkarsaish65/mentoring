@@ -25,11 +25,6 @@ module.exports = (sequelize, DataTypes) => {
 					fields: ['requestee_id'],
 					name: 'index_requestee_id_session_request_mapping',
 				},
-				{
-					fields: ['session_request_id', 'requestee_id'],
-					name: 'index_requestee_id_session_request_id_session_request_mapping',
-					unique: true,
-				},
 			],
 		}
 	)

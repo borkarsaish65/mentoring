@@ -78,20 +78,8 @@ module.exports = (sequelize, DataTypes) => {
 					name: 'index_requestor_id_session_request',
 				},
 				{
-					fields: ['requestee_id'],
-					name: 'index_requestee_id_session_request',
-				},
-				{
 					fields: ['status'],
 					name: 'index_status_session_request',
-				},
-				{
-					fields: ['created_by'],
-					name: 'index_created_by_session_request',
-				},
-				{
-					fields: ['session_id'],
-					name: 'index_session_id_session_request',
 				},
 			],
 		}

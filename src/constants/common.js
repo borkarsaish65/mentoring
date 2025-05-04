@@ -222,6 +222,7 @@ module.exports = {
 		PENDING: 'PENDING',
 		REQUESTED: 'REQUESTED',
 		BLOCKED: 'BLOCKED',
+		EXPIRED: 'EXPIRED',
 	},
 	CONNECTIONS_DEFAULT_MESSAGE: 'Hi, I would like to connect with you.',
 	COMMUNICATION: {

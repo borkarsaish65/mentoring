@@ -69,25 +69,13 @@ module.exports = {
 		await queryInterface.addIndex('session_request', ['requestor_id'], {
 			name: 'index_requestor_id_session_request',
 		})
-		await queryInterface.addIndex('session_request', ['requestee_id'], {
-			name: 'index_requestee_id_session_request',
-		})
 		await queryInterface.addIndex('session_request', ['status'], {
 			name: 'index_status_session_request',
-		})
-		await queryInterface.addIndex('session_request', ['created_by'], {
-			name: 'index_created_by_session_request',
-		})
-		await queryInterface.addIndex('session_request', ['session_id'], {
-			name: 'index_session_id_session_request',
 		})
 	},
 
 	async down(queryInterface, Sequelize) {
-		await queryInterface.removeIndex('session_request', 'index_requestee_id_session_request')
 		await queryInterface.removeIndex('session_request', 'index_status_session_request')
-		await queryInterface.removeIndex('session_request', 'index_created_by_session_request')
-		await queryInterface.removeIndex('session_request', 'index_session_id_session_request')
 		await queryInterface.removeIndex('session_request', 'index_requestor_id_request_sessions')
 
 		await queryInterface.dropTable('session_request')

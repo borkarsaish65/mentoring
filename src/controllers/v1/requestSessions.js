@@ -37,7 +37,7 @@ module.exports = class requestsSessions {
 				req.decodedToken.id,
 				req.query.pageNo,
 				req.query.pageSize,
-				req.query.status ? req.query.status : common.CONNECTIONS_STATUS.REQUESTED
+				req.query.status ? req.query.status.split(',').map((s) => s.trim()) : []
 			)
 			return requestSessionDetails
 		} catch (error) {
@@ -55,18 +55,14 @@ module.exports = class requestsSessions {
 	 */
 	async accept(req) {
 		try {
-			const notifyUser = req.query.notifyUser ? req.query.notifyUser.toLowerCase() === 'true' : true
 			if (req.headers.timezone) {
 				req.body['time_zone'] = req.headers.timezone
 			}
-			const SkipValidation = req.query.SkipValidation ? req.query.SkipValidation : false
 			const acceptRequestSession = await requestSessionsService.accept(
 				req.body,
 				req.decodedToken.id,
 				req.decodedToken.organization_id,
-				isAMentor(req.decodedToken.roles),
-				notifyUser,
-				SkipValidation
+				isAMentor(req.decodedToken.roles)
 			)
 			return acceptRequestSession
 		} catch (error) {
@@ -106,7 +102,9 @@ module.exports = class requestsSessions {
 				req.query.pageSize,
 				req.query.searchText,
 				req.query.status,
-				req.decodedToken.roles
+				req.decodedToken.roles,
+				req.query.start_date,
+				req.query.end_date
 			)
 		} catch (error) {
 			throw error

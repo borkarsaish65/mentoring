@@ -1,5 +1,4 @@
 const requestSession = require('@database/models/index').RequestSession
-const requestSessionMapping = require('@database/models/index').SessionRequestMapping
 const { Op } = require('sequelize')
 const sequelize = require('@database/models/index').sequelize
 
@@ -25,38 +24,25 @@ exports.getModelName = async () => {
 
 exports.addSessionRequest = async (requestorId, requesteeId, Agenda, startDate, endDate, Title, Meta) => {
 	try {
-		const result = await sequelize.transaction(async (t) => {
-			const SessionRequestData = [
-				{
-					requestor_id: requestorId,
-					requestee_id: requesteeId,
-					status: common.CONNECTIONS_STATUS.REQUESTED,
-					title: Title,
-					agenda: Agenda,
-					start_date: startDate,
-					end_date: endDate,
-					created_by: requestorId,
-					updated_by: requestorId,
-					meta: Meta,
-				},
-			]
+		const SessionRequestData = [
+			{
+				requestor_id: requestorId,
+				requestee_id: requesteeId,
+				status: common.CONNECTIONS_STATUS.REQUESTED,
+				title: Title,
+				agenda: Agenda,
+				start_date: startDate,
+				end_date: endDate,
+				created_by: requestorId,
+				updated_by: requestorId,
+				meta: Meta,
+			},
+		]
 
-			const requests = await requestSession.bulkCreate(SessionRequestData, { transaction: t })
-			const requestResult = requests[0].get({ plain: true })
+		const requests = await requestSession.bulkCreate(SessionRequestData)
+		const requestResult = requests[0].get({ plain: true })
 
-			const SessionRequestMappingData = [
-				{
-					requestee_id: requesteeId,
-					session_request_id: requestResult.id,
-				},
-			]
-			const requestsMapping = await requestSessionMapping.bulkCreate(SessionRequestMappingData, {
-				transaction: t,
-			})
-			return requests[0].get({ plain: true })
-		})
-
-		return result
+		return requestResult
 	} catch (error) {
 		throw error
 	}
@@ -70,34 +56,49 @@ exports.getAllRequests = async (userId, page, pageSize, status) => {
 
 		// Prepare status filter
 		const statusFilter =
-			status != ''
+			status != []
 				? status
 				: {
 						[Op.in]: [
 							common.CONNECTIONS_STATUS.ACCEPTED,
 							common.CONNECTIONS_STATUS.REQUESTED,
 							common.CONNECTIONS_STATUS.REJECTED,
+							common.CONNECTIONS_STATUS.EXPIRED,
 						],
 				  }
 
-		const sessionRequest = await requestSession.findAll({
+		const sessionRequest = await requestSession.findAndCountAll({
 			where: {
 				requestor_id: userId,
 				status: statusFilter,
 			},
+			raw: true,
+			limit,
+			offset,
 		})
 
-		const sessionRequestData = sessionRequest.map((session) => session.dataValues)
+		return sessionRequest
+	} catch (error) {
+		console.error('Error in getAllRequests:', error)
+		throw error
+	}
+}
 
-		const sessionRequestMapping = await requestSessionMapping.findAll({
-			where: {
-				requestee_id: userId,
-			},
-		})
+exports.getSessionMappingDetails = async (sessionRequestIds, status) => {
+	try {
+		const statusFilter =
+			status != []
+				? status
+				: {
+						[Op.in]: [
+							common.CONNECTIONS_STATUS.ACCEPTED,
+							common.CONNECTIONS_STATUS.REQUESTED,
+							common.CONNECTIONS_STATUS.REJECTED,
+							common.CONNECTIONS_STATUS.EXPIRED,
+						],
+				  }
 
-		const sessionRequestIds = sessionRequestMapping.map((session) => session.dataValues.session_request_id)
-
-		const sessionMappingDetails = await requestSession.findAll({
+		const result = await requestSession.findAll({
 			where: {
 				id: {
 					[Op.in]: sessionRequestIds, // Using Sequelize.Op.in to filter by multiple ids
@@ -105,14 +106,9 @@ exports.getAllRequests = async (userId, page, pageSize, status) => {
 				status: statusFilter, // Your status filter
 			},
 		})
-		const sessionMappingDetailsData = sessionMappingDetails.map((session) => session.dataValues)
-		const combinedData = [...sessionRequestData, ...sessionMappingDetailsData]
-		return {
-			count: combinedData.length,
-			rows: combinedData,
-		}
+
+		return result
 	} catch (error) {
-		console.error('Error in getAllRequests:', error)
 		throw error
 	}
 }
@@ -140,8 +136,6 @@ exports.getpendingRequests = async (userId, page, pageSize) => {
 }
 
 exports.approveRequest = async (userId, requestSessionId, sessionId) => {
-	const t = await sequelize.transaction() // start transaction
-
 	try {
 		const updateData = {
 			status: common.CONNECTIONS_STATUS.ACCEPTED,
@@ -154,14 +148,11 @@ exports.approveRequest = async (userId, requestSessionId, sessionId) => {
 				status: common.CONNECTIONS_STATUS.REQUESTED,
 				id: requestSessionId,
 			},
-			transaction: t,
 			individualHooks: true,
 		})
 
-		await t.commit()
-		return requests[1]
+		return requests[1] // this typically refers to the number of affected rows
 	} catch (error) {
-		await t.rollback()
 		throw error
 	}
 }
