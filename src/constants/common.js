@@ -228,4 +228,6 @@ module.exports = {
 	COMMUNICATION: {
 		UNAUTHORIZED: 'Unauthorized',
 	},
+	SESSION_POST_RESOURCE_TYPE: 'post',
+	SESSION_PRE_RESOURCE_TYPE: 'pre',
 }

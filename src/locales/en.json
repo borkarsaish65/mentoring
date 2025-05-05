@@ -217,5 +217,8 @@
 	"SESSION_APPROVAL_FAILED": "We couldn't approve your session request. Please try again or contact support.",
 	"REQUEST_SESSION_NOT_FOUND": "Oops! We couldn't find that session request.",
 	"REQUEST_SESSION_DETAILS": "request session details fetched successfully.",
-	"SAME_USER_MENTOR": "You cannot assign yourself as a mentor."
+	"SAME_USER_MENTOR": "You cannot assign yourself as a mentor.",
+	"ORG_THEME_FETCHED_SUCCESSFULLY": "Organization theme fetched successfully.",
+	"SESSION_RESOURCE_CANT_UPDATE": "Session Resources can't be updated",
+	"ORG_THEME_UPDATED_SUCCESSFULLY": "Organization theme updated successfully."
 }
