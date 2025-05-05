@@ -188,7 +188,7 @@ module.exports = class requestSessionsHelper {
 			// Map requestee details by user IDs
 			const requesteeIds = allSessionRequest.rows.map((requestSession) => requestSession.requestee_id)
 			let requesteeDetails = await userExtensionQueries.getUsersByUserIds(requesteeIds, {
-				attributes: ['user_id', 'image'],
+				attributes: ['user_id', 'image', 'name', 'experience'],
 			})
 
 			const requesteeDetailsMap = requesteeDetails.reduce((acc, requestee) => {
@@ -533,7 +533,7 @@ module.exports = class requestSessionsHelper {
 
 			return responses.successResponse({
 				statusCode: httpStatusCode.created,
-				message: 'SESSION_REQUEST_REJECTED',
+				message: 'MENTOR_AVAILABILITY',
 				result: availability.result,
 			})
 		} catch (error) {
