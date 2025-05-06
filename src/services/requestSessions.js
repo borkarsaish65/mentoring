@@ -188,7 +188,7 @@ module.exports = class requestSessionsHelper {
 			// Map requestee details by user IDs
 			const requesteeIds = allSessionRequest.rows.map((requestSession) => requestSession.requestee_id)
 			let requesteeDetails = await userExtensionQueries.getUsersByUserIds(requesteeIds, {
-				attributes: ['user_id', 'image', 'name', 'experience'],
+				attributes: ['user_id', 'image', 'name', 'experience', 'designation'],
 			})
 
 			const requesteeDetailsMap = requesteeDetails.reduce((acc, requestee) => {
