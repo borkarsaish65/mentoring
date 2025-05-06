@@ -191,6 +191,16 @@ module.exports = class requestSessionsHelper {
 				attributes: ['user_id', 'image', 'name', 'experience', 'designation'],
 			})
 
+			const userExtensionsModelName = await userExtensionQueries.getModelName()
+
+			const uniqueOrgIds = [...new Set(requesteeDetails.map((obj) => obj.organization_id))]
+			requesteeDetails = await entityTypeService.processEntityTypesToAddValueLabels(
+				requesteeDetails,
+				uniqueOrgIds,
+				userExtensionsModelName,
+				'organization_id'
+			)
+
 			const requesteeDetailsMap = requesteeDetails.reduce((acc, requestee) => {
 				acc[requestee.user_id] = requestee
 				return acc
