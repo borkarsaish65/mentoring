@@ -19,6 +19,7 @@ const { Op } = require('sequelize')
 const { removeDefaultOrgEntityTypes } = require('@generics/utils')
 const menteeServices = require('@services/mentees')
 const mentorService = require('@services/mentors')
+const mentorQueries = require('@database/queries/mentorExtension')
 
 module.exports = class requestSessionsHelper {
 	static async checkConnectionRequestExists(userId, targetUserId) {
@@ -39,7 +40,7 @@ module.exports = class requestSessionsHelper {
 
 	static async create(bodyData, userId, orgId, skipValidation) {
 		try {
-			const mentorUserExists = await userExtensionQueries.getMenteeExtension(bodyData.requestee_id)
+			const mentorUserExists = await mentorQueries.getMentorExtension(bodyData.requestee_id)
 			if (!mentorUserExists) {
 				return responses.failureResponse({
 					statusCode: httpStatusCode.not_found,
@@ -133,6 +134,11 @@ module.exports = class requestSessionsHelper {
 				bodyData.meta ? bodyData.meta : null
 			)
 
+			const SessionRequestMapping = await sessionRequestMappingQueries.addSessionRequest(
+				bodyData.requestee_id,
+				SessionRequestResult.id
+			)
+
 			return responses.successResponse({
 				statusCode: httpStatusCode.created,
 				message: 'SESSION_REQUEST_SENT_SUCCESSFULLY',
@@ -154,16 +160,6 @@ module.exports = class requestSessionsHelper {
 	static async list(userId, pageNo, pageSize, status) {
 		try {
 			const allRequestSession = await sessionRequestQueries.getAllRequests(userId, pageNo, pageSize, status)
-			if (allRequestSession.count == 0 || allRequestSession.rows.length == 0) {
-				return responses.successResponse({
-					statusCode: httpStatusCode.ok,
-					message: 'SESSION_REQUESTS_LIST',
-					result: {
-						data: [],
-						count: allRequestSession.count,
-					},
-				})
-			}
 
 			const sessionRequestData = allRequestSession.rows.map((session) => session)
 

@@ -9,7 +9,7 @@ exports.addSessionRequest = async (requesteeId, requestId) => {
 			},
 		]
 
-		await requestSessionMapping.bulkCreate(SessionRequestMappingData)
+		const requestResult = await requestSessionMapping.bulkCreate(SessionRequestMappingData)
 
 		return requestResult
 	} catch (error) {
