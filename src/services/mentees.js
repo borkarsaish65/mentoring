@@ -1122,6 +1122,40 @@ module.exports = class MenteesHelper {
 			const query = utils.processQueryParametersWithExclusions(queryParams)
 			const userExtensionModelName = await menteeQueries.getModelName()
 
+			let connectedMenteeIds = []
+
+			if (queryParams.connected_mentees === 'true') {
+				const connectedQueryParams = { ...queryParams }
+				delete connectedQueryParams.connected_mentees
+				const connectedQuery = utils.processQueryParametersWithExclusions(connectedQueryParams)
+
+				const connectionDetails = await connectionQueries.getConnectionsDetails(
+					pageNo,
+					pageSize,
+					connectedQuery,
+					searchText,
+					userId,
+					organization_ids,
+					[] // roles can be passed if needed
+				)
+
+				if (connectionDetails?.data?.length > 0) {
+					connectedMenteeIds = connectionDetails.data.map((item) => item.user_id)
+				}
+
+				// If there are no connected mentees, short-circuit and return empty
+				if (connectedMenteeIds.length === 0) {
+					return responses.successResponse({
+						statusCode: httpStatusCode.ok,
+						message: 'MENTEE_LIST',
+						result: {
+							data: [],
+							count: 0,
+						},
+					})
+				}
+			}
+
 			let validationData = await entityTypeQueries.findAllEntityTypesAndEntities({
 				status: common.ACTIVE_STATUS,
 				model_names: { [Op.overlap]: [userExtensionModelName] },
@@ -1145,7 +1179,7 @@ module.exports = class MenteesHelper {
 
 			const saasFilter = await this.filterMenteeListBasedOnSaasPolicy(userId, isAMentor, organization_ids)
 			let extensionDetails = await menteeQueries.getAllUsers(
-				[],
+				connectedMenteeIds ? connectedMenteeIds : [],
 				pageNo,
 				pageSize,
 				filteredQuery,

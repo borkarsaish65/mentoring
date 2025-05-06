@@ -66,7 +66,7 @@ module.exports = class SessionsHelper {
 
 	static async create(bodyData, loggedInUserId, orgId, isAMentor, notifyUser, skipValidations) {
 		try {
-			let skipValidation = skipValidations ? skipValidations : false
+			let skipValidation = bodyData.type == common.SESSION_TYPE.PRIVATE || skipValidations == true ? true : false
 			// check if session mentor is added in the mentee list
 			if (bodyData?.mentees?.includes(bodyData?.mentor_id)) {
 				return responses.failureResponse({
