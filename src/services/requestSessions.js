@@ -181,52 +181,55 @@ module.exports = class requestSessionsHelper {
 				rows: combinedData,
 			}
 
-			// Map requestee details by user IDs
-			const requesteeIds = allSessionRequest.rows.map((requestSession) => requestSession.requestee_id)
-			let requesteeDetails = await userExtensionQueries.getUsersByUserIds(requesteeIds, {
-				attributes: ['user_id', 'image', 'name', 'experience', 'designation'],
+			// Get opposite user ID for each session
+			const oppositeUserIds = combinedData.map((session) => {
+				return session.requestor_id === userId ? session.requestee_id : session.requestor_id
+			})
+
+			// Fetch user details for opposite users
+			let oppositeUserDetails = await userExtensionQueries.getUsersByUserIds(oppositeUserIds, {
+				attributes: ['user_id', 'image', 'name', 'experience', 'designation', 'organization_id'],
 			})
 
 			const userExtensionsModelName = await userExtensionQueries.getModelName()
+			const uniqueOrgIds = [...new Set(oppositeUserDetails.map((obj) => obj.organization_id))]
 
-			const uniqueOrgIds = [...new Set(requesteeDetails.map((obj) => obj.organization_id))]
-			requesteeDetails = await entityTypeService.processEntityTypesToAddValueLabels(
-				requesteeDetails,
+			oppositeUserDetails = await entityTypeService.processEntityTypesToAddValueLabels(
+				oppositeUserDetails,
 				uniqueOrgIds,
 				userExtensionsModelName,
 				'organization_id'
 			)
 
-			const requesteeDetailsMap = requesteeDetails.reduce((acc, requestee) => {
-				acc[requestee.user_id] = requestee
+			const userDetailsMap = oppositeUserDetails.reduce((acc, user) => {
+				acc[user.user_id] = user
 				return acc
 			}, {})
 
-			let requestSessionWithDetails = allSessionRequest.rows.map((requestSession) => {
-				return {
-					...requestSession,
-					user_details: requesteeDetailsMap[requestSession.requestee_id] || null,
-				}
-			})
-
-			const userIds = requestSessionWithDetails.map((item) => item.requestee_id)
+			const userIds = oppositeUserIds.map((id) => String(id))
 			const userDetails = await userRequests.getListOfUserDetails(userIds, true)
-			const userDetailsMap = new Map(userDetails.result.map((userDetail) => [String(userDetail.id), userDetail]))
-			requestSessionWithDetails = requestSessionWithDetails.filter((requestSessionWithDetail) => {
-				const user_id = String(requestSessionWithDetail.requestee_id)
+			const userDetailsFullMap = new Map(userDetails.result.map((u) => [String(u.id), u]))
 
-				if (userDetailsMap.has(user_id)) {
-					const userDetail = userDetailsMap.get(user_id)
-					requestSessionWithDetail.user_details.image = userDetail.image
-					return true
-				}
-				return false
-			})
+			const requestSessionWithDetails = combinedData
+				.map((session) => {
+					const oppositeUserId = session.requestor_id === userId ? session.requestee_id : session.requestor_id
+					const baseDetails = userDetailsMap[oppositeUserId] || null
+
+					if (baseDetails && userDetailsFullMap.has(String(oppositeUserId))) {
+						baseDetails.image = userDetailsFullMap.get(String(oppositeUserId)).image
+						return {
+							...session,
+							user_details: baseDetails,
+						}
+					}
+					return null
+				})
+				.filter(Boolean)
 
 			return responses.successResponse({
 				statusCode: httpStatusCode.ok,
 				message: 'SESSION_REQUESTS_LIST',
-				result: { data: requestSessionWithDetails, count: allSessionRequest.count },
+				result: { data: requestSessionWithDetails, count: requestSessionWithDetails.length },
 			})
 		} catch (error) {
 			console.error(error)
