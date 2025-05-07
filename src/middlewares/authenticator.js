@@ -20,7 +20,7 @@ module.exports = async function (req, res, next) {
 		const isInternalAccess = common.internalAccessUrls.some((path) => {
 			if (req.path.includes(path)) {
 				if (req.headers.internal_access_token === process.env.INTERNAL_ACCESS_TOKEN) return true
-				throw createUnauthorizedResponse()
+				// throw createUnauthorizedResponse()
 			}
 			return false
 		})
@@ -32,7 +32,7 @@ module.exports = async function (req, res, next) {
 			else throw createUnauthorizedResponse('PERMISSION_DENIED')
 		}
 
-		const [decodedToken, skipFurtherChecks] = await authenticateUser(authHeader, req)
+		let [decodedToken, skipFurtherChecks] = await authenticateUser(authHeader, req)
 
 		// Path to config.json
 		const configFilePath = path.resolve(__dirname, '../', 'config.json')
@@ -60,8 +60,21 @@ module.exports = async function (req, res, next) {
 			defaultTokenExtraction = true
 		}
 
+		let organizationKey = 'organization_id'
+
+		defaultTokenExtraction = true
 		// performing default token data extraction
 		if (defaultTokenExtraction) {
+			decodedToken[organizationKey] = getOrgId(req.headers, decodedToken, 'data.organization_ids[0]')
+			decodedToken.data[organizationKey] = decodedToken[organizationKey]
+
+			const resolvedRolePath = resolvePathTemplate(
+				'data.organizations[?organization_id={{organization_id}}].roles',
+				decodedToken
+			)
+			const roles = getNestedValue(decodedToken, resolvedRolePath) || []
+			decodedToken.data['roles'] = roles
+
 			req.decodedToken = {
 				...decodedToken.data,
 			}
@@ -70,13 +83,34 @@ module.exports = async function (req, res, next) {
 			for (let key in configData) {
 				if (configData.hasOwnProperty(key)) {
 					let keyValue = getNestedValue(decodedToken, configData[key])
-					if (key === 'id' || key === 'organization_id') {
+					if (key === 'id') {
 						keyValue = keyValue?.toString()
 					}
+					if (key === organizationKey) {
+						req.decodedToken[key] = getOrgId(req.headers, decodedToken, configData[key])
+						continue
+					}
+					if (key === 'roles') {
+						let orgId = getOrgId(req.headers, decodedToken, configData[organizationKey])
+
+						// Now extract roles using fully dynamic path
+						const rolePathTemplate = configData[key]
+
+						decodedToken[organizationKey] = orgId
+						const resolvedRolePath = resolvePathTemplate(rolePathTemplate, decodedToken)
+						const roles = getNestedValue(decodedToken, resolvedRolePath) || []
+						req.decodedToken[key] = roles
+						continue
+					}
+
 					// For each key in config, assign the corresponding value from decodedToken
 					req.decodedToken[key] = keyValue
 				}
 			}
+		}
+
+		if (!req.decodedToken[organizationKey]) {
+			throw createUnauthorizedResponse()
 		}
 
 		req.decodedToken.token = authHeader
@@ -138,9 +172,53 @@ module.exports = async function (req, res, next) {
 	}
 }
 
-// Helper function to access nested properties
+function getOrgId(headers, decodedToken, orgConfigData) {
+	if (headers['organization_id']) {
+		return (orgId = headers['organization_id'].toString())
+	} else {
+		const orgIdPath = orgConfigData
+		return (orgId = getNestedValue(decodedToken, orgIdPath)?.toString())
+	}
+}
 function getNestedValue(obj, path) {
-	return path.split('.').reduce((acc, part) => acc && acc[part], obj)
+	const parts = path.split('.')
+	let current = obj
+
+	for (const part of parts) {
+		if (!current) return undefined
+
+		// Match conditional array access: key[?field=value]
+		const conditionalMatch = part.match(/^(\w+)\[\?(\w+)=([^\]]+)\]$/)
+		if (conditionalMatch) {
+			const [, arrayKey, field, expected] = conditionalMatch
+			const array = current[arrayKey]
+			if (!Array.isArray(array)) return undefined
+			current = array.find((item) => item[field]?.toString() === expected)
+			continue
+		}
+
+		// Match array index: key[0]
+		const indexMatch = part.match(/^(\w+)\[(\d+)\]$/)
+		if (indexMatch) {
+			const [, key, index] = indexMatch
+			const array = current[key]
+			if (!Array.isArray(array)) return undefined
+			current = array[parseInt(index)]
+			continue
+		}
+
+		// Simple object property
+		current = current[part]
+	}
+
+	return current
+}
+
+function resolvePathTemplate(template, contextObject) {
+	return template.replace(/\{\{(.*?)\}\}/g, (_, path) => {
+		const value = getNestedValue(contextObject, path.trim())
+		return value?.toString?.() ?? ''
+	})
 }
 
 function createUnauthorizedResponse(message = 'UNAUTHORIZED_REQUEST') {
