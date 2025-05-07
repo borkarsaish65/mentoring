@@ -455,9 +455,9 @@ module.exports = class requestSessionsHelper {
 	 * @returns {Promise<Object>} The session information.
 	 * @throws Will throw an error if the request fails.
 	 */
-	static async getInfo(requestSessionId) {
+	static async getInfo(requestSessionId, userId) {
 		try {
-			const requestSessions = await sessionRequestQueries.getRequestSessions(requestSessionId)
+			const requestSessions = await sessionRequestQueries.getRequestSessions(requestSessionId, userId)
 
 			const defaultOrgId = await getDefaultOrgId()
 			if (!defaultOrgId) {
@@ -468,9 +468,12 @@ module.exports = class requestSessionsHelper {
 				})
 			}
 
+			const targetUserId =
+				userId === requestSessions.requestee_id ? requestSessions.requestor_id : requestSessions.requestee_id
+
 			const [userExtensionsModelName, userDetails] = await Promise.all([
 				userExtensionQueries.getModelName(),
-				userExtensionQueries.getMenteeExtension(requestSessions.requestee_id, [
+				userExtensionQueries.getMenteeExtension(targetUserId, [
 					'name',
 					'user_id',
 					'mentee_visibility',
@@ -492,7 +495,10 @@ module.exports = class requestSessionsHelper {
 					message: 'USER_NOT_FOUND',
 				})
 			}
-			userDetails.image &&= (await userRequests.getDownloadableUrl(userDetails.image))?.result
+			if (userDetails.image) {
+				const imageData = await userRequests.getDownloadableUrl(userDetails.image)
+				userDetails.image = imageData?.result
+			}
 
 			// Fetch entity types associated with the user
 			let entityTypes = await entityTypeQueries.findUserEntityTypesAndEntities({
