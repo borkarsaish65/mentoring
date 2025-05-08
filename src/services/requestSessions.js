@@ -219,6 +219,7 @@ module.exports = class requestSessionsHelper {
 						baseDetails.image = userDetailsFullMap.get(String(oppositeUserId)).image
 						return {
 							...session,
+							id: session.id?.toString(), // Convert ID to string
 							user_details: baseDetails,
 						}
 					}
@@ -520,6 +521,7 @@ module.exports = class requestSessionsHelper {
 			}
 
 			requestSessions.user_details = processedUserDetails
+			requestSessions.id = requestSessions.id?.toString() // Convert ID to string
 
 			return responses.successResponse({
 				statusCode: httpStatusCode.ok,
