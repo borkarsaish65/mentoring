@@ -568,6 +568,7 @@ function createMentorAvailabilityResponse(data) {
 		const timeSlot = {
 			startTime: startDate.format('HH:mm:ss'),
 			endTime: endDate.format('HH:mm:ss'),
+			title: session.title || '',
 		}
 
 		if (!availability[dateKey]) {

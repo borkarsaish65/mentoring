@@ -220,5 +220,6 @@
 	"SAME_USER_MENTOR": "You cannot assign yourself as a mentor.",
 	"ORG_THEME_FETCHED_SUCCESSFULLY": "Organization theme fetched successfully.",
 	"SESSION_RESOURCE_CANT_UPDATE": "Session Resources can't be updated",
-	"ORG_THEME_UPDATED_SUCCESSFULLY": "Organization theme updated successfully."
+	"ORG_THEME_UPDATED_SUCCESSFULLY": "Organization theme updated successfully.",
+	"MENTOR_AVAILABILITY": "mentor availibilty featched successfully"
 }
