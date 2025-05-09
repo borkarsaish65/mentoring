@@ -109,10 +109,21 @@ module.exports = async function (req, res, next) {
 			}
 		}
 
-		if (!req.decodedToken[organizationKey]) {
+
+
+
+
+		req.decodedToken.id =
+			typeof req.decodedToken?.id === 'number' ? req.decodedToken?.id?.toString() : req.decodedToken?.id
+		req.decodedToken.organization_id =
+			typeof req.decodedToken?.organization_id === 'number'
+				? req.decodedToken?.organization_id?.toString()
+				: req.decodedToken?.organization_id
+
+    
+    if (!req.decodedToken[organizationKey]) {
 			throw createUnauthorizedResponse()
 		}
-
 		req.decodedToken.token = authHeader
 
 		if (adminHeader) {
@@ -321,7 +332,7 @@ async function authenticateUser(authHeader, req) {
 	else if (process.env.AUTH_METHOD === common.AUTH_METHOD.KEYCLOAK_PUBLIC_KEY)
 		decodedToken = await keycloakPublicKeyAuthentication(token)
 	if (!decodedToken) throw createUnauthorizedResponse()
-	if (decodedToken.data.user_roles && isAdminRole(decodedToken.data.user_roles)) {
+	if (decodedToken.data.roles && isAdminRole(decodedToken.data.roles)) {
 		req.decodedToken = decodedToken.data
 		return [decodedToken, true]
 	}
@@ -393,7 +404,7 @@ async function keycloakPublicKeyAuthentication(token) {
 		return {
 			data: {
 				id: externalUserId,
-				user_roles: roles,
+				roles: roles,
 				name: verifiedClaims.name,
 				organization_id: verifiedClaims.org || null,
 			},
