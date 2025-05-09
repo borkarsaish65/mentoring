@@ -65,15 +65,15 @@ module.exports = async function (req, res, next) {
 		defaultTokenExtraction = true
 		// performing default token data extraction
 		if (defaultTokenExtraction) {
-			decodedToken[organizationKey] = getOrgId(req.headers, decodedToken, 'data.organization_ids[0]')
-			decodedToken.data[organizationKey] = decodedToken[organizationKey]
+			// decodedToken[organizationKey] = getOrgId(req.headers, decodedToken, 'data.organization_ids[0]')
+			// decodedToken.data[organizationKey] = decodedToken[organizationKey]
 
-			const resolvedRolePath = resolvePathTemplate(
-				'data.organizations[?organization_id={{organization_id}}].roles',
-				decodedToken
-			)
-			const roles = getNestedValue(decodedToken, resolvedRolePath) || []
-			decodedToken.data['roles'] = roles
+			// const resolvedRolePath = resolvePathTemplate(
+			// 	'data.organizations[?organization_id={{organization_id}}].roles',
+			// 	decodedToken
+			// )
+			// const roles = getNestedValue(decodedToken, resolvedRolePath) || []
+			// decodedToken.data['roles'] = roles
 
 			req.decodedToken = {
 				...decodedToken.data,
@@ -94,7 +94,7 @@ module.exports = async function (req, res, next) {
 						let orgId = getOrgId(req.headers, decodedToken, configData[organizationKey])
 
 						// Now extract roles using fully dynamic path
-						const rolePathTemplate = configData[key]
+						const rolePathTemplate = configData['roles']
 
 						decodedToken[organizationKey] = orgId
 						const resolvedRolePath = resolvePathTemplate(rolePathTemplate, decodedToken)
