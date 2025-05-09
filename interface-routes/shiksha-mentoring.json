@@ -769,7 +769,6 @@
 				}
 			]
 		},
-
 		{
 			"sourceRoute": "/interface/v1/profile/read",
 			"type": "GET",
@@ -2665,7 +2664,6 @@
 				"type": "internal"
 			}
 		},
-
 		{
 			"sourceRoute": "/interface/v1/account/create",
 			"type": "POST",
@@ -3124,6 +3122,20 @@
 			"priority": "MUST_HAVE",
 			"inSequence": false,
 			"orchestrated": false,
+			"targetPackages": [
+				{
+					"basePackageName": "mentoring",
+					"packageName": "shiksha-mentoring"
+				}
+			]
+		},
+		{
+			"sourceRoute": "/user/v1/public/branding",
+			"type": "GET",
+			"priority": "MUST_HAVE",
+			"inSequence": false,
+			"orchestrated": false,
+			"service": "user",
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
