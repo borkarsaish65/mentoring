@@ -1134,13 +1134,16 @@ module.exports = class MenteesHelper {
 					pageSize,
 					connectedQuery,
 					searchText,
-					userId,
+					queryParams.mentorId ? queryParams.mentorId : userId,
 					organization_ids,
 					[] // roles can be passed if needed
 				)
 
 				if (connectionDetails?.data?.length > 0) {
 					connectedMenteeIds = connectionDetails.data.map((item) => item.user_id)
+					if (!connectedMenteeIds.includes(userId)) {
+						connectedMenteeIds.push(userId)
+					}
 				}
 
 				// If there are no connected mentees, short-circuit and return empty
