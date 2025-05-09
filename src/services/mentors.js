@@ -934,7 +934,7 @@ module.exports = class MentorsHelper {
 			}
 			const defaultRuleFilter = await defaultRulesFilter({
 				ruleType: 'mentor',
-				requesterId: userId,
+				requesterId: queryParams.menteeId ? queryParams.menteeId : userId,
 				roles: roles,
 				requesterOrganizationId: orgId,
 			})
@@ -947,8 +947,45 @@ module.exports = class MentorsHelper {
 				})
 			}
 
+			let connectedMentorsIds = []
+
+			if (queryParams.connected_mentors === 'true') {
+				const connectedQueryParams = { ...queryParams }
+				delete connectedQueryParams.connected_mentors
+				const connectedQuery = utils.processQueryParametersWithExclusions(connectedQueryParams)
+
+				const connectionDetails = await connectionQueries.getConnectionsDetails(
+					pageNo,
+					pageSize,
+					connectedQuery,
+					searchText,
+					queryParams.mentorId ? queryParams.mentorId : userId,
+					organization_ids,
+					[] // roles can be passed if needed
+				)
+
+				if (connectionDetails?.data?.length > 0) {
+					connectedMentorsIds = connectionDetails.data.map((item) => item.user_id)
+					if (!connectedMentorsIds.includes(userId)) {
+						connectedMentorsIds.push(userId)
+					}
+				}
+
+				// If there are no connected mentees, short-circuit and return empty
+				if (connectedMentorsIds.length === 0) {
+					return responses.successResponse({
+						statusCode: httpStatusCode.ok,
+						message: 'MENTEE_LIST',
+						result: {
+							data: [],
+							count: 0,
+						},
+					})
+				}
+			}
+
 			let extensionDetails = await mentorQueries.getMentorsByUserIdsFromView(
-				[],
+				connectedMentorsIds ? connectedMentorsIds : [],
 				pageNo,
 				pageSize,
 				filteredQuery,
