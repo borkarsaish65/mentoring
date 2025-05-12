@@ -466,8 +466,8 @@ module.exports = class SessionsHelper {
 			if (sessionDetail.status == common.COMPLETED_STATUS && bodyData?.resources) {
 				const completedDate = moment(sessionDetail.completed_at)
 				const currentDate = moment.utc()
-				let diffInMinutes = completedDate.diff(currentDate, 'minutes')
-				if (process.env.POST_RESOURCE_DELETE_TIMEOUT > diffInMinutes) {
+				let diffInMinutes = currentDate.diff(completedDate, 'minutes')
+				if (diffInMinutes > process.env.POST_RESOURCE_DELETE_TIMEOUT) {
 					return responses.failureResponse({
 						message: 'SESSION_RESOURCE_CANT_UPDATE',
 						statusCode: httpStatusCode.bad_request,
