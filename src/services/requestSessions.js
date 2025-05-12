@@ -181,6 +181,14 @@ module.exports = class requestSessionsHelper {
 				rows: combinedData,
 			}
 
+			if (allSessionRequest.count == 0) {
+				return responses.successResponse({
+					statusCode: httpStatusCode.ok,
+					message: 'SESSION_REQUESTS_LIST',
+					result: { data: [], count: 0 },
+				})
+			}
+
 			// Get opposite user ID for each session
 			const oppositeUserIds = combinedData.map((session) => {
 				return session.requestor_id === userId ? session.requestee_id : session.requestor_id
