@@ -44,7 +44,6 @@ module.exports = async function (req, res, next) {
 
 		// Check if config.json exists
 		if (fs.existsSync(configFilePath)) {
-			 console.log(" config exit");
 			// Read and parse the config.json file
 			const rawData = fs.readFileSync(configFilePath)
 			try {
@@ -63,7 +62,6 @@ module.exports = async function (req, res, next) {
 
 		let organizationKey = 'organization_id'
 
-		defaultTokenExtraction = true
 		// performing default token data extraction
 		if (defaultTokenExtraction) {
 			// decodedToken[organizationKey] = getOrgId(req.headers, decodedToken, 'data.organization_ids[0]')
@@ -110,8 +108,6 @@ module.exports = async function (req, res, next) {
 			}
 		}
 
-
- console.log(" decoded tokenen ",req.decodedToken);
 
 
 		req.decodedToken.id =
