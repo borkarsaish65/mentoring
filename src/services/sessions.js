@@ -679,11 +679,10 @@ module.exports = class SessionsHelper {
 					}
 				}
 				if (bodyData?.resources) {
-					await resourceQueries.deleteResource(sessionId)
 					await this.addResources(bodyData.resources, userId, sessionId)
 
 					bodyData.resources.forEach((element) => {
-						if ((element.type = common.SESSION_PRE_RESOURCE_TYPE && element.isNew == true)) {
+						if ((element.type = common.SESSION_PRE_RESOURCE_TYPE)) {
 							preResourceSendEmail = true
 						}
 					})
@@ -3082,8 +3081,7 @@ module.exports = class SessionsHelper {
 			resource['session_id'] = sessionId
 		})
 		let resourceInfo = await resourceQueries.bulkCreate(data)
-
-		console.log(userId, 'resourceInfo      ++++++++++++++++++++ ', resourceInfo)
+		return resourceInfo
 	}
 	static async getResources(sessionId) {
 		let resourceInfo = await resourceQueries.find({ session_id: sessionId })
