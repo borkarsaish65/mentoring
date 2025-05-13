@@ -35,7 +35,7 @@ module.exports = async function (req, res, next) {
 		let [decodedToken, skipFurtherChecks] = await authenticateUser(authHeader, req)
 
 		// Path to config.json
-		const configFilePath = path.resolve(__dirname, '../', 'config.json')
+		const configFilePath = path.resolve(__dirname, 'config.json')
 
 		// Initialize variables
 		let configData = {}
