@@ -61,7 +61,7 @@ module.exports = class ResourcessData {
 	static async find(filter, projection = {}) {
 		try {
 			const ResourcesData = await Resources.findAll({
-				where: filter,
+				where: { ...filter, deleted_at: null },
 				attributes: projection,
 				raw: true,
 			})
