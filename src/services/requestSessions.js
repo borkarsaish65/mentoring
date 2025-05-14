@@ -426,7 +426,12 @@ module.exports = class requestSessionsHelper {
 			// Send Email
 			const templateCode = process.env.MENTOR_ACCEPT_SESSION_REQUEST_EMAIL_TEMPLATE
 			if (templateCode) {
-				emailForAcceptAndReject(templateCode, orgId, getRequestSessionDetails.requestor_id, mentorUserId)
+				emailForAcceptAndReject(
+					templateCode,
+					orgId.toString(),
+					getRequestSessionDetails.requestor_id,
+					mentorUserId
+				)
 			}
 
 			// Return Success
@@ -478,7 +483,7 @@ module.exports = class requestSessionsHelper {
 			}
 
 			const templateCode = process.env.MENTOR_REJECT_SESSION_REQUEST_EMAIL_TEMPLATE
-			emailForAcceptAndReject(templateCode, orgId, rejectedData[0].dataValues.requestor_id, userId)
+			emailForAcceptAndReject(templateCode, orgId.toString(), rejectedData[0].dataValues.requestor_id, userId)
 
 			return responses.successResponse({
 				statusCode: httpStatusCode.created,
