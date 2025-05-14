@@ -682,16 +682,16 @@ async function emailForAcceptAndReject(templateCode, orgId, requestor_id, mentor
 
 	// If template data is available. create mail data and push to kafka
 	if (templateData) {
-		let name = menteeDetails.name
+		let name = menteeDetails[0].name
 		// Push successful enrollment to session in kafka
 		const payload = {
 			type: 'email',
 			email: {
-				to: menteeDetails.email,
+				to: menteeDetails[0].email,
 				subject: templateData.subject,
 				body: utils.composeEmailBody(templateData.body, {
 					name,
-					mentorName: mentorDetails.name,
+					mentorName: mentorDetails[0].name,
 				}),
 			},
 		}
