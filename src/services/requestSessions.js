@@ -478,7 +478,7 @@ module.exports = class requestSessionsHelper {
 			}
 
 			const templateCode = process.env.MENTOR_REJECT_SESSION_REQUEST_EMAIL_TEMPLATE
-			emailForAcceptAndReject(templateCode, orgId, userId, rejectedData[0].dataValues.requestor_id)
+			emailForAcceptAndReject(templateCode, orgId, rejectedData[0].dataValues.requestor_id, userId)
 
 			return responses.successResponse({
 				statusCode: httpStatusCode.created,
