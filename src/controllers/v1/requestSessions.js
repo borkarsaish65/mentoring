@@ -110,4 +110,22 @@ module.exports = class requestsSessions {
 			throw error
 		}
 	}
+
+	/**
+	 * Expire Request Session.
+	 * @method
+	 * @name expire
+	 * @param {Object} req -request data.
+	 * @param {String} req.params.id - Session Id.
+	 * @returns {JSON} - Expire session callback url.
+	 */
+
+	async expire(req) {
+		try {
+			const sessionsExpire = await requestSessionsService.expire(req.params.id)
+			return sessionsExpire
+		} catch (error) {
+			return error
+		}
+	}
 }

@@ -56,7 +56,7 @@ exports.getAllRequests = async (userId, page, pageSize, status) => {
 
 		// Prepare status filter
 		const statusFilter =
-			status != []
+			status.length != 0
 				? status
 				: {
 						[Op.in]: [
@@ -163,6 +163,24 @@ exports.rejectRequest = async (userId, requestSessionId, rejectReason) => {
 			status: common.CONNECTIONS_STATUS.REJECTED,
 			updated_by: userId,
 			reject_reason: rejectReason ? rejectReason : null,
+		}
+
+		return await requestSession.update(updateData, {
+			where: {
+				status: common.CONNECTIONS_STATUS.REQUESTED,
+				id: requestSessionId,
+			},
+			individualHooks: true,
+		})
+	} catch (error) {
+		throw error
+	}
+}
+
+exports.expireRequest = async (requestSessionId) => {
+	try {
+		let updateData = {
+			status: common.CONNECTIONS_STATUS.EXPIRED,
 		}
 
 		return await requestSession.update(updateData, {

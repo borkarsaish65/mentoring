@@ -20,6 +20,7 @@ const { removeDefaultOrgEntityTypes } = require('@generics/utils')
 const menteeServices = require('@services/mentees')
 const mentorService = require('@services/mentors')
 const mentorQueries = require('@database/queries/mentorExtension')
+const schedulerRequest = require('@requests/scheduler')
 
 module.exports = class requestSessionsHelper {
 	static async checkConnectionRequestExists(userId, targetUserId) {
@@ -137,6 +138,25 @@ module.exports = class requestSessionsHelper {
 			const SessionRequestMapping = await sessionRequestMappingQueries.addSessionRequest(
 				bodyData.requestee_id,
 				SessionRequestResult.id
+			)
+
+			// Schedule a job to expire the session request after end_date
+			const jobId = common.expireSessionRequest + SessionRequestResult.id
+
+			const delay = await utils.getTimeDifferenceInMilliseconds(bodyData.end_date, 0, 'minutes')
+
+			const reqBody = {
+				job_id: jobId,
+				session_request_id: SessionRequestResult.id,
+			}
+
+			const expire = await schedulerRequest.createSchedulerJob(
+				jobId,
+				delay,
+				'ExpireSessionRequest',
+				reqBody,
+				`${common.expireSessionRequestEndpoint}/${SessionRequestResult.id}`,
+				common.POST_METHOD
 			)
 
 			return responses.successResponse({
@@ -427,6 +447,18 @@ module.exports = class requestSessionsHelper {
 	 */
 	static async reject(bodyData, userId, orgId) {
 		try {
+			// Fetch session request details
+			const getRequestSessionDetails = await sessionRequestQueries.findOneRequest(bodyData.request_session_id)
+
+			// If no session request found
+			if (!getRequestSessionDetails) {
+				return responses.failureResponse({
+					statusCode: httpStatusCode.not_found,
+					responseCode: 'CLIENT_ERROR',
+					message: 'SESSION_REQUEST_NOT_FOUND',
+				})
+			}
+
 			const [rejectedCount, rejectedData] = await sessionRequestQueries.rejectRequest(
 				userId,
 				bodyData.request_session_id,
@@ -563,6 +595,40 @@ module.exports = class requestSessionsHelper {
 			})
 		} catch (error) {
 			return error
+		}
+	}
+
+	static async expire(requestSessionId) {
+		try {
+			// Fetch session request details
+			const getRequestSessionDetails = await sessionRequestQueries.findOneRequest(requestSessionId)
+
+			// If no session request found
+			if (!getRequestSessionDetails) {
+				return responses.failureResponse({
+					statusCode: httpStatusCode.not_found,
+					responseCode: 'CLIENT_ERROR',
+					message: 'SESSION_REQUEST_NOT_FOUND',
+				})
+			}
+
+			const [expiredCount, expiredData] = await sessionRequestQueries.expireRequest(requestSessionId)
+
+			if (expiredCount == 0) {
+				return responses.failureResponse({
+					message: 'SESSION_REQUEST_NOT_FOUND_OR_ALREADY_PROCESSED',
+					statusCode: httpStatusCode.not_found,
+					responseCode: 'CLIENT_ERROR',
+				})
+			}
+
+			return responses.successResponse({
+				statusCode: httpStatusCode.created,
+				message: 'SESSION_REQUEST_EXPIRED',
+			})
+		} catch (error) {
+			console.error(error)
+			throw error
 		}
 	}
 }

@@ -61,7 +61,7 @@ module.exports = {
 		req.checkQuery('status')
 			.optional()
 			.custom((value) => {
-				const allowedStatuses = ['REQUESTED', 'ACCEPTED', 'REJECTED']
+				const allowedStatuses = ['REQUESTED', 'ACCEPTED', 'REJECTED', 'EXPIRED']
 
 				// Allow comma-separated values
 				const statuses = value.split(',').map((status) => status.trim())
@@ -69,7 +69,7 @@ module.exports = {
 				// Check if every status provided is valid
 				const isValid = statuses.every((status) => allowedStatuses.includes(status))
 				if (!isValid) {
-					throw new Error('Status must be one or more of REQUESTED, ACCEPTED, or REJECTED')
+					throw new Error('Status must be one or more of REQUESTED, ACCEPTED, REJECTED or EXPIRED')
 				}
 
 				return true
