@@ -179,7 +179,7 @@ module.exports = class requestSessionsHelper {
 	 */
 	static async list(userId, pageNo, pageSize, status) {
 		try {
-			const allRequestSession = await sessionRequestQueries.getAllRequests(userId, pageNo, pageSize, status)
+			const allRequestSession = await sessionRequestQueries.getAllRequests(userId, status)
 
 			const sessionRequestData = allRequestSession.rows.map((session) => session)
 
@@ -196,23 +196,24 @@ module.exports = class requestSessionsHelper {
 
 			const combinedData = [...sessionRequestData, ...sessionMappingDetailsData]
 
-			const allSessionRequest = {
-				count: combinedData.length,
-				rows: combinedData,
-			}
+			const totalCount = combinedData.length
 
-			if (allSessionRequest.count == 0) {
+			// Apply pagination
+			const offset = (pageNo - 1) * pageSize
+			const paginatedData = combinedData.slice(offset, offset + pageSize)
+
+			if (paginatedData.length === 0) {
 				return responses.successResponse({
 					statusCode: httpStatusCode.ok,
 					message: 'SESSION_REQUESTS_LIST',
-					result: { data: [], count: 0 },
+					result: { data: [], count: 0, pageNo, pageSize },
 				})
 			}
 
 			// Get opposite user ID for each session
-			const oppositeUserIds = combinedData.map((session) => {
-				return session.requestor_id === userId ? session.requestee_id : session.requestor_id
-			})
+			const oppositeUserIds = paginatedData.map((session) =>
+				session.requestor_id === userId ? session.requestee_id : session.requestor_id
+			)
 
 			// Fetch user details for opposite users
 			let oppositeUserDetails = await userExtensionQueries.getUsersByUserIds(oppositeUserIds, {
@@ -238,7 +239,7 @@ module.exports = class requestSessionsHelper {
 			const userDetails = await userRequests.getListOfUserDetails(userIds, true)
 			const userDetailsFullMap = new Map(userDetails.result.map((u) => [String(u.id), u]))
 
-			const requestSessionWithDetails = combinedData
+			const requestSessionWithDetails = paginatedData
 				.map((session) => {
 					const oppositeUserId = session.requestor_id === userId ? session.requestee_id : session.requestor_id
 					const baseDetails = userDetailsMap[oppositeUserId] || null
@@ -247,7 +248,7 @@ module.exports = class requestSessionsHelper {
 						baseDetails.image = userDetailsFullMap.get(String(oppositeUserId)).image
 						return {
 							...session,
-							id: session.id?.toString(), // Convert ID to string
+							id: session.id?.toString(),
 							user_details: baseDetails,
 						}
 					}
@@ -258,7 +259,10 @@ module.exports = class requestSessionsHelper {
 			return responses.successResponse({
 				statusCode: httpStatusCode.ok,
 				message: 'SESSION_REQUESTS_LIST',
-				result: { data: requestSessionWithDetails, count: requestSessionWithDetails.length },
+				result: {
+					data: requestSessionWithDetails,
+					count: totalCount,
+				},
 			})
 		} catch (error) {
 			console.error(error)

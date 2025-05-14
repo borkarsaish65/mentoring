@@ -48,12 +48,8 @@ exports.addSessionRequest = async (requestorId, requesteeId, Agenda, startDate, 
 	}
 }
 
-exports.getAllRequests = async (userId, page, pageSize, status) => {
+exports.getAllRequests = async (userId, status) => {
 	try {
-		const currentPage = Number.isInteger(page) && page > 0 ? page : 1
-		const limit = Number.isInteger(pageSize) && pageSize > 0 ? pageSize : 10
-		const offset = (currentPage - 1) * limit
-
 		// Prepare status filter
 		const statusFilter =
 			status.length != 0
@@ -73,8 +69,6 @@ exports.getAllRequests = async (userId, page, pageSize, status) => {
 				status: statusFilter,
 			},
 			raw: true,
-			limit,
-			offset,
 		})
 
 		return sessionRequest
@@ -115,8 +109,8 @@ exports.getSessionMappingDetails = async (sessionRequestIds, status) => {
 
 exports.getpendingRequests = async (userId, page, pageSize) => {
 	try {
-		const currentPage = Number.isInteger(page) && page > 0 ? page : 1
-		const limit = Number.isInteger(pageSize) && pageSize > 0 ? pageSize : 10
+		const currentPage = page ? page : 1
+		const limit = pageSize ? pageSize : 5
 		const offset = (currentPage - 1) * limit
 
 		const result = await requestSession.findAndCountAll({
