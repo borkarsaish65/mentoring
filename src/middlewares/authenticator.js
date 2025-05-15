@@ -63,7 +63,7 @@ module.exports = async function (req, res, next) {
 
 		let organizationKey = 'organization_id'
 
-		defaultTokenExtraction = true
+		// defaultTokenExtraction = true
 		// performing default token data extraction
 		if (defaultTokenExtraction) {
 			// decodedToken[organizationKey] = getOrgId(req.headers, decodedToken, 'data.organization_ids[0]')
