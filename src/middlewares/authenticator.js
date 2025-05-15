@@ -156,7 +156,7 @@ module.exports = async function (req, res, next) {
 			const roleValidation = common.roleValidationPaths.some((path) => req.path.includes(path))
 
 			if (roleValidation) {
-				if (process.env.AUTH_METHOD === common.AUTH_METHOD.NATIVE) await nativeRoleValidation(decodedToken)
+				if (process.env.AUTH_METHOD === common.AUTH_METHOD.NATIVE) await nativeRoleValidation(decodedToken, authHeader)
 				else if (process.env.AUTH_METHOD === common.AUTH_METHOD.KEYCLOAK_PUBLIC_KEY)
 					await dbBasedRoleValidation(decodedToken)
 			}
@@ -289,10 +289,10 @@ async function validateSession(authHeader) {
 		throw new Error('USER_SERVICE_DOWN')
 }
 
-async function fetchUserProfile(userId) {
+async function fetchUserProfile(authHeader) {
 	const userBaseUrl = `${process.env.USER_SERVICE_HOST}${process.env.USER_SERVICE_BASE_URL}`
-	const profileUrl = `${userBaseUrl}${endpoints.USER_PROFILE_DETAILS}/${userId}`
-	const user = await requests.get(profileUrl, null, true)
+	const profileUrl = `${userBaseUrl}${endpoints.USER_PROFILE_DETAILS}`
+	const user = await requests.get(profileUrl, authHeader, false)
 
 	if (!user || !user.success) throw createUnauthorizedResponse('USER_NOT_FOUND')
 	if (user.data.result.deleted_at !== null) throw createUnauthorizedResponse('USER_ROLE_UPDATED')
@@ -342,8 +342,8 @@ async function authenticateUser(authHeader, req) {
 	return [decodedToken, false]
 }
 
-async function nativeRoleValidation(decodedToken) {
-	const userProfile = await fetchUserProfile(decodedToken.data.id)
+async function nativeRoleValidation(decodedToken,authHeader) {
+	const userProfile = await fetchUserProfile(authHeader)
 	decodedToken.data.roles = userProfile.user_roles
 	decodedToken.data.organization_id = userProfile.organization_id
 }
