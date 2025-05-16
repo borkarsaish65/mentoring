@@ -966,6 +966,7 @@ module.exports = class MentorsHelper {
 			extensionDetails.data = await Promise.all(
 				extensionDetails.data.map(async (user) => ({
 					...user,
+					id: user.user_id, // Add 'id' key, to be removed later
 					email: user.email ? await emailEncryption.decrypt(user.email) : null, // Decrypt email
 					organization: orgMap[user.organization_id] || null,
 				}))
