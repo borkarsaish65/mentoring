@@ -12,7 +12,7 @@
 				{
 					"service": "mentoring",
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring",
+					"packageName": "shiksha-mentoring",
 					"targetBody": [],
 					"responseBody": [
 						{
@@ -33,7 +33,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			],
 			"rateLimit": {
@@ -50,7 +50,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			],
 			"rateLimit": {
@@ -67,7 +67,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			],
 			"rateLimit": {
@@ -84,7 +84,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			],
 			"rateLimit": {
@@ -101,7 +101,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			],
 			"rateLimit": {
@@ -118,7 +118,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -132,7 +132,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -147,7 +147,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			],
 			"rateLimit": {
@@ -164,7 +164,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			],
 			"rateLimit": {
@@ -182,7 +182,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			],
 			"rateLimit": {
@@ -199,7 +199,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -213,7 +213,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			],
 			"rateLimit": {
@@ -230,7 +230,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			],
 			"rateLimit": {
@@ -247,7 +247,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -261,7 +261,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			],
 			"rateLimit": {
@@ -278,7 +278,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -292,7 +292,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -306,7 +306,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -320,7 +320,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -334,7 +334,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -348,7 +348,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -362,7 +362,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -376,7 +376,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -390,7 +390,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -404,7 +404,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -419,7 +419,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			],
 			"rateLimit": {
@@ -436,7 +436,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -450,7 +450,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -464,7 +464,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -478,7 +478,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -492,7 +492,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -506,7 +506,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -520,7 +520,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -534,7 +534,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -548,7 +548,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -562,7 +562,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -576,7 +576,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -590,7 +590,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -604,7 +604,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -618,7 +618,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -633,7 +633,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			],
 			"rateLimit": {
@@ -650,7 +650,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -664,7 +664,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -678,7 +678,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -692,7 +692,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -706,7 +706,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			],
 			"rateLimit": {
@@ -723,7 +723,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -737,7 +737,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -751,7 +751,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -765,7 +765,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -774,15 +774,15 @@
 			"sourceRoute": "/interface/v1/profile/read",
 			"type": "GET",
 			"priority": "MUST_HAVE",
+			"service": "mentoring",
 			"inSequence": false,
 			"orchestrated": false,
 			"responseMessage": "User Profile Fetched Successfully.",
 			"requiresCustomHandling": true,
 			"targetPackages": [
 				{
-					"service": "mentoring",
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring",
+					"packageName": "shiksha-mentoring",
 					"targetBody": [],
 					"responseBody": [
 						{
@@ -803,7 +803,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -817,7 +817,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -831,7 +831,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -845,7 +845,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -859,7 +859,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -873,7 +873,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -887,7 +887,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -901,7 +901,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -915,7 +915,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -929,7 +929,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -943,7 +943,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -957,7 +957,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -971,7 +971,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -985,7 +985,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -999,7 +999,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1013,7 +1013,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1027,7 +1027,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1041,7 +1041,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1055,7 +1055,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1069,7 +1069,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1083,7 +1083,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1097,7 +1097,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1111,7 +1111,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1125,7 +1125,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1139,7 +1139,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1153,7 +1153,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1167,7 +1167,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1181,7 +1181,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1195,7 +1195,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1209,7 +1209,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1223,7 +1223,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1237,7 +1237,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1251,7 +1251,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1265,7 +1265,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1279,7 +1279,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1293,7 +1293,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1307,7 +1307,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1321,7 +1321,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1335,7 +1335,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1349,7 +1349,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1363,7 +1363,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1377,7 +1377,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1391,7 +1391,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1405,7 +1405,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1419,7 +1419,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1433,7 +1433,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1447,7 +1447,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1461,7 +1461,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1475,7 +1475,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1489,7 +1489,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1503,7 +1503,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1517,7 +1517,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1531,7 +1531,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1545,7 +1545,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1559,7 +1559,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1573,7 +1573,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1587,7 +1587,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1601,7 +1601,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1615,7 +1615,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1629,7 +1629,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1643,7 +1643,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1657,7 +1657,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1671,7 +1671,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1685,7 +1685,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1699,7 +1699,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1713,7 +1713,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1727,7 +1727,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1741,7 +1741,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1755,7 +1755,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1769,7 +1769,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1783,7 +1783,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1797,7 +1797,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1811,7 +1811,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1825,7 +1825,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1839,7 +1839,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1853,7 +1853,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1867,7 +1867,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1881,7 +1881,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1895,7 +1895,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1909,7 +1909,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1923,7 +1923,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1937,7 +1937,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1951,7 +1951,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1965,7 +1965,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1979,7 +1979,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -1993,7 +1993,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2007,7 +2007,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2021,7 +2021,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			],
 			"rateLimit": {
@@ -2038,7 +2038,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2052,7 +2052,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2066,7 +2066,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			],
 			"rateLimit": {
@@ -2083,7 +2083,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2097,7 +2097,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			],
 			"rateLimit": {
@@ -2114,7 +2114,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2128,7 +2128,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2142,7 +2142,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			],
 			"rateLimit": {
@@ -2159,7 +2159,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			],
 			"rateLimit": {
@@ -2176,7 +2176,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2190,7 +2190,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2204,7 +2204,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2218,7 +2218,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2232,7 +2232,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2246,7 +2246,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2260,7 +2260,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2274,7 +2274,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2288,7 +2288,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2302,7 +2302,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2316,7 +2316,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2330,7 +2330,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2344,7 +2344,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			],
 			"rateLimit": {
@@ -2361,7 +2361,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			],
 			"rateLimit": {
@@ -2378,7 +2378,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2392,7 +2392,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2406,7 +2406,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2420,7 +2420,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2434,7 +2434,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2448,7 +2448,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2462,7 +2462,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2476,7 +2476,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2490,7 +2490,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2504,7 +2504,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2518,7 +2518,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2532,7 +2532,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2546,7 +2546,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2560,7 +2560,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2574,7 +2574,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2588,7 +2588,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2602,7 +2602,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2616,7 +2616,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2630,7 +2630,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2644,7 +2644,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2658,7 +2658,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			],
 			"rateLimit": {
@@ -2677,7 +2677,7 @@
 				{
 					"service": "user",
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring",
+					"packageName": "shiksha-mentoring",
 					"targetBody": [],
 					"responseBody": [
 						{
@@ -2693,7 +2693,7 @@
 				{
 					"service": "mentoring",
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring",
+					"packageName": "shiksha-mentoring",
 					"targetBody": [],
 					"responseBody": [
 						{
@@ -2719,7 +2719,7 @@
 				{
 					"service": "user",
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring",
+					"packageName": "shiksha-mentoring",
 					"targetBody": [],
 					"responseBody": [
 						{
@@ -2743,7 +2743,7 @@
 				{
 					"service": "mentoring",
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring",
+					"packageName": "shiksha-mentoring",
 					"targetBody": [],
 					"responseBody": [
 						{
@@ -2777,7 +2777,7 @@
 				{
 					"service": "user",
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring",
+					"packageName": "shiksha-mentoring",
 					"targetBody": [],
 					"responseBody": [
 						{
@@ -2789,7 +2789,7 @@
 				{
 					"service": "mentoring",
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring",
+					"packageName": "shiksha-mentoring",
 					"targetBody": [],
 					"responseBody": [
 						{
@@ -2811,14 +2811,14 @@
 				{
 					"service": "user",
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring",
+					"packageName": "shiksha-mentoring",
 					"targetBody": [],
 					"responseBody": []
 				},
 				{
 					"service": "mentoring",
 					"basePackageName": "mentoring",
-					"packageName": "sunbird-mentoring",
+					"packageName": "shiksha-mentoring",
 					"targetBody": [],
 					"responseBody": [
 						{
@@ -2841,7 +2841,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "elevate-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2854,7 +2854,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "elevate-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2867,7 +2867,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "elevate-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2880,7 +2880,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "elevate-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2893,7 +2893,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "elevate-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2906,7 +2906,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "elevate-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2919,7 +2919,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "elevate-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2932,7 +2932,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "elevate-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2945,7 +2945,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "elevate-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2958,7 +2958,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "elevate-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2971,7 +2971,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "elevate-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2984,7 +2984,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "elevate-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -2997,7 +2997,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "elevate-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -3010,7 +3010,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "elevate-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -3023,7 +3023,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "elevate-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -3036,7 +3036,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "elevate-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -3049,7 +3049,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "elevate-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -3062,7 +3062,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "elevate-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -3075,7 +3075,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "elevate-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -3088,7 +3088,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "elevate-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -3101,7 +3101,7 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "elevate-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
@@ -3114,33 +3114,22 @@
 			"targetPackages": [
 				{
 					"basePackageName": "mentoring",
-					"packageName": "elevate-mentoring"
+					"packageName": "shiksha-mentoring"
 				}
 			]
 		},
 		{
-            "sourceRoute": "/interface/v1/mentors/details/:id",
-            "type": "GET",
-            "priority": "MUST_HAVE",
-            "inSequence": true,
-            "orchestrated": true,
-            "responseMessage": "Profile fetched successfully.",
-            "targetPackages": [
-                {
-                    "service": "mentoring",
-			"basePackageName": "mentoring",
-                    "packageName": "sunbird-mentoring",
-                    "targetBody": [],
-                    "responseBody": [
-						{
-							"sourceField": "user_roles",
-							"targetField": "mentoring.user_roles[]"
-						}
-					]
-                }
-                
-            ]
-        }
+			"sourceRoute": "/notification/v1/email/send",
+			"type": "POST",
+			"priority": "MUST_HAVE",
+			"inSequence": false,
+			"orchestrated": false,
+			"targetPackages": [
+				{
+					"basePackageName": "mentoring",
+					"packageName": "shiksha-mentoring"
+				}
+			]
 		}
 	]
 }
