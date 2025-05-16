@@ -395,6 +395,7 @@ module.exports = class MenteeExtensionQueries {
 
 			let projectionClause = `
 				user_id,
+				name,
 				email,
 				organization_id,
 				designation,
