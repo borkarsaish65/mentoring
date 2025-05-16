@@ -54,7 +54,6 @@ module.exports = {
 		'/organization/eventListener',
 		'/users/update',
 		'/sessions/removeAllSessions',
-		,
 		'/mentoring/v1/users/add',
 	],
 	COMPLETED_STATUS: 'COMPLETED',
