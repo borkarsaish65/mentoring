@@ -4,7 +4,7 @@
 set -e
 
 # Define the GitHub raw URL for the JSON file
-GITHUB_REPO="https://raw.githubusercontent.com/ELEVATE-Project/mentoring-mobile-app/refs/heads/release-3.1.2/forms.json"
+GITHUB_REPO="https://raw.githubusercontent.com/ELEVATE-Project/mentoring-mobile-app/refs/heads/release-3.1.1/forms.json"
 JSON_FILE="forms.json"  # The name to save the downloaded file
 
 
@@ -91,6 +91,5 @@ echo "$jsonData" | jq -c '.[]' | while read -r item; do
     # Append the query to the dump file
     echo "$query" >> "$DUMP_FILE"
 done
-
 
 echo "Queries written to: $DUMP_FILE"
