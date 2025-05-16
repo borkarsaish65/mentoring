@@ -108,6 +108,37 @@ module.exports = class UserHelper {
 		}
 	}
 
+	static async add(bodyData) {
+		bodyData.id = bodyData.id.toString()
+		const isNewUser = await this.#checkUserExistence(bodyData.id)
+		if (isNewUser) {
+			const result = await this.#createUserWithBody(bodyData)
+			return result
+		}
+	}
+
+	static async #createUserWithBody(userBody) {
+		const orgExtension = await this.#createOrUpdateOrg({ id: userBody.organization_id.toString() })
+
+		if (!orgExtension) {
+			return responses.failureResponse({
+				message: 'ORG_EXTENSION_NOT_FOUND',
+				statusCode: httpStatusCode.not_found,
+				responseCode: 'UNAUTHORIZED',
+			})
+		}
+		const userExtensionData = this.#getExtensionData(userBody, orgExtension)
+
+		const createResult = await this.#createUser(userExtensionData)
+
+		if (createResult.statusCode != httpStatusCode.ok) return createResult
+		else
+			return responses.successResponse({
+				statusCode: httpStatusCode.ok,
+				message: 'PROFILE_CREATED_SUCCESSFULLY',
+				result: createResult.result,
+			})
+	}
 	static async #createOrUpdateUserAndOrg(userId, isNewUser) {
 		const userDetails = await userRequests.fetchUserDetails({ userId })
 		if (!userDetails?.data?.result) {
@@ -157,15 +188,15 @@ module.exports = class UserHelper {
 			organization: {
 				id: orgExtension.organization_id,
 			},
-			roles: userDetails.user_roles,
-			email: userDetails.email,
-			phone: userDetails.phone,
-			name: userDetails.name,
+			roles: userDetails?.user_roles,
+			email: userDetails?.email,
+			phone: userDetails?.phone,
+			name: userDetails?.name,
 			skipValidation: true,
-			competency: userDetails.competency,
-			designation: userDetails.designation,
-			language: userDetails.language,
-			image: userDetails.image ? userDetails.image : '',
+			competency: userDetails?.competency,
+			designation: userDetails?.designation,
+			language: userDetails?.language,
+			image: userDetails?.image ? userDetails.image : '',
 		}
 	}
 
