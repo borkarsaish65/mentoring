@@ -3,7 +3,7 @@ const userRequests = require('@requests/user')
 exports.getDefaultOrgId = async () => {
 	try {
 		let defaultOrgDetails = await userRequests.fetchOrgDetails({
-			organizationCode: process.env.DEFAULT_ORGANISATION_CODE,
+			organizationId: process.env.DEFAULT_ORG_ID,
 		})
 		if (defaultOrgDetails.success && defaultOrgDetails.data && defaultOrgDetails.data.result)
 			return defaultOrgDetails.data.result.id
