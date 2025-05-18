@@ -183,21 +183,34 @@ module.exports = class UserHelper {
 	}
 
 	static #getExtensionData(userDetails, orgExtension) {
-		return {
+		const data = {
 			id: userDetails.id,
+			name: userDetails?.name,
 			organization: {
 				id: orgExtension.organization_id,
 			},
+		}
+
+		// List of optional fields to check
+		const optionalFields = {
 			roles: userDetails?.user_roles,
 			email: userDetails?.email,
 			phone: userDetails?.phone,
-			name: userDetails?.name,
 			skipValidation: true,
 			competency: userDetails?.competency,
 			designation: userDetails?.designation,
 			language: userDetails?.language,
 			image: userDetails?.image ? userDetails.image : '',
 		}
+
+		// Add only defined values to the data object
+		Object.entries(optionalFields).forEach(([key, value]) => {
+			if (value !== undefined && value !== null) {
+				data[key] = value
+			}
+		})
+
+		return data
 	}
 
 	static async #createOrUpdateOrg(orgData) {
