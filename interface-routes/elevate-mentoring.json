@@ -2145,10 +2145,7 @@
                     "packageName": "elevate-mentoring",
                     "targetBody": [],
                     "responseBody": [
-						{
-							"sourceField": "user_roles",
-							"targetField": "mentoring.user_roles[]"
-						}
+						
 					]
                 },
                 {
