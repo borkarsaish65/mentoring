@@ -110,11 +110,12 @@ module.exports = class UserHelper {
 
 	static async add(bodyData) {
 		bodyData.id = bodyData.id.toString()
+		let result = {}
 		const isNewUser = await this.#checkUserExistence(bodyData.id)
 		if (isNewUser) {
-			const result = await this.#createUserWithBody(bodyData)
-			return result
+			result = await this.#createUserWithBody(bodyData)
 		}
+		return result
 	}
 
 	static async #createUserWithBody(userBody) {
