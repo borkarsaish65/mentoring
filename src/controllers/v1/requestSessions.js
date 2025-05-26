@@ -86,6 +86,13 @@ module.exports = class requestsSessions {
 		}
 	}
 
+	/**
+	 * get details of session request.
+	 * @param {Object} bodyData - The body data containing the target user ID.
+	 * @param {string} bodyData.request_session_id - The ID of the target user.
+	 * @param {string} userId - The ID of the user initiating the request.
+	 * @returns {Promise<Object>} A success or failure response.
+	 */
 	async getDetails(req) {
 		try {
 			return await requestSessionsService.getInfo(req.query.request_session_id, req.decodedToken.id)
@@ -94,6 +101,17 @@ module.exports = class requestsSessions {
 		}
 	}
 
+	/**
+	 * get user availability for a session.
+	 * @param {Object} bodyData - The body data containing the target user ID.
+	 * @param {string} bodyData.request_session_id - The ID of the target user.
+	 * @param {string} userId - The ID of the user initiating the request.
+	 * @param {integer} pageNo - Page no for the data
+	 * @param {integer} pageSize - Limit of the data to be shown
+	 * @param {string} status - Status of the request
+	 * @param {string} roles - Role of the user
+	 * @returns {Promise<Object>} A success or failure response.
+	 */
 	async userAvailability(req) {
 		try {
 			return await requestSessionsService.userAvailability(
@@ -113,7 +131,6 @@ module.exports = class requestsSessions {
 
 	/**
 	 * Expire Request Session.
-	 * @method
 	 * @name expire
 	 * @param {Object} req -request data.
 	 * @param {String} req.params.id - Session Id.

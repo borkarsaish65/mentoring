@@ -98,6 +98,18 @@ module.exports = {
 			.withMessage('request_session_id is required')
 			.isString()
 			.withMessage('request_session_id must be a string')
+
+		req.checkBody('reason')
+			.optional()
+			.isString()
+			.withMessage('reason must be a string')
+			.custom((value) => {
+				const wordCount = value.trim().split(/\s+/).length
+				if (wordCount > 50) {
+					throw new Error('reason must be 50 words or fewer')
+				}
+				return true
+			})
 	},
 
 	userAvailability: (req) => {

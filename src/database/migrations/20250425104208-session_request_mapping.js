@@ -8,7 +8,7 @@ module.exports = {
 				allowNull: false,
 				primaryKey: true,
 			},
-			session_request_id: {
+			request_session_id: {
 				type: Sequelize.INTEGER,
 				allowNull: false,
 				primaryKey: true,

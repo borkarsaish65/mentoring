@@ -67,7 +67,7 @@ module.exports = class requestSessionsHelper {
 				return responses.failureResponse({
 					statusCode: httpStatusCode.bad_request,
 					responseCode: 'CLIENT_ERROR',
-					message: 'SAME_USER_MENTOR',
+					message: 'SELF_MENTOR',
 				})
 			}
 
@@ -147,7 +147,7 @@ module.exports = class requestSessionsHelper {
 
 			const reqBody = {
 				job_id: jobId,
-				session_request_id: SessionRequestResult.id,
+				request_session_id: SessionRequestResult.id,
 			}
 
 			const expire = await schedulerRequest.createSchedulerJob(
@@ -185,7 +185,7 @@ module.exports = class requestSessionsHelper {
 
 			const sessionRequestMapping = await sessionRequestMappingQueries.getSessionsMapping(userId)
 
-			const sessionRequestIds = sessionRequestMapping.map((session) => session.session_request_id)
+			const sessionRequestIds = sessionRequestMapping.map((session) => session.request_session_id)
 
 			const sessionMappingDetails = await sessionRequestQueries.getSessionMappingDetails(
 				sessionRequestIds,
@@ -236,8 +236,8 @@ module.exports = class requestSessionsHelper {
 			}, {})
 
 			const userIds = oppositeUserIds.map((id) => String(id))
-			const userDetails = await userRequests.getListOfUserDetails(userIds, true)
-			const userDetailsFullMap = new Map(userDetails.result.map((u) => [String(u.id), u]))
+			const userDetails = await userExtensionQueries.getUsersByUserIds(userIds, {}, true)
+			const userDetailsFullMap = new Map(userDetails.map((u) => [String(u.user_id), u]))
 
 			const requestSessionWithDetails = paginatedData
 				.map((session) => {

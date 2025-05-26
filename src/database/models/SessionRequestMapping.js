@@ -8,7 +8,7 @@ module.exports = (sequelize, DataTypes) => {
 				allowNull: false,
 				primaryKey: true,
 			},
-			session_request_id: {
+			request_session_id: {
 				type: DataTypes.INTEGER,
 				allowNull: false,
 				primaryKey: true,

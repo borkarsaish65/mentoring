@@ -5,7 +5,7 @@ exports.addSessionRequest = async (requesteeId, requestId) => {
 		const SessionRequestMappingData = [
 			{
 				requestee_id: requesteeId,
-				session_request_id: requestId,
+				request_session_id: requestId,
 			},
 		]
 
