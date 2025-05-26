@@ -51,7 +51,6 @@ module.exports = class Mentors {
 	 */
 	async details(req) {
 		try {
-			console.log(req.decodedToken)
 			return await mentorsService.read(
 				req.params.id,
 				req.decodedToken.organization_id,
