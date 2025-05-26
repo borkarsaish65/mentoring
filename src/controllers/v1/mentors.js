@@ -51,12 +51,14 @@ module.exports = class Mentors {
 	 */
 	async details(req) {
 		try {
+			console.log(req.decodedToken)
 			return await mentorsService.read(
 				req.params.id,
 				req.decodedToken.organization_id,
 				req.decodedToken.id,
 				isAMentor(req.decodedToken.roles),
-				req.decodedToken.roles
+				req.decodedToken.roles,
+				req.decodedToken.tenant_code
 			)
 		} catch (error) {
 			return error
