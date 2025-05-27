@@ -624,7 +624,7 @@ module.exports = class MentorsHelper {
 	 * @param {Boolean} isAMentor 				- user mentor or not.
 	 * @returns {JSON} 							- profile details
 	 */
-	static async read(id, orgId, userId = '', isAMentor = '', roles = '') {
+	static async read(id, orgId, userId = '', isAMentor = '', roles = '', tenantCode) {
 		try {
 			let requestedMentorExtension = false
 			if (userId !== '' && isAMentor !== '' && roles !== '') {
@@ -733,6 +733,7 @@ module.exports = class MentorsHelper {
 			const profileMandatoryFields = await utils.validateProfileData(processDbResponse, validationData)
 			mentorProfile.profile_mandatory_fields = profileMandatoryFields
 
+
 			let communications = null
 
 			if (mentorExtension?.meta?.communications_user_id) {
@@ -747,6 +748,7 @@ module.exports = class MentorsHelper {
 				...processDbResponse.meta,
 				communications,
 			}
+
 			if (!mentorProfile.organization) {
 				const orgDetails = await organisationExtensionQueries.findOne(
 					{ organization_id: orgId },
@@ -757,15 +759,26 @@ module.exports = class MentorsHelper {
 					name: orgDetails.name,
 				}
 			}
+			// Conditionally fetch profile details if token exists
+			let userProfile = {}
+			if (tenantCode) {
+				const profileResponse = await userRequests.getProfileDetails({ tenantCode, userId: id })
+				// If profileResponse.data.result exists, include it; otherwise, keep userProfile empty
+				if (profileResponse.data.result) {
+					userProfile = profileResponse.data.result
+				}
+				// No failure response; proceed with available data
 
+			}
 			return responses.successResponse({
 				statusCode: httpStatusCode.ok,
-				message: 'PROFILE_FTECHED_SUCCESSFULLY',
+				message: 'PROFILE_FETCHED_SUCCESSFULLY',
 				result: {
 					sessions_attended: totalSession,
 					sessions_hosted: totalSessionHosted,
 					...mentorProfile,
 					...processDbResponse,
+					...userProfile, // Include userProfile only if token was provided
 				},
 			})
 		} catch (error) {
@@ -947,6 +960,7 @@ module.exports = class MentorsHelper {
 				})
 			}
 
+			// Fetch mentor data
 			let extensionDetails = await mentorQueries.getMentorsByUserIdsFromView(
 				[],
 				pageNo,
@@ -956,11 +970,11 @@ module.exports = class MentorsHelper {
 				additionalProjectionString,
 				false,
 				searchFilter,
-				hasValidEmails ? emailIds : searchText, //array for email search
+				hasValidEmails ? emailIds : searchText,
 				defaultRuleFilter
 			)
-
-			if (extensionDetails.count == 0 || extensionDetails.data.length == 0) {
+			// Early return for empty results
+			if (extensionDetails.count === 0 || extensionDetails.data.length === 0) {
 				return responses.successResponse({
 					statusCode: httpStatusCode.ok,
 					message: 'MENTOR_LIST',
@@ -971,22 +985,56 @@ module.exports = class MentorsHelper {
 				})
 			}
 
-			const mentorIds = extensionDetails.data.map((item) => item.user_id)
+			//Enrich with organization details
+			//Extract unique organization_ids
+			const organizationIds = [...new Set(extensionDetails.data.map((user) => user.organization_id))]
 
-			const userDetails = await userRequests.getListOfUserDetails(mentorIds, true, false)
+			//Query organization table (only if there are IDs to query)
+			let organizationDetails = []
+			if (organizationIds.length > 0) {
+				const orgFilter = {
+					organization_id: {
+						[Op.in]: organizationIds,
+					},
+				}
+				organizationDetails = await organisationExtensionQueries.findAll(orgFilter, {
+					attributes: ['name', 'organization_id'],
+					raw: true, // Ensure plain objects
+				})
+			}
+
+			//Create a map of organization_id to organization details
+			const orgMap = {}
+			organizationDetails.forEach((org) => {
+				orgMap[org.organization_id] = {
+					id: org.organization_id,
+					name: org.name,
+				}
+			})
+
+			//Attach organization details and decrypt email for each user
+			extensionDetails.data = await Promise.all(
+				extensionDetails.data.map(async (user) => ({
+					...user,
+					id: user.user_id, // Add 'id' key, to be removed later
+					email: user.email ? await emailEncryption.decrypt(user.email) : null, // Decrypt email
+					organization: orgMap[user.organization_id] || null,
+				}))
+			)
+
 
 			const connectedUsers = await connectionQueries.getConnectionsByUserIds(userId, mentorIds)
 			const connectedMentorIds = new Set(connectedUsers.map((connectedUser) => connectedUser.friend_id))
 
 			if (extensionDetails.data.length > 0) {
-				const uniqueOrgIds = [...new Set(extensionDetails.data.map((obj) => obj.organization_id))]
 				extensionDetails.data = await entityTypeService.processEntityTypesToAddValueLabels(
 					extensionDetails.data,
-					uniqueOrgIds,
+					organizationIds,
 					mentorExtensionsModelName,
 					'organization_id'
 				)
 			}
+
 
 			// Create a map from userDetails.result for quick lookups
 			const userDetailsMap = new Map(userDetails.result.map((userDetail) => [userDetail.id, userDetail]))
@@ -1048,7 +1096,7 @@ module.exports = class MentorsHelper {
 
 			return responses.successResponse({
 				statusCode: httpStatusCode.ok,
-				message: userDetails.message,
+				message: 'MENTOR_LIST',
 				result: extensionDetails,
 			})
 		} catch (error) {
