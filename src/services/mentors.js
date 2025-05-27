@@ -1022,6 +1022,7 @@ module.exports = class MentorsHelper {
 			}
 
 			const mentorIds = extensionDetails.data.map((item) => item.user_id)
+			const userDetails = await userRequests.getListOfUserDetails(mentorIds)
 
 			//Extract unique organization_ids
 			const organizationIds = [...new Set(extensionDetails.data.map((user) => user.organization_id))]
@@ -1072,8 +1073,7 @@ module.exports = class MentorsHelper {
 			}
 
 			// Create a map from userDetails.result for quick lookups
-			const userDetails = await userExtensionQueries.getUsersByUserIds(mentorIds, {}, true)
-			const userDetailsMap = new Map(userDetails.map((userDetail) => [userDetail.user_id, userDetail]))
+			const userDetailsMap = new Map(userDetails.result.map((userDetail) => [userDetail.id, userDetail]))
 
 			// Map over extensionDetails.data to merge with the corresponding userDetail
 			extensionDetails.data = extensionDetails.data
