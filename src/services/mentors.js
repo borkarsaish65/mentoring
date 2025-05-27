@@ -1096,7 +1096,7 @@ module.exports = class MentorsHelper {
 				})
 				.filter((extensionDetail) => extensionDetail !== null)
 
-			if (directory) {
+			if (directory && extensionDetails.data != 0) {
 				let foundKeys = {}
 				let result = []
 				for (let user of extensionDetails.data) {
