@@ -110,9 +110,7 @@ module.exports = async function (req, res, next) {
 			}
 		}
 
-
  console.log(" decoded tokenen ",req.decodedToken);
-
 
 		req.decodedToken.id =
 			typeof req.decodedToken?.id === 'number' ? req.decodedToken?.id?.toString() : req.decodedToken?.id
@@ -120,7 +118,6 @@ module.exports = async function (req, res, next) {
 			typeof req.decodedToken?.organization_id === 'number'
 				? req.decodedToken?.organization_id?.toString()
 				: req.decodedToken?.organization_id
-
 
 		console.log(" req decoded tokenen ",req.decodedToken);
     if (!req.decodedToken[organizationKey]) {

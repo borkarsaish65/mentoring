@@ -66,6 +66,7 @@ module.exports = class SessionsHelper {
 
 	static async create(bodyData, loggedInUserId, orgId, isAMentor, notifyUser) {
 		try {
+			let skipValidation = bodyData.type == common.SESSION_TYPE.PRIVATE ? true : false
 			// check if session mentor is added in the mentee list
 			if (bodyData?.mentees?.includes(bodyData?.mentor_id)) {
 				return responses.failureResponse({
@@ -210,8 +211,7 @@ module.exports = class SessionsHelper {
 					responseCode: 'CLIENT_ERROR',
 				})
 			const sessionModelName = await sessionQueries.getModelName()
-
-			let entityTypes = await entityTypeQueries.findUserEntityTypesAndEntities({
+			const entityTypes = await entityTypeQueries.findUserEntityTypesAndEntities({
 				status: 'ACTIVE',
 				organization_id: {
 					[Op.in]: [orgId, defaultOrgId],
@@ -222,7 +222,7 @@ module.exports = class SessionsHelper {
 			//validationData = utils.removeParentEntityTypes(JSON.parse(JSON.stringify(validationData)))
 			const validationData = removeDefaultOrgEntityTypes(entityTypes, orgId)
 			bodyData.status = common.PUBLISHED_STATUS
-			let res = utils.validateInput(bodyData, validationData, sessionModelName)
+			let res = utils.validateInput(bodyData, validationData, sessionModelName, skipValidation)
 			if (!res.success) {
 				return responses.failureResponse({
 					message: 'SESSION_CREATION_FAILED',
@@ -275,7 +275,6 @@ module.exports = class SessionsHelper {
 				bodyData.mentor_feedback_question_set = organisationPolicy.mentor_feedback_question_set
 
 			// Create session
-
 			const data = await sessionQueries.create(bodyData)
 
 			if (!data?.id) {
@@ -467,8 +466,8 @@ module.exports = class SessionsHelper {
 			if (sessionDetail.status == common.COMPLETED_STATUS && bodyData?.resources) {
 				const completedDate = moment(sessionDetail.completed_at)
 				const currentDate = moment.utc()
-				let diffInMinutes = completedDate.diff(currentDate, 'minutes')
-				if (process.env.POST_RESOURCE_DELETE_TIMEOUT > diffInMinutes) {
+				let diffInMinutes = currentDate.diff(completedDate, 'minutes')
+				if (diffInMinutes > process.env.POST_RESOURCE_DELETE_TIMEOUT) {
 					return responses.failureResponse({
 						message: 'SESSION_RESOURCE_CANT_UPDATE',
 						statusCode: httpStatusCode.bad_request,
@@ -679,11 +678,10 @@ module.exports = class SessionsHelper {
 					}
 				}
 				if (bodyData?.resources) {
-					await resourceQueries.deleteResource(sessionId)
 					await this.addResources(bodyData.resources, userId, sessionId)
 
 					bodyData.resources.forEach((element) => {
-						if ((element.type = common.SESSION_PRE_RESOURCE_TYPE && element.isNew == true)) {
+						if ((element.type = common.SESSION_PRE_RESOURCE_TYPE)) {
 							preResourceSendEmail = true
 						}
 					})
@@ -1088,7 +1086,12 @@ module.exports = class SessionsHelper {
 
 			// check for accessibility
 			if (userId !== '' && isAMentor !== '') {
-				let isAccessible = await this.checkIfSessionIsAccessible(sessionDetails, userId, isAMentor)
+				let isAccessible = await this.checkIfSessionIsAccessible(
+					sessionDetails,
+					userId,
+					isAMentor,
+					mentorExtension
+				)
 
 				// Throw access error
 				if (!isAccessible) {
@@ -1183,7 +1186,6 @@ module.exports = class SessionsHelper {
 
 			sessionDetails['resources'] = await this.getResources(sessionDetails.id)
 
-			const sessionModelName = await sessionQueries.getModelName()
 			let entityTypes = await entityTypeQueries.findUserEntityTypesAndEntities({
 				status: 'ACTIVE',
 				organization_id: {
@@ -3102,8 +3104,7 @@ module.exports = class SessionsHelper {
 			resource['session_id'] = sessionId
 		})
 		let resourceInfo = await resourceQueries.bulkCreate(data)
-
-		console.log(userId, 'resourceInfo      ++++++++++++++++++++ ', resourceInfo)
+		return resourceInfo
 	}
 	static async getResources(sessionId) {
 		let resourceInfo = await resourceQueries.find({ session_id: sessionId })
