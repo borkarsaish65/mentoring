@@ -27,6 +27,7 @@ const emailEncryption = require('@utils/emailEncryption')
 const { defaultRulesFilter, validateDefaultRulesFilter } = require('@helpers/defaultRules')
 const connectionQueries = require('@database/queries/connection')
 const communicationHelper = require('@helpers/communications')
+const userExtensionQueries = require('@database/queries/userExtension')
 module.exports = class MentorsHelper {
 	/**
 	 * upcomingSessions.
@@ -1071,7 +1072,8 @@ module.exports = class MentorsHelper {
 			}
 
 			// Create a map from userDetails.result for quick lookups
-			const userDetailsMap = new Map(userDetails.result.map((userDetail) => [userDetail.id, userDetail]))
+			const userDetails = await userExtensionQueries.getUsersByUserIds(mentorIds, {}, true)
+			const userDetailsMap = new Map(userDetails.map((userDetail) => [userDetail.user_id, userDetail]))
 
 			// Map over extensionDetails.data to merge with the corresponding userDetail
 			extensionDetails.data = extensionDetails.data
