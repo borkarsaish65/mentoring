@@ -98,7 +98,6 @@ module.exports = class MenteesHelper {
 			communications,
 		}
 
-
 		if (!menteeDetails.data.result.organization) {
 			const orgDetails = await organisationExtensionQueries.findOne(
 				{ organization_id: orgId },
@@ -1518,7 +1517,7 @@ module.exports = class MenteesHelper {
 	static async details(id, orgId, userId = '', isAMentor = '', roles = '') {
 		try {
 			let requestedUserExtension = await menteeQueries.getMenteeExtension(id)
-
+			console.logs('------------', requestedUserExtension)
 			if (!requestedUserExtension || (!isAMentor && requestedUserExtension.is_mentor == false)) {
 				return responses.failureResponse({
 					statusCode: httpStatusCode.not_found,
