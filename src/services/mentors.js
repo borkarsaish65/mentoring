@@ -733,7 +733,6 @@ module.exports = class MentorsHelper {
 			const profileMandatoryFields = await utils.validateProfileData(processDbResponse, validationData)
 			mentorProfile.profile_mandatory_fields = profileMandatoryFields
 
-
 			let communications = null
 
 			if (mentorExtension?.meta?.communications_user_id) {
@@ -768,7 +767,6 @@ module.exports = class MentorsHelper {
 					userProfile = profileResponse.data.result
 				}
 				// No failure response; proceed with available data
-
 			}
 			return responses.successResponse({
 				statusCode: httpStatusCode.ok,
@@ -1022,7 +1020,8 @@ module.exports = class MentorsHelper {
 				})
 			}
 
-			//Enrich with organization details
+			const mentorIds = extensionDetails.data.map((item) => item.user_id)
+
 			//Extract unique organization_ids
 			const organizationIds = [...new Set(extensionDetails.data.map((user) => user.organization_id))]
 
@@ -1059,7 +1058,6 @@ module.exports = class MentorsHelper {
 				}))
 			)
 
-
 			const connectedUsers = await connectionQueries.getConnectionsByUserIds(userId, mentorIds)
 			const connectedMentorIds = new Set(connectedUsers.map((connectedUser) => connectedUser.friend_id))
 
@@ -1071,7 +1069,6 @@ module.exports = class MentorsHelper {
 					'organization_id'
 				)
 			}
-
 
 			// Create a map from userDetails.result for quick lookups
 			const userDetailsMap = new Map(userDetails.result.map((userDetail) => [userDetail.id, userDetail]))
