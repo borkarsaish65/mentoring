@@ -1022,7 +1022,7 @@ module.exports = class MentorsHelper {
 			}
 
 			const mentorIds = extensionDetails.data.map((item) => item.user_id)
-			const userDetails = await userRequests.getListOfUserDetails(mentorIds)
+			const userDetails = await userRequests.getListOfUserDetails(mentorIds, true)
 
 			//Extract unique organization_ids
 			const organizationIds = [...new Set(extensionDetails.data.map((user) => user.organization_id))]
@@ -1095,8 +1095,7 @@ module.exports = class MentorsHelper {
 					return null
 				})
 				.filter((extensionDetail) => extensionDetail !== null)
-			console.log('============', directory && extensionDetails.data)
-			if (directory && extensionDetails.data.length != 0) {
+			if (directory) {
 				let foundKeys = {}
 				let result = []
 				for (let user of extensionDetails.data) {
