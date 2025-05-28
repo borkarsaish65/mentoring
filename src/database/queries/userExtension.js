@@ -395,11 +395,13 @@ module.exports = class MenteeExtensionQueries {
 
 			let projectionClause = `
 				user_id,
-				mentee_visibility,
+				name,
+				email,
 				organization_id,
 				designation,
 				area_of_expertise,
 				education_qualification,
+				mentee_visibility,
 				custom_entity_text::JSONB AS custom_entity_text,
 				meta::JSONB AS meta
 			`

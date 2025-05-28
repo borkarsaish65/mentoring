@@ -601,7 +601,7 @@ module.exports = class MentorsHelper {
 	 * @param {Boolean} isAMentor 				- user mentor or not.
 	 * @returns {JSON} 							- profile details
 	 */
-	static async read(id, orgId, userId = '', isAMentor = '', roles = '') {
+	static async read(id, orgId, userId = '', isAMentor = '', roles = '', tenantCode) {
 		try {
 			let requestedMentorExtension = false
 			if (userId !== '' && isAMentor !== '' && roles !== '') {
@@ -720,15 +720,25 @@ module.exports = class MentorsHelper {
 					name: orgDetails.name,
 				}
 			}
-
+			// Conditionally fetch profile details if token exists
+			let userProfile = {}
+			if (tenantCode) {
+				const profileResponse = await userRequests.getProfileDetails({ tenantCode, userId: id })
+				// If profileResponse.data.result exists, include it; otherwise, keep userProfile empty
+				if (profileResponse.data.result) {
+					userProfile = profileResponse.data.result
+				}
+				// No failure response; proceed with available data
+			}
 			return responses.successResponse({
 				statusCode: httpStatusCode.ok,
-				message: 'PROFILE_FTECHED_SUCCESSFULLY',
+				message: 'PROFILE_FETCHED_SUCCESSFULLY',
 				result: {
 					sessions_attended: totalSession,
 					sessions_hosted: totalSessionHosted,
 					...mentorProfile,
 					...processDbResponse,
+					...userProfile, // Include userProfile only if token was provided
 				},
 			})
 		} catch (error) {
@@ -966,6 +976,7 @@ module.exports = class MentorsHelper {
 			extensionDetails.data = await Promise.all(
 				extensionDetails.data.map(async (user) => ({
 					...user,
+					id: user.user_id, // Add 'id' key, to be removed later
 					email: user.email ? await emailEncryption.decrypt(user.email) : null, // Decrypt email
 					organization: orgMap[user.organization_id] || null,
 				}))
