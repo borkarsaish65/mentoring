@@ -52,7 +52,6 @@ async function checkIfUserIsAccessible(userId, userData) {
 					break
 
 				case common.ASSOCIATED:
-					console.log('================', organization_id, user.visible_to_organizations)
 					isAccessible =
 						(user.visible_to_organizations.includes(organization_id) &&
 							user[roleVisibilityKey] !== common.CURRENT) ||
@@ -60,7 +59,6 @@ async function checkIfUserIsAccessible(userId, userData) {
 					break
 
 				case common.ALL:
-					console.log('================', organization_id, user.visible_to_organizations)
 					isAccessible =
 						(user.visible_to_organizations.includes(organization_id) &&
 							user[roleVisibilityKey] !== common.CURRENT) ||

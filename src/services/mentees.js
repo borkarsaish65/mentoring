@@ -1517,7 +1517,6 @@ module.exports = class MenteesHelper {
 	static async details(id, orgId, userId = '', isAMentor = '', roles = '') {
 		try {
 			let requestedUserExtension = await menteeQueries.getMenteeExtension(id)
-			console.log('------------', requestedUserExtension)
 			if (!requestedUserExtension || (!isAMentor && requestedUserExtension.is_mentor == false)) {
 				return responses.failureResponse({
 					statusCode: httpStatusCode.not_found,

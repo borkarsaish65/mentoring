@@ -264,7 +264,6 @@ module.exports = class MentorsHelper {
 				let mentorDetails = await userRequests.getUserDetailedList(userIds)
 
 				mentorDetails = mentorDetails.result
-				//console.log("mentorDetails.result",mentorDetails.result);
 
 				for (let i = 0; i < session.length; i++) {
 					let mentorIndex = mentorDetails.findIndex((x) => x.user_id === session[i].mentor_id)
