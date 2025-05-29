@@ -462,7 +462,6 @@ module.exports = class SessionsHelper {
 				})
 			}
 
-			sessionDetail.status = common.COMPLETED_STATUS
 			if (sessionDetail.status == common.COMPLETED_STATUS && bodyData?.resources) {
 				const completedDate = moment(sessionDetail.completed_at)
 				const currentDate = moment.utc()
@@ -1182,7 +1181,6 @@ module.exports = class SessionsHelper {
 				)
 				sessionDetails.mentor_designation = processedEntityType.designation
 			}
-
 
 			sessionDetails['resources'] = await this.getResources(sessionDetails.id)
 
