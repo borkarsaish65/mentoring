@@ -39,6 +39,20 @@ module.exports = {
 					created_by: 0,
 				},
 				{
+					role_title: common.MENTOR_ROLE,
+					permission_id: await POSTPermissionId(
+						'requestSessions',
+						['POST'],
+						'/mentoring/v1/requestSessions/create'
+					),
+					module: 'requestSessions',
+					request_type: ['POST'],
+					api_path: '/mentoring/v1/requestSessions/create',
+					created_at: new Date(),
+					updated_at: new Date(),
+					created_by: 0,
+				},
+				{
 					role_title: common.MENTEE_ROLE,
 					permission_id: await POSTPermissionId(
 						'requestSessions',
