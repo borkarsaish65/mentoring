@@ -774,11 +774,15 @@ const getUserDetailedList = function (userIds) {
 			// Enrich user details with roles and organization info
 			await Promise.all(
 				userDetails.map(async function (user) {
-					user.email = await emailEncryption.decrypt(user.email)
+					if (user.email) {
+						user.email = await emailEncryption.decrypt(user.email)
+					}
+
 					if (user.image) {
 						const downloadImageResponse = await getDownloadableUrl(user.image)
 						user.image = downloadImageResponse.result
 					}
+
 					user.user_roles = [{ title: common.MENTEE_ROLE }]
 					if (user.is_mentor) {
 						user.user_roles.push({ title: common.MENTOR_ROLE })
