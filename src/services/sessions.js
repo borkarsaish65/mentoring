@@ -712,7 +712,7 @@ module.exports = class SessionsHelper {
 				}
 				// If new start date is passed update session notification jobs
 
-				if (bodyData.start_date && bodyData.start_date !== Number(sessionDetail.start_date)) {
+				if (bodyData.start_date && Number(bodyData.start_date) !== Number(sessionDetail.start_date)) {
 					isSessionReschedule = true
 
 					const updateDelayData = sessionRelatedJobIds.map((jobId) => ({ id: jobId }))
@@ -739,7 +739,7 @@ module.exports = class SessionsHelper {
 						await schedulerRequest.updateDelayOfScheduledJob(updateDelayData[jobIndex])
 					}
 				}
-				if (bodyData.end_date && bodyData.end_date !== Number(sessionDetail.end_date)) {
+				if (bodyData.end_date && Number(bodyData.end_date) !== Number(sessionDetail.end_date)) {
 					isSessionReschedule = true
 
 					const jobId = common.jobPrefixToMarkSessionAsCompleted + sessionDetail.id
@@ -1086,12 +1086,7 @@ module.exports = class SessionsHelper {
 
 			// check for accessibility
 			if (userId !== '' && isAMentor !== '') {
-				let isAccessible = await this.checkIfSessionIsAccessible(
-					sessionDetails,
-					userId,
-					isAMentor,
-					mentorExtension
-				)
+				let isAccessible = await this.checkIfSessionIsAccessible(sessionDetails, userId, isAMentor)
 
 				// Throw access error
 				if (!isAccessible) {
@@ -1397,7 +1392,7 @@ module.exports = class SessionsHelper {
 				name = userDetails.name
 				enrollmentType = common.ENROLLED
 			} else {
-				userId = userTokenData.id
+				userId = userTokenData.user_id
 				email = userTokenData.email
 				name = userTokenData.name
 				emailTemplateCode = process.env.MENTEE_SESSION_ENROLLMENT_BY_MANAGER_EMAIL_TEMPLATE // update with new template
@@ -2512,7 +2507,7 @@ module.exports = class SessionsHelper {
 
 	static async addMentees(sessionId, menteeIds, timeZone) {
 		try {
-			// check if session exists or not
+			// Check if session exists
 			const sessionDetails = await sessionQueries.findOne({ id: sessionId })
 			if (!sessionDetails || Object.keys(sessionDetails).length === 0) {
 				return responses.failureResponse({
@@ -2522,47 +2517,42 @@ module.exports = class SessionsHelper {
 				})
 			}
 
-			// Get mentee name and email from user service
-			const menteeAccounts = await userRequests.getListOfUserDetails(menteeIds, true)
-			if (!menteeAccounts.result || !menteeAccounts.result.length > 0) {
+			// Fetch mentee details
+			const mentees = await menteeExtensionQueries.getUsersByUserIds(menteeIds, {
+				attributes: ['user_id', 'email', 'name', 'is_mentor'],
+			})
+			if (!mentees) {
 				return responses.failureResponse({
 					message: 'USER_NOT_FOUND',
 					statusCode: httpStatusCode.bad_request,
 					responseCode: 'CLIENT_ERROR',
 				})
 			}
-			const menteeDetails = menteeAccounts.result.map((element) => ({
-				id: element.id,
-				email: element.email,
-				name: element.name,
-				roles: element.user_roles,
-			}))
-
-			// Enroll mentees to the given session
-			const failedIds = []
+			// Enroll mentees
 			const successIds = []
+			const failedIds = []
+			const enrollPromises = mentees.map((menteeData) =>
+				this.enroll(sessionId, menteeData, timeZone, menteeData.is_mentor, false, sessionDetails)
+					.then((response) => ({
+						id: menteeData.user_id,
+						status: response.statusCode === httpStatusCode.created ? 'fulfilled' : 'rejected',
+					}))
+					.catch(() => ({ id: menteeData.id, status: 'rejected' }))
+			)
 
-			const enrollPromises = menteeDetails.map((menteeData) => {
-				let isAMentor = utils.isAMentor(menteeData.roles)
-				return this.enroll(sessionId, menteeData, timeZone, isAMentor, false, sessionDetails)
-					.then((response) => {
-						if (response.statusCode == httpStatusCode.created) {
-							// Enrolled successfully
-							successIds.push(menteeData.id)
-						} else {
-							// Enrollment failed
-							failedIds.push(menteeData.id)
-						}
-					})
-					.catch((error) => {
-						// mentee enroll error
-						failedIds.push(menteeData.id)
-					})
+			// Wait for all enrollments to settle
+			const results = await Promise.allSettled(enrollPromises)
+			console.log(results)
+			results.forEach((result, index) => {
+				if (result.status === 'fulfilled' && result.value.status === 'fulfilled') {
+					console.log(result)
+					successIds.push(mentees[index].id)
+				} else {
+					failedIds.push(mentees[index].id)
+				}
 			})
 
-			// Wait for all promises to settle
-			await Promise.all(enrollPromises)
-
+			// Handle results
 			if (failedIds.length > 0) {
 				return responses.failureResponse({
 					message: 'FAILED_TO_ADD_MENTEES',
@@ -2576,7 +2566,7 @@ module.exports = class SessionsHelper {
 				message: 'MENTEES_ARE_ADDED_SUCCESSFULLY',
 			})
 		} catch (error) {
-			console.log(error)
+			console.error(`Error in addMentees for session ${sessionId}:`, error)
 			throw error
 		}
 	}

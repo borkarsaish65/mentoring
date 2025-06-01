@@ -774,11 +774,15 @@ const getUserDetailedList = function (userIds) {
 			// Enrich user details with roles and organization info
 			await Promise.all(
 				userDetails.map(async function (user) {
-					user.email = await emailEncryption.decrypt(user.email)
+					if (user.email) {
+						user.email = await emailEncryption.decrypt(user.email)
+					}
+
 					if (user.image) {
 						const downloadImageResponse = await getDownloadableUrl(user.image)
 						user.image = downloadImageResponse.result
 					}
+
 					user.user_roles = [{ title: common.MENTEE_ROLE }]
 					if (user.is_mentor) {
 						user.user_roles.push({ title: common.MENTOR_ROLE })
@@ -800,6 +804,21 @@ const getUserDetailedList = function (userIds) {
 	})
 }
 
+const getProfileDetails = async ({ tenantCode, userId }) => {
+	try {
+		let profileUrl = `${userBaseUrl}${endpoints.GET_PROFILE_BY_ID}`
+
+		profileUrl += `/${userId}?tenant_code=${tenantCode}`
+
+		const userDetails = await requests.get(profileUrl, '', true)
+
+		return userDetails
+	} catch (error) {
+		console.error(error)
+		throw error
+	}
+}
+
 module.exports = {
 	fetchOrgDetails, // dependent on releated orgs  And query on code
 	fetchUserDetails, // dependendt on languages and prefered lang etc
@@ -816,4 +835,5 @@ module.exports = {
 	getUserDetails,
 	organizationList,
 	getOrgDetails,
+	getProfileDetails,
 }
