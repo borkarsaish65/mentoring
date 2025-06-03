@@ -3755,18 +3755,6 @@
 					"basePackageName": "mentoring",
 					"packageName": "elevate-mentoring",
 					"targetBody": [],
-					"responseBody": [
-						{
-							"sourceField": "user_roles",
-							"targetField": "mentoring.user_roles[]"
-						}
-					]
-				},
-				{
-					"service": "user",
-					"basePackageName": "mentoring",
-					"packageName": "elevate-mentoring",
-					"targetBody": [],
 					"responseBody": []
 				}
 			]
@@ -4145,7 +4133,7 @@
 				}
 			]
 		},
-    {
+		{
 			"sourceRoute": "/mentoring/v1/requestSessions/create",
 			"type": "POST",
 			"priority": "MUST_HAVE",
@@ -4431,6 +4419,63 @@
 					"packageName": "elevate-mentoring"
 				}
 			]
-		}
+		},
+		{
+			"sourceRoute": "/mentoring/v1/users/add",
+			"type": "POST",
+			"priority": "MUST_HAVE",
+			"inSequence": false,
+			"orchestrated": false,
+			"requiresCustomHandling": true,
+			"targetPackages": [
+				{
+					"basePackageName": "mentoring",
+					"packageName": "elevate-mentoring"
+				}
+			],
+			"rateLimit": {
+				"type": "internal"
+			}
+		},
+		{
+			"sourceRoute": "/user/v1/account/delete",
+			"type": "DELETE",
+			"priority": "MUST_HAVE",
+			"inSequence": false,
+			"orchestrated": false,
+			"requiresCustomHandling": false,
+			"targetPackages": [
+				{
+					"basePackageName": "mentoring",
+					"packageName": "elevate-mentoring"
+				}
+			]
+		},
+		        {
+            "sourceRoute": "/user/v1/user/profileById",
+            "type": "GET",
+            "priority": "MUST_HAVE",
+            "inSequence": false,
+            "orchestrated": false,
+            "targetPackages": [
+                {
+                    "basePackageName": "mentoring",
+                    "packageName": "elevate-mentoring"
+                }
+            ]
+        },
+        {
+            "sourceRoute": "/user/v1/user/profileById/:id",
+            "type": "GET",
+            "priority": "MUST_HAVE",
+            "inSequence": false,
+            "orchestrated": false,
+            "targetPackages": [
+                {
+                    "basePackageName": "mentoring",
+                    "packageName": "elevate-mentoring"
+                }
+            ]
+        }
 	]
 }
