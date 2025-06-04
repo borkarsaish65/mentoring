@@ -9,6 +9,7 @@
 const { isAMentor } = require('@generics/utils')
 const feedbackService = require('@services/feedback')
 const userService = require('@services/users')
+const adminService = require('@services/admin')
 
 module.exports = class Users {
 	/**
@@ -74,6 +75,15 @@ module.exports = class Users {
 	async update(req) {
 		try {
 			return await userService.update(req.body)
+		} catch (error) {
+			console.log(error)
+			return error
+		}
+	}
+
+	async delete(req) {
+		try {
+			return await adminService.userDelete(req.body.id.toString())
 		} catch (error) {
 			console.log(error)
 			return error
