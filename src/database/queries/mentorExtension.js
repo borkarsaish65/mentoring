@@ -126,6 +126,10 @@ module.exports = class MentorExtensionQueries {
 					external_session_visibility: null,
 					external_mentor_visibility: null,
 					deleted_at: Date.now(),
+					name: null,
+					email: null,
+					phone: null,
+					image: null,
 				},
 				{
 					where: {

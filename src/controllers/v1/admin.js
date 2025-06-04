@@ -23,6 +23,13 @@ module.exports = class admin {
 
 	async userDelete(req) {
 		try {
+			if (!req.decodedToken.roles.some((role) => role.title === common.ADMIN_ROLE)) {
+				return responses.failureResponse({
+					message: 'UNAUTHORIZED_REQUEST',
+					statusCode: httpStatusCode.unauthorized,
+					responseCode: 'UNAUTHORIZED',
+				})
+			}
 			const userDelete = await adminService.userDelete(req.decodedToken, req.query.userId)
 			return userDelete
 		} catch (error) {

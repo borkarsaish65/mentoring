@@ -196,6 +196,10 @@ module.exports = class MenteeExtensionQueries {
 					external_mentee_visibility: null,
 					mentee_visibility: null,
 					deleted_at: Date.now(),
+					name: null,
+					email: null,
+					phone: null,
+					image: null,
 				},
 				{
 					where: {
