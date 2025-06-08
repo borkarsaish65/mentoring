@@ -233,3 +233,27 @@ exports.getRequestSessions = async (requestSessionId) => {
 		throw error
 	}
 }
+
+exports.markRequestsAsDeleted = async (requestSessionIds = []) => {
+	try {
+		const currentEpochTime = moment().unix()
+		const currentDate = moment()
+		const currentDateTime = moment().format('YYYY-MM-DD HH:mm:ssZ')
+
+		const updated = await requestSession.update(
+			{
+				deleted_at: currentDateTime, // or use new Date()
+			},
+			{
+				where: {
+					id: {
+						[Op.in]: requestSessionIds,
+					},
+				},
+			}
+		)
+		return updated // returns [number of affected rows]
+	} catch (error) {
+		throw error
+	}
+}
