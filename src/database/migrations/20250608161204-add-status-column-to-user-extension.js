@@ -6,6 +6,7 @@ module.exports = {
 		await queryInterface.addColumn('user_extensions', 'status', {
 			type: Sequelize.STRING,
 			allowNull: true,
+			defaultValue: 'ACTIVE',
 		})
 	},
 

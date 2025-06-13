@@ -1,9 +1,7 @@
 const common = require('@constants/common')
 const httpStatusCode = require('@generics/http-status')
-
 const utils = require('@generics/utils')
 const kafkaCommunication = require('@generics/kafka-communication')
-
 const sessionQueries = require('@database/queries/sessions')
 const sessionAttendeesQueries = require('@database/queries/sessionAttendees')
 const notificationTemplateQueries = require('@database/queries/notificationTemplate')
@@ -18,6 +16,7 @@ const userRequests = require('@requests/user')
 const mentorExtensionQueries = require('@database/queries/mentorExtension')
 const organisationExtensionQueries = require('@database/queries/organisationExtension')
 const communicationHelper = require('@helpers/communications')
+const moment = require('moment')
 
 module.exports = class AdminHelper {
 	/**
@@ -50,14 +49,14 @@ module.exports = class AdminHelper {
 			}
 			const userInfo = getUserDetails[0]
 			const isMentor = userInfo.isMentor == true ? true : false
-			const isAlreadyUnderDeletion = userInfo.status === common.UNDER_DELETION_STATUS
-
-			const getUserDetailById = await userRequests.fetchUserDetails({ userId })
-			const roleTitles = getUserDetailById.data.result.user_roles.map((u) => u.title)
-			const isSessionManager = roleTitles.includes(common.SESSION_MANAGER_ROLE)
 
 			// Session Manager Deletion Flow Codes
 
+			// const isAlreadyUnderDeletion = userInfo.status === common.UNDER_DELETION_STATUS
+
+			// const getUserDetailById = await userRequests.fetchUserDetails({ userId })
+			// const roleTitles = getUserDetailById.data.result.user_roles.map((u) => u.title)
+			// const isSessionManager = roleTitles.includes(common.SESSION_MANAGER_ROLE)
 			// if (isSessionManager) {
 			// 	if (isAlreadyUnderDeletion) {
 			// 		return responses.failureResponse({
@@ -84,7 +83,40 @@ module.exports = class AdminHelper {
 
 			let removedUserDetails
 
+			const connectionExists = await connectionQueries.getConnectionsDetails(
+				common.pagination.DEFAULT_PAGE_NO,
+				common.pagination.DEFAULT_PAGE_SIZE,
+				filteredQuery,
+				searchText,
+				userId,
+				decodedToken.organization_id,
+				roles
+			)
+
+			if (connectionExists.count != 0) {
+				const removeConnections = await communicationHelper.setActiveStatus(userId, false, true)
+				const UpdateConnectionsName = await communicationHelper.updateUser(userId, common.USER_NOT_FOUND)
+				result.isConnectionRemoved = removeConnections?.result?.success === true
+				result.isConnectionNameUpdated = UpdateConnectionsName?.result?.success === true
+			}
+
 			if (isMentor) {
+				const requestSessions = await this.removeRequestSessions(userId)
+				if (!requestSessions === true) {
+					if (!requestSessions.requestedSessions.length === 0) {
+						result.isRequestedSessionMentorNotified = await this.NotifySessionRequestedUsers(
+							requestSessions.requestedSessions,
+							false,
+							true
+						)
+					}
+					if (!requestSessions.receivedSessions.length === 0) {
+						result.isRequestedSessionMenteeNotified = await this.NotifySessionRequestedUsers(
+							requestSessions.receivedSessions,
+							true
+						)
+					}
+				}
 				removedUserDetails = await mentorQueries.removeMentorDetails(userId)
 				const removedSessionsDetail = await sessionQueries.removeAndReturnMentorSessions(userId)
 				result.isAttendeesNotified = await this.unenrollAndNotifySessionAttendees(
@@ -92,17 +124,26 @@ module.exports = class AdminHelper {
 					userInfo.organization_id ? userInfo.organization_id : ''
 				)
 			} else {
+				const requestSessions = await this.removeRequestSessions(userId)
+				if (!requestSessions === true) {
+					if (!requestSessions.requestedSessions.length === 0) {
+						result.isRequestedSessionMentorNotified = await this.NotifySessionRequestedUsers(
+							requestSessions.requestedSessions,
+							false,
+							true
+						)
+					}
+				}
 				removedUserDetails = await menteeQueries.removeMenteeDetails(userId)
 			}
 
-			const removeConnections = await communicationHelper.setActiveStatus(userId, false, true)
-			const UpdateConnectionsName = await communicationHelper.updateUser(userId, common.USER_NOT_FOUND)
-
 			result.areUserDetailsCleared = removedUserDetails > 0
 			result.isUnenrolledFromSessions = await this.unenrollFromUpcomingSessions(userId)
-			result.isSessionRequestUserNotified = await this.removeRequestSessions(userId)
-			result.isConnectionRemoved = removeConnections?.result?.success === true
-			result.isConnectionNameUpdated = UpdateConnectionsName?.result?.success === true
+
+			const userServiceDeletion = await userRequests.deleteUser(userId)
+			if (userServiceDeletion === true) {
+				result.isUserServiceCleared = userServiceDeletion
+			}
 
 			if (result.isUnenrolledFromSessions && result.areUserDetailsCleared) {
 				return responses.successResponse({
@@ -203,44 +244,79 @@ module.exports = class AdminHelper {
 	// 	})
 	// }
 
-	static async unenrollAndNotifySessionRequestedUsers(removedSessionsDetail, orgId = '') {
+	static async NotifySessionRequestedUsers(sessionsDetails, received = false, sent = false, orgId = '') {
 		try {
+			// Get the appropriate template
 			const templateData = await notificationTemplateQueries.findOneEmailTemplate(
-				process.env.MENTOR_SESSION_DELETION_EMAIL_CODE,
+				received
+					? process.env.MENTEE_SESSION_REQUEST_DELETION_EMAIL_CODE
+					: process.env.MENTOR_SESSION_REQUEST_DELETION_EMAIL_CODE,
 				orgId
 			)
 
-			for (const session of removedSessionsDetail) {
-				const sessionAttendees = await sessionAttendeesQueries.findAll({
-					session_id: session.id,
-				})
+			for (const session of sessionsDetails) {
+				let userIds = []
+				let sessionDetails = []
 
-				const sessionAttendeesIds = sessionAttendees.map((attendee) => attendee.mentee_id)
+				if (received) {
+					userIds = session.map((user) => user.requestor_id)
+					sessionDetails = session.map((user) => ({
+						user_id: user.requestor_id,
+					}))
+				}
 
-				const attendeeProfiles = await menteeQueries.getUsersByUserIds(sessionAttendeesIds, {}, true)
+				if (sent) {
+					userIds = session.map((user) => user.requestee_id)
+					sessionDetails = session.map((user) => {
+						const dateTime = moment.unix(user.start_date)
+						return {
+							user_id: user.requestee_id,
+							date: dateTime.format('DD-MM-YYYY'),
+							time: dateTime.format('hh:mm A'),
+						}
+					})
+				}
 
-				console.log('ATTENDEE PROFILES: ', attendeeProfiles)
+				const userProfiles = await menteeQueries.getUsersByUserIds(userIds, {}, true)
 
-				const sendEmailPromises = attendeeProfiles.map(async (attendee) => {
+				const sendEmailPromises = userProfiles.map(async (user) => {
+					const userSessionInfo = sessionDetails.find((detail) => detail.user_id === user.id)
+
+					// Base data for body and subject
+					const emailTemplateData = {
+						nameOfTheSession: session.title,
+					}
+
+					if (sent && userSessionInfo) {
+						emailTemplateData.Date = userSessionInfo.date
+						emailTemplateData.Time = userSessionInfo.time
+					}
+
 					const payload = {
 						type: 'email',
 						email: {
-							to: attendee.email,
-							subject: templateData.subject,
-							body: utils.composeEmailBody(templateData.body, {
-								nameOfTheSession: session.title,
-							}),
+							to: user.email,
+							subject: sent
+								? utils.composeEmailBody(templateData.subject, emailTemplateData)
+								: templateData.subject,
+							body: utils.composeEmailBody(templateData.body, emailTemplateData),
 						},
 					}
+
 					await kafkaCommunication.pushEmailToKafka(payload)
 				})
+
 				await Promise.all(sendEmailPromises)
 			}
-			const sessionIds = removedSessionsDetail.map((session) => session.id)
-			const unenrollCount = await sessionAttendeesQueries.unEnrollAllAttendeesOfSessions(sessionIds)
+
+			// Collect all session request IDs for deletion
+			const AllSessionRequestIds = sessionsDetails.map((session) => session.id)
+
+			await requestSessionQueries.markRequestsAsDeleted(AllSessionRequestIds)
+
 			return true
 		} catch (error) {
-			console.error('An error occurred in notifySessionAttendees:', error)
+			console.error('An error occurred in NotifySessionRequestedUsers:', error)
 			return error
 		}
 	}
@@ -321,17 +397,21 @@ module.exports = class AdminHelper {
 			userId,
 			common.DEFAULT_PAGE_NO,
 			common.DEFAULT_PAGE_SIZE,
-			common.CONNECTIONS_STATUS.REQUESTED
+			common.CONNECTIONS_STATUS.REQUESTED,
+			true
 		)
 		if (!findAllRequests || findAllRequests.result.count === 0) {
 			return true
 		}
 
-		const requestedOrReceivedSessionIds = findAllRequests.map((sessionRequest) => sessionRequest.id)
+		const AllSessionRequestIds = findAllRequests.result.data.map((sessionRequest) => sessionRequest.id)
+		const requestedSessions = findAllRequests.result.sent
+		const receivedSessions = findAllRequests.result.recived
 
-		await requestSessionQueries.markRequestsAsDeleted(requestedOrReceivedSessionIds)
-
-		return true
+		return {
+			requestedSessions,
+			receivedSessions,
+		}
 	}
 
 	static async triggerViewRebuild(decodedToken) {

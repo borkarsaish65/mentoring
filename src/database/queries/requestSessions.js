@@ -236,13 +236,11 @@ exports.getRequestSessions = async (requestSessionId) => {
 
 exports.markRequestsAsDeleted = async (requestSessionIds = []) => {
 	try {
-		const currentEpochTime = moment().unix()
-		const currentDate = moment()
 		const currentDateTime = moment().format('YYYY-MM-DD HH:mm:ssZ')
 
-		const updated = await requestSession.update(
+		const [, updatedRows] = await requestSession.update(
 			{
-				deleted_at: currentDateTime, // or use new Date()
+				deleted_at: currentDateTime,
 			},
 			{
 				where: {
@@ -250,9 +248,13 @@ exports.markRequestsAsDeleted = async (requestSessionIds = []) => {
 						[Op.in]: requestSessionIds,
 					},
 				},
+				returning: true, // Only works with PostgreSQL
 			}
 		)
-		return updated // returns [number of affected rows]
+
+		const deletedIds = updatedRows.map((row) => row.id)
+
+		return deletedIds
 	} catch (error) {
 		throw error
 	}

@@ -8,14 +8,26 @@ module.exports = {
 		}
 		const emailTemplates = [
 			{
-				code: 'mentor_deleted_session_deletion_email',
-				subject: 'Mentor Session Deleted ',
-				body: '<p>Hi,</p><p>{nameOfTheSession}</p><p>This session has been deleted. Mentor for this session is no longer available. </p> ',
+				code: 'mentor_request_session_deletion_email',
+				subject: ' {nameOfTheSession} Cancelled ',
+				body: '<p>Hi,</p><p>The session {nameOfTheSession}, scheduled for {Date}, {Time}, has been cancelled and deleted as the mentee is no longer part of the organisation. </p><p>For more details, please visit MentorED. </p> ',
 			},
 			{
-				code: 'mentor_deleted_request_session_email',
-				subject: 'Request Session Deleted',
-				body: '<p>Hi,</p><p>{nameOfTheSession}</p><p>The session request is deleted because the mentor is no longer available. </p> ',
+				code: 'mentee_request_session_deletion_email',
+				subject: 'Session Request Rejected ',
+				body: '<p>Hi,</p><p>{<nameOfTheSession>}</p><p>This session request has been rejected and deleted. Requested Mentor for this session is no longer available. </p> ',
+			},
+			{
+				code: 'session_manager_private_session_deletion_email',
+				subject: 'Action Required - Mentor/Mentee Deleted',
+				body: `
+				  <p>Hi,</p>
+				  <p><strong>{name}</strong> is no longer a part of the organisation, and following are their upcoming sessions:</p>
+				  <ul>
+					{sessionsList}
+				  </ul>
+				  <p>Please reassign a mentor/mentee to continue the sessions or cancel the session to notify attendees.</p>
+				`,
 			},
 		]
 
