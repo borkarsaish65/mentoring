@@ -478,6 +478,11 @@ let enviromentVariables = {
 		optional: true,
 		default: 30000,
 	},
+	LIMIT_FOR_SESSION_REQUEST_MONTH: {
+		message: 'Request Session Allowed Limit in months',
+		optional: true,
+		default: 3,
+	},
 }
 
 let success = true

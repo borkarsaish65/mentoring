@@ -92,6 +92,22 @@ module.exports = class requestSessionsHelper {
 				})
 			}
 
+			const maxAllowedDate = moment().add(process.env.LIMIT_FOR_SESSION_REQUEST_MONTH, 'months')
+			const sessionStartDate = moment.unix(bodyData.start_date)
+			const sessionEndDate = moment.unix(bodyData.end_date)
+
+			if (sessionStartDate.isAfter(maxAllowedDate) || sessionEndDate.isAfter(maxAllowedDate)) {
+				const errorMessage = {
+					key: 'DATE_EXCEEDS_ALLOWED_RANGE',
+					interpolation: { limitedTime: process.env.LIMIT_FOR_SESSION_REQUEST_MONTH },
+				}
+				return responses.failureResponse({
+					message: errorMessage,
+					statusCode: httpStatusCode.bad_request,
+					responseCode: 'CLIENT_ERROR',
+				})
+			}
+
 			// Get default org id and entities
 			const defaultOrgId = await getDefaultOrgId()
 			if (!defaultOrgId)

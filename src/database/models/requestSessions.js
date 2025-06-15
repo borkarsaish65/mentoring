@@ -29,7 +29,7 @@ module.exports = (sequelize, DataTypes) => {
 				allowNull: false,
 			},
 			agenda: {
-				type: DataTypes.STRING,
+				type: DataTypes.STRING(2000),
 				allowNull: false,
 			},
 			start_date: {
