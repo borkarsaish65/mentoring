@@ -125,32 +125,42 @@ module.exports = class MentorExtensionQueries {
 	}
 	static async removeMentorDetails(userId) {
 		try {
-			return await MentorExtension.update(
-				{
-					designation: null,
-					area_of_expertise: [],
-					education_qualification: null,
-					rating: null,
-					meta: null,
-					stats: null,
-					tags: [],
-					configs: null,
-					mentor_visibility: null,
-					visible_to_organizations: [],
-					external_session_visibility: null,
-					external_mentor_visibility: null,
-					deleted_at: Date.now(),
-					name: common.USER_NOT_FOUND,
-					email: null,
-					phone: null,
-					image: null,
-				},
-				{
-					where: {
-						user_id: userId,
-					},
+			const modelAttributes = MentorExtension.rawAttributes
+
+			const fieldsToNullify = {}
+
+			for (const [key, attribute] of Object.entries(modelAttributes)) {
+				// Skip primary key or explicitly excluded fields
+				if (
+					attribute.primaryKey ||
+					key === 'user_id' ||
+					key === 'organization_id' || // required field
+					key === 'created_at' ||
+					key === 'updated_at' ||
+					key === 'is_mentor' // has default value
+				) {
+					continue
 				}
-			)
+
+				// Set types accordingly
+				if (attribute.type.constructor.name === 'ARRAY') {
+					fieldsToNullify[key] = []
+				} else if (attribute.type.key === 'JSON' || attribute.type.key === 'JSONB') {
+					fieldsToNullify[key] = null // Or `{}` if you prefer default object
+				} else if (key === 'deleted_at') {
+					fieldsToNullify[key] = new Date() // Timestamp field
+				} else if (key === 'name') {
+					fieldsToNullify[key] = common.USER_NOT_FOUND
+				} else {
+					fieldsToNullify[key] = null
+				}
+			}
+
+			return await MentorExtension.update(fieldsToNullify, {
+				where: {
+					user_id: userId,
+				},
+			})
 		} catch (error) {
 			console.error('An error occurred:', error)
 			throw error
