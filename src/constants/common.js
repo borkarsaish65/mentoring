@@ -55,6 +55,7 @@ module.exports = {
 		'/users/update',
 		'/sessions/removeAllSessions',
 		'/mentoring/v1/users/add',
+		'/mentoring/v1/users/delete',
 	],
 	COMPLETED_STATUS: 'COMPLETED',
 	UNFULFILLED_STATUS: 'UNFULFILLED',

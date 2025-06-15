@@ -141,6 +141,9 @@ module.exports = class MentorExtensionQueries {
 					external_mentor_visibility: null,
 					deleted_at: Date.now(),
 					name: common.USER_NOT_FOUND,
+					email: null,
+					phone: null,
+					image: null,
 				},
 				{
 					where: {
