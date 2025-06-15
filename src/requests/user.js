@@ -827,7 +827,7 @@ const deleteUser = function (userId, token) {
 	return new Promise(async (resolve, reject) => {
 		const apiUrl = userBaseUrl + endpoints.USER_DELETE + '/' + userId
 		try {
-			let userDelete = await requests.del(apiUrl, token)
+			let userDelete = await requests.delete(apiUrl, token)
 			if (userDelete.data.responseCode === 'CLIENT_ERROR') {
 				return resolve(
 					responses.failureResponse({

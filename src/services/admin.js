@@ -11,12 +11,12 @@ const adminService = require('../generics/materializedViews')
 const responses = require('@helpers/responses')
 const requestSessionsService = require('@services/requestSessions')
 const requestSessionQueries = require('@database/queries/requestSessions')
-const { request } = require('express')
 const userRequests = require('@requests/user')
 const mentorExtensionQueries = require('@database/queries/mentorExtension')
 const organisationExtensionQueries = require('@database/queries/organisationExtension')
 const communicationHelper = require('@helpers/communications')
 const moment = require('moment')
+const connectionQueries = require('@database/queries/connection')
 
 module.exports = class AdminHelper {
 	/**
@@ -83,23 +83,19 @@ module.exports = class AdminHelper {
 
 			let removedUserDetails
 
-			const connectionExists = await connectionQueries.getConnectionsDetails(
-				common.pagination.DEFAULT_PAGE_NO,
-				common.pagination.DEFAULT_PAGE_SIZE,
-				filteredQuery,
-				searchText,
-				userId,
+			const connectionExists = await connectionQueries.getConnectionsCount(filteredQuery, searchText, userId, [
 				decodedToken.organization_id,
-				roles
-			)
+			])
 
 			if (connectionExists.count != 0) {
 				const removeConnections = await communicationHelper.setActiveStatus(userId, false, true)
 				const UpdateConnectionsName = await communicationHelper.updateUser(userId, common.USER_NOT_FOUND)
 				result.isConnectionRemoved = removeConnections?.result?.success === true
 				result.isConnectionNameUpdated = UpdateConnectionsName?.result?.success === true
+				result.isRequestedConnectionsRemoved = await connectionQueries.fetchAndDeletePendingConnectionRequests(
+					userId
+				)
 			}
-
 			if (isMentor) {
 				const requestSessions = await this.removeRequestSessions(userId)
 				if (!requestSessions === true) {

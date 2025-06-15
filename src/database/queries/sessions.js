@@ -7,7 +7,6 @@ const moment = require('moment')
 const SessionOwnership = require('../models/index').SessionOwnership
 const Sequelize = require('@database/models/index').sequelize
 const sessionOwnership = require('@database/queries/sessionOwnership')
-const Sessions = require('@controllers/v1/manage-sessions')
 
 exports.getColumns = async () => {
 	try {

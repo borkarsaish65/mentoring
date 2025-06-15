@@ -195,16 +195,33 @@ exports.checkPendingRequest = async (userId, friendId) => {
 	}
 }
 
-exports.getSentAndReceivedRequests = async (userId) => {
+exports.fetchAndDeletePendingConnectionRequests = async (userId) => {
 	try {
-		const result = await Connection.findAll({
+		const requests = await ConnectionRequest.findAll({
 			where: {
 				[Op.or]: [{ user_id: userId }, { friend_id: userId }],
 				status: common.CONNECTIONS_STATUS.REQUESTED,
 			},
 			raw: true,
 		})
-		return result
+
+		// If there are any requests, mark them as deleted
+		if (requests.length > 0) {
+			const requestIds = requests.map((req) => req.id)
+
+			await ConnectionRequest.update(
+				{ deleted_at: new Date() },
+				{
+					where: {
+						id: {
+							[Op.in]: requestIds,
+						},
+					},
+				}
+			)
+		}
+
+		return requests.length == 0 || requests.length > 0 ? true : false
 	} catch (error) {
 		throw error
 	}
@@ -383,6 +400,65 @@ exports.updateConnection = async (userId, friendId, updateBody) => {
 		)
 
 		return targetConnection
+	} catch (error) {
+		throw error
+	}
+}
+
+exports.getConnectionsCount = async (filter, searchText = '', userId, organizationIds = [], roles = []) => {
+	try {
+		let additionalFilter = ''
+		let orgFilter = ''
+		let filterClause = ''
+		let rolesFilter = ''
+
+		if (searchText) {
+			additionalFilter = `AND name ILIKE :search`
+		}
+
+		if (organizationIds.length > 0) {
+			orgFilter = `AND organization_id IN (:organizationIds)`
+		}
+
+		if (filter?.query?.length > 0) {
+			filterClause = filter.query.startsWith('AND') ? filter.query : 'AND ' + filter.query
+		}
+
+		if (roles.includes('mentor') && roles.includes('mentee')) {
+			// No filter
+		} else if (roles.includes('mentor')) {
+			rolesFilter = `AND is_mentor = true`
+		} else if (roles.includes('mentee')) {
+			rolesFilter = `AND is_mentor = false`
+		}
+
+		const userFilterClause = `mv.user_id IN (SELECT friend_id FROM ${Connection.tableName} WHERE user_id = :userId)`
+
+		const countQuery = `
+		    SELECT COUNT(*) AS count
+		    FROM ${common.materializedViewsPrefix + MenteeExtension.tableName} mv
+		    LEFT JOIN ${Connection.tableName} c 
+		    ON c.friend_id = mv.user_id AND c.user_id = :userId
+		    WHERE ${userFilterClause}
+		    ${orgFilter}
+		    ${filterClause}
+		    ${rolesFilter}
+		    ${additionalFilter};
+		`
+
+		const replacements = {
+			...filter?.replacements,
+			search: `%${searchText}%`,
+			userId,
+			organizationIds,
+		}
+
+		const result = await sequelize.query(countQuery, {
+			type: QueryTypes.SELECT,
+			replacements,
+		})
+
+		return Number(result[0].count)
 	} catch (error) {
 		throw error
 	}

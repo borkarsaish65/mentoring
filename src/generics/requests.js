@@ -81,7 +81,7 @@ var post = function (url, body, token = '', internal_access_token = false) {
 	})
 }
 
-var del = function (url, token = '', internal_access_token = false) {
+var deleteRequest = function (url, token = '', internal_access_token = false) {
 	return new Promise((resolve, reject) => {
 		try {
 			let headers = {
@@ -120,5 +120,5 @@ var del = function (url, token = '', internal_access_token = false) {
 module.exports = {
 	get: get,
 	post: post,
-	del: del,
+	delete: deleteRequest,
 }
