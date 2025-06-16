@@ -21,6 +21,7 @@ const menteeServices = require('@services/mentees')
 const mentorService = require('@services/mentors')
 const mentorQueries = require('@database/queries/mentorExtension')
 const schedulerRequest = require('@requests/scheduler')
+const communicationHelper = require('@helpers/communications')
 
 module.exports = class requestSessionsHelper {
 	static async checkConnectionRequestExists(userId, targetUserId) {
@@ -237,6 +238,16 @@ module.exports = class requestSessionsHelper {
 
 			const userIds = oppositeUserIds.map((id) => String(id))
 			const userDetails = await userExtensionQueries.getUsersByUserIds(userIds, {}, true)
+
+			await Promise.all(
+				userDetails.map(async function (userMap) {
+					if (userMap.image) {
+						userMap.image = await utils.getDownloadableUrl(userMap.image)
+					}
+					return userMap
+				})
+			)
+
 			const userDetailsFullMap = new Map(userDetails.map((u) => [String(u.user_id), u]))
 
 			const requestSessionWithDetails = paginatedData
@@ -646,13 +657,11 @@ function createMentorAvailabilityResponse(data) {
 	const availability = {}
 
 	data.forEach((session) => {
-		const startDate = moment.unix(Number(session.start_date))
-		const endDate = moment.unix(Number(session.end_date))
-		const dateKey = startDate.format('YYYY-MM-DD')
+		const dateKey = session.start_date.format('YYYY-MM-DD')
 
 		const timeSlot = {
-			startTime: startDate.format('HH:mm:ss'),
-			endTime: endDate.format('HH:mm:ss'),
+			startTime: session.start_date,
+			endTime: session.start_date,
 			title: session.title || '',
 		}
 
@@ -699,8 +708,8 @@ async function emailForAcceptAndReject(templateCode, orgId, requestor_id, mentor
 				to: menteeDetails[0].email,
 				subject: templateData.subject,
 				body: utils.composeEmailBody(templateData.body, {
-					name,
-					mentorName: mentorDetails[0].name,
+					name: name,
+					mentorName: mentorDetails.name,
 				}),
 			},
 		}
