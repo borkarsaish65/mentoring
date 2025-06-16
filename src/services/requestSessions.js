@@ -455,6 +455,9 @@ module.exports = class requestSessionsHelper {
 				statusCode: httpStatusCode.created,
 				message: !connectionExists ? 'SESSION_REQUEST_APPROVED_AND_CONNECTED' : 'SESSION_REQUEST_APPROVED',
 				result: approveSessionRequest[0]?.dataValues?.status,
+				interpolation: !connectionExists
+					? { MenteeName: userExists.name } // Pass your dynamic value here
+					: undefined,
 			})
 		} catch (error) {
 			console.error(error)
