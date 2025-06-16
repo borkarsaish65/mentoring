@@ -238,6 +238,16 @@ module.exports = class requestSessionsHelper {
 
 			const userIds = oppositeUserIds.map((id) => String(id))
 			const userDetails = await userExtensionQueries.getUsersByUserIds(userIds, {}, true)
+
+			await Promise.all(
+				userDetails.map(async function (userMap) {
+					if (userMap.image) {
+						userMap.image = await utils.getDownloadableUrl(userMap.image)
+					}
+					return userMap
+				})
+			)
+
 			const userDetailsFullMap = new Map(userDetails.map((u) => [String(u.user_id), u]))
 
 			const requestSessionWithDetails = paginatedData
