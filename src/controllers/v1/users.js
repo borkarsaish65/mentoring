@@ -55,6 +55,15 @@ module.exports = class Users {
 		}
 	}
 
+	/**
+	 * Creates a new user record if one doesn't already exist.
+	 * Intended to be used after user login to register them in the system.
+	 * @method
+	 * @name create
+	 * @param {Object} req - Request object.
+	 * @param {Object} req.decodedToken - Decoded token object from authenticated user.
+	 * @returns {JSON} - Success or failure message.
+	 */
 	async create(req) {
 		try {
 			return await userService.create(req.decodedToken)
@@ -63,6 +72,16 @@ module.exports = class Users {
 			return error
 		}
 	}
+
+	/**
+	 * Adds a new user to the system.
+	 * Used by an admin or internal service to register users with full input.
+	 * @method
+	 * @name add
+	 * @param {Object} req - Request object.
+	 * @param {Object} req.body - User details (name, email, type, etc.)
+	 * @returns {JSON} - Success or failure response.
+	 */
 	async add(req) {
 		try {
 			return await userService.add(req.body)
@@ -72,6 +91,14 @@ module.exports = class Users {
 		}
 	}
 
+	/**
+	 * Updates user details like name, role, or profile data.
+	 * @method
+	 * @name update
+	 * @param {Object} req - Request object.
+	 * @param {Object} req.body - Updated user details.
+	 * @returns {JSON} - Update status and response data.
+	 */
 	async update(req) {
 		try {
 			return await userService.update(req.body)
@@ -81,6 +108,15 @@ module.exports = class Users {
 		}
 	}
 
+	/**
+	 * Deletes a user by internal user ID.
+	 * Only accessible to admin users.
+	 * @method
+	 * @name delete
+	 * @param {Object} req - Request object.
+	 * @param {String} req.body.id - Internal user ID to delete.
+	 * @returns {JSON} - Deletion status and response.
+	 */
 	async delete(req) {
 		try {
 			return await adminService.userDelete(req.body.id.toString())

@@ -484,17 +484,17 @@ let enviromentVariables = {
 		default: 'mentor_deleted_session_deletion_email',
 	},
 	MENTOR_SESSION_REQUEST_DELETION_EMAIL_CODE: {
-		message: 'Required mentor session request template code',
+		message: 'Required mentor session request deletion template code',
 		optional: true,
 		default: 'mentor_request_session_deletion_email',
 	},
 	MENTEE_SESSION_REQUEST_DELETION_EMAIL_CODE: {
-		message: 'Required mentee session request template code',
+		message: 'Required mentee session request deletion template code',
 		optional: true,
 		default: 'mentor_request_session_deletion_email',
 	},
 	SESSION_MANAGER_PRIVATE_SESSION_DELETION: {
-		message: 'Required session manager private session template code',
+		message: 'Required session manager private session deletion template code',
 		optional: true,
 		default: 'session_manager_private_session_deletion_email',
 	},
