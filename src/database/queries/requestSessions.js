@@ -69,6 +69,7 @@ exports.getAllRequests = async (userId, status) => {
 				status: statusFilter,
 			},
 			raw: true,
+			order: [['created_at', 'DESC']],
 		})
 
 		return sessionRequest
@@ -99,6 +100,7 @@ exports.getSessionMappingDetails = async (sessionRequestIds, status) => {
 				},
 				status: statusFilter, // Your status filter
 			},
+			order: [['created_at', 'DESC']],
 		})
 
 		return result

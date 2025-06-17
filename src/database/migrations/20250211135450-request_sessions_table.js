@@ -30,7 +30,7 @@ module.exports = {
 				allowNull: false,
 			},
 			agenda: {
-				type: Sequelize.STRING,
+				type: Sequelize.TEXT,
 				allowNull: false,
 			},
 			start_date: {

@@ -21,6 +21,7 @@ const menteeServices = require('@services/mentees')
 const mentorService = require('@services/mentors')
 const mentorQueries = require('@database/queries/mentorExtension')
 const schedulerRequest = require('@requests/scheduler')
+const communicationHelper = require('@helpers/communications')
 
 module.exports = class requestSessionsHelper {
 	static async checkConnectionRequestExists(userId, targetUserId) {
@@ -87,6 +88,22 @@ module.exports = class requestSessionsHelper {
 			if (elapsedMinutes > 1440) {
 				return responses.failureResponse({
 					message: 'EXCEEDED_MAXIMUM_SESSION_TIME',
+					statusCode: httpStatusCode.bad_request,
+					responseCode: 'CLIENT_ERROR',
+				})
+			}
+
+			const maxAllowedDate = moment().add(process.env.LIMIT_FOR_SESSION_REQUEST_MONTH, 'months')
+			const sessionStartDate = moment.unix(bodyData.start_date)
+			const sessionEndDate = moment.unix(bodyData.end_date)
+
+			if (sessionStartDate.isAfter(maxAllowedDate) || sessionEndDate.isAfter(maxAllowedDate)) {
+				const errorMessage = {
+					key: 'DATE_EXCEEDS_ALLOWED_RANGE',
+					interpolation: { limitedTime: process.env.LIMIT_FOR_SESSION_REQUEST_MONTH },
+				}
+				return responses.failureResponse({
+					message: errorMessage,
 					statusCode: httpStatusCode.bad_request,
 					responseCode: 'CLIENT_ERROR',
 				})
@@ -237,6 +254,16 @@ module.exports = class requestSessionsHelper {
 
 			const userIds = oppositeUserIds.map((id) => String(id))
 			const userDetails = await userExtensionQueries.getUsersByUserIds(userIds, {}, true)
+
+			await Promise.all(
+				userDetails.map(async function (userMap) {
+					if (userMap.image) {
+						userMap.image = await utils.getDownloadableUrl(userMap.image)
+					}
+					return userMap
+				})
+			)
+
 			const userDetailsFullMap = new Map(userDetails.map((u) => [String(u.user_id), u]))
 
 			const sentSessions = []
@@ -459,6 +486,9 @@ module.exports = class requestSessionsHelper {
 				statusCode: httpStatusCode.created,
 				message: !connectionExists ? 'SESSION_REQUEST_APPROVED_AND_CONNECTED' : 'SESSION_REQUEST_APPROVED',
 				result: approveSessionRequest[0]?.dataValues?.status,
+				interpolation: !connectionExists
+					? { MenteeName: userExists.name } // Pass your dynamic value here
+					: undefined,
 			})
 		} catch (error) {
 			console.error(error)
@@ -666,13 +696,11 @@ function createMentorAvailabilityResponse(data) {
 	const availability = {}
 
 	data.forEach((session) => {
-		const startDate = moment.unix(Number(session.start_date))
-		const endDate = moment.unix(Number(session.end_date))
-		const dateKey = startDate.format('YYYY-MM-DD')
+		const dateKey = session.start_date.format('YYYY-MM-DD')
 
 		const timeSlot = {
-			startTime: startDate.format('HH:mm:ss'),
-			endTime: endDate.format('HH:mm:ss'),
+			startTime: session.start_date,
+			endTime: session.start_date,
 			title: session.title || '',
 		}
 
@@ -719,8 +747,8 @@ async function emailForAcceptAndReject(templateCode, orgId, requestor_id, mentor
 				to: menteeDetails[0].email,
 				subject: templateData.subject,
 				body: utils.composeEmailBody(templateData.body, {
-					name,
-					mentorName: mentorDetails[0].name,
+					name: name,
+					mentorName: mentorDetails.name,
 				}),
 			},
 		}

@@ -497,6 +497,11 @@ let enviromentVariables = {
 		message: 'Required session manager private session deletion template code',
 		optional: true,
 		default: 'session_manager_private_session_deletion_email',
+  },
+	LIMIT_FOR_SESSION_REQUEST_MONTH: {
+		message: 'Request Session Allowed Limit in months',
+		optional: true,
+		default: 3,
 	},
 }
 

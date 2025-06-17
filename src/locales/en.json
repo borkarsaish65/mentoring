@@ -196,7 +196,7 @@
 	"CONNECTION_REQUEST_APPROVED": "Your connection request has been approved.",
 	"CONNECTION_REQUEST_REJECTED": "Your connection request has been rejected.",
 	"CONNECTION_REQUEST_NOT_FOUND": "Oops! We couldn't find that connection request.",
-	"CONNECTION_EXITS": "You are already connected with this user.",
+	"CONNECTION_EXITS": "You cannot send any more messages till your message request is accepted.",
 	"CONNECTION_NOT_FOUND": "Connection not found.",
 	"CONNECTION_DETAILS": "Connection details fetched successfully.",
 	"CONNECTED_USERS_FETCHED": "Connections retrieved successfully.",
@@ -224,5 +224,6 @@
 	"MENTOR_AVAILABILITY": "mentor availibilty featched successfully",
 	"SESSION_REQUEST_EXPIRED": "Session request expired successfully.",
 	"USER_UNDER_DELETION": "User deletion is intiated.",
-	"USER_ALREADY_UNDER_DELETION": "User deletion is already intiated."
+	"USER_ALREADY_UNDER_DELETION": "User deletion is already intiated.",
+	"DATE_EXCEEDS_ALLOWED_RANGE": "Session should start and end before {{limitedTime}} months"
 }
