@@ -129,11 +129,6 @@ module.exports = class AdminHelper {
 			result.areUserDetailsCleared = removedUserDetails > 0
 			result.isUnenrolledFromSessions = await this.unenrollFromUpcomingSessions(userId)
 
-			const userServiceDeletion = await userRequests.deleteUser(userId)
-			if (userServiceDeletion === true) {
-				result.isUserServiceCleared = userServiceDeletion
-			}
-
 			if (result.isUnenrolledFromSessions && result.areUserDetailsCleared) {
 				return responses.successResponse({
 					statusCode: httpStatusCode.ok,

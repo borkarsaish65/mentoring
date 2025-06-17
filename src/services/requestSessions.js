@@ -296,7 +296,6 @@ module.exports = class requestSessionsHelper {
 					statusCode: httpStatusCode.ok,
 					message: 'SESSION_REQUESTS_LIST',
 					result: {
-						data: requestSessionWithDetails,
 						count: totalCount,
 						sent: sentSessions,
 						received: receivedSessions,

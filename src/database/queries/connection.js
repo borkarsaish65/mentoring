@@ -413,11 +413,11 @@ exports.getConnectionsCount = async (filter, searchText = '', userId, organizati
 		let rolesFilter = ''
 
 		if (searchText) {
-			additionalFilter = `AND name ILIKE :search`
+			additionalFilter = `AND ue.name ILIKE :search`
 		}
 
 		if (organizationIds.length > 0) {
-			orgFilter = `AND organization_id IN (:organizationIds)`
+			orgFilter = `AND ue.organization_id IN (:organizationIds)`
 		}
 
 		if (filter?.query?.length > 0) {
@@ -427,23 +427,23 @@ exports.getConnectionsCount = async (filter, searchText = '', userId, organizati
 		if (roles.includes('mentor') && roles.includes('mentee')) {
 			// No filter
 		} else if (roles.includes('mentor')) {
-			rolesFilter = `AND is_mentor = true`
+			rolesFilter = `AND ue.is_mentor = true`
 		} else if (roles.includes('mentee')) {
-			rolesFilter = `AND is_mentor = false`
+			rolesFilter = `AND ue.is_mentor = false`
 		}
 
-		const userFilterClause = `mv.user_id IN (SELECT friend_id FROM ${Connection.tableName} WHERE user_id = :userId)`
+		const userFilterClause = `ue.user_id IN (SELECT friend_id FROM ${Connection.tableName} WHERE user_id = :userId)`
 
 		const countQuery = `
-		    SELECT COUNT(*) AS count
-		    FROM ${common.materializedViewsPrefix + MenteeExtension.tableName} mv
-		    LEFT JOIN ${Connection.tableName} c 
-		    ON c.friend_id = mv.user_id AND c.user_id = :userId
-		    WHERE ${userFilterClause}
-		    ${orgFilter}
-		    ${filterClause}
-		    ${rolesFilter}
-		    ${additionalFilter};
+			SELECT COUNT(*) AS count
+			FROM ${UserExtension.tableName} ue
+			LEFT JOIN ${Connection.tableName} c 
+			ON c.friend_id = ue.user_id AND c.user_id = :userId
+			WHERE ${userFilterClause}
+			${orgFilter}
+			${filterClause}
+			${rolesFilter}
+			${additionalFilter};
 		`
 
 		const replacements = {
