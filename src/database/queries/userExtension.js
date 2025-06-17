@@ -195,7 +195,7 @@ module.exports = class MenteeExtensionQueries {
 	}
 	static async removeMenteeDetails(userId) {
 		try {
-			const modelAttributes = MentorExtension.rawAttributes
+			const modelAttributes = MenteeExtension.rawAttributes
 
 			const fieldsToNullify = {}
 
@@ -226,7 +226,7 @@ module.exports = class MenteeExtensionQueries {
 				}
 			}
 
-			return await MentorExtension.update(fieldsToNullify, {
+			return await MenteeExtension.update(fieldsToNullify, {
 				where: {
 					user_id: userId,
 				},

@@ -47,9 +47,9 @@ module.exports = class AdminHelper {
 
 			// const isAlreadyUnderDeletion = userInfo.status === common.UNDER_DELETION_STATUS
 
-			// const getUserDetailById = await userRequests.fetchUserDetails({ userId })
-			// const roleTitles = getUserDetailById.data.result.user_roles.map((u) => u.title)
-			// const isSessionManager = roleTitles.includes(common.SESSION_MANAGER_ROLE)
+			const getUserDetailById = await userRequests.fetchUserDetails({ userId })
+			const roleTitles = getUserDetailById.data.result.user_roles.map((u) => u.title)
+			const isSessionManager = roleTitles.includes(common.SESSION_MANAGER_ROLE)
 			// if (isSessionManager) {
 			// 	if (isAlreadyUnderDeletion) {
 			// 		return responses.failureResponse({
@@ -89,7 +89,7 @@ module.exports = class AdminHelper {
 					userId
 				)
 			}
-			if (isMentor) {
+			if (isMentor && !isSessionManager) {
 				const requestSessions = await this.removeRequestSessions(userId)
 				if (!requestSessions === true) {
 					if (!requestSessions.requestedSessions.length === 0) {
@@ -112,7 +112,7 @@ module.exports = class AdminHelper {
 					removedSessionsDetail,
 					userInfo.organization_id ? userInfo.organization_id : ''
 				)
-			} else {
+			} else if (!isMentor && !isSessionManager) {
 				const requestSessions = await this.removeRequestSessions(userId)
 				if (!requestSessions === true) {
 					if (!requestSessions.requestedSessions.length === 0) {
@@ -124,6 +124,12 @@ module.exports = class AdminHelper {
 					}
 				}
 				removedUserDetails = await menteeQueries.removeMenteeDetails(userId)
+			} else if ((isMentor && isSessionManager) || (!isMentor && isSessionManager)) {
+				return responses.failureResponse({
+					statusCode: httpStatusCode.bad_request,
+					message: 'SESSION_MANAGER_DELETION_UNSUCCESSFUL',
+					result,
+				})
 			}
 
 			result.areUserDetailsCleared = removedUserDetails > 0

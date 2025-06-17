@@ -225,5 +225,6 @@
 	"SESSION_REQUEST_EXPIRED": "Session request expired successfully.",
 	"USER_UNDER_DELETION": "User deletion is intiated.",
 	"USER_ALREADY_UNDER_DELETION": "User deletion is already intiated.",
-	"DATE_EXCEEDS_ALLOWED_RANGE": "Session should start and end before {{limitedTime}} months"
+	"DATE_EXCEEDS_ALLOWED_RANGE": "Session should start and end before {{limitedTime}} months",
+	"SESSION_MANAGER_DELETION_UNSUCCESSFUL": "Session Manager Cannot be Deleted."
 }
