@@ -681,7 +681,7 @@ function createMentorAvailabilityResponse(data) {
 
 		const timeSlot = {
 			startTime: session.start_date,
-			endTime: session.start_date,
+			endTime: session.end_date,
 			title: session.title || '',
 		}
 
