@@ -28,103 +28,56 @@ module.exports = class AdminHelper {
 	 * @returns {JSON} - List of users
 	 */
 
-	static async userDelete(userId) {
+	static async userDelete(decodedToken, userId) {
 		try {
 			let result = {}
 
-			const getUserDetails = await menteeQueries.getUsersByUserIds([userId])
-			if (getUserDetails.length <= 0) {
+			// Step 1: Fetch user details
+			const getUserDetails = await menteeQueries.getUsersByUserIds([userId]) // userId = "1"
+			if (!getUserDetails || getUserDetails.length === 0) {
 				return responses.failureResponse({
 					statusCode: httpStatusCode.bad_request,
 					message: 'USER_NOT_FOUND',
 					result,
 				})
 			}
+
 			const userInfo = getUserDetails[0]
-			const isMentor = userInfo.isMentor == true ? true : false
+			const isMentor = userInfo.isMentor === true
 
-			// Session Manager Deletion Flow Codes
-
-			// const isAlreadyUnderDeletion = userInfo.status === common.UNDER_DELETION_STATUS
-
-			const getUserDetailById = await userRequests.fetchUserDetails({ userId })
-			const roleTitles = getUserDetailById.data.result.user_roles.map((u) => u.title)
+			// Step 2: Check if user is a session manager
+			const getUserDetailById = await userRequests.fetchUserDetails({ userId }) // userId = "1"
+			const roleTitles = getUserDetailById?.data?.result?.user_roles?.map((r) => r.title) || []
 			const isSessionManager = roleTitles.includes(common.SESSION_MANAGER_ROLE)
+
+			// Step 3: Optional logic to mark Session Manager as UNDER_DELETION
+			// const isAlreadyUnderDeletion = userInfo.status === common.UNDER_DELETION_STATUS;
 			// if (isSessionManager) {
 			// 	if (isAlreadyUnderDeletion) {
 			// 		return responses.failureResponse({
 			// 			statusCode: httpStatusCode.bad_request,
 			// 			message: 'USER_ALREADY_UNDER_DELETION',
 			// 			result,
-			// 		})
+			// 		});
 			// 	}
 
-			// 	const updateData = { status: common.UNDER_DELETION_STATUS }
+			// 	const updateData = { status: common.UNDER_DELETION_STATUS };
 
 			// 	if (isMentor) {
-			// 		await mentorQueries.updateMentorExtension(userId, updateData, true)
+			// 		await mentorQueries.updateMentorExtension(userId, updateData, true);
 			// 	} else {
-			// 		await menteeQueries.updateMenteeExtension(userId, updateData, true)
+			// 		await menteeQueries.updateMenteeExtension(userId, updateData, true);
 			// 	}
 
 			// 	return responses.successResponse({
 			// 		statusCode: httpStatusCode.ok,
 			// 		message: 'USER_UNDER_DELETION',
 			// 		result,
-			// 	})
+			// 	});
 			// }
 
-			let removedUserDetails
-
-			const connectionExists = await connectionQueries.getConnectionsCount(filteredQuery, searchText, userId, [
-				decodedToken.organization_id,
-			])
-
-			if (connectionExists.count != 0) {
-				const removeConnections = await communicationHelper.setActiveStatus(userId, false, true)
-				const UpdateConnectionsName = await communicationHelper.updateUser(userId, common.USER_NOT_FOUND)
-				result.isConnectionRemoved = removeConnections?.result?.success === true
-				result.isConnectionNameUpdated = UpdateConnectionsName?.result?.success === true
-				result.isRequestedConnectionsRemoved = await connectionQueries.fetchAndDeletePendingConnectionRequests(
-					userId
-				)
-			}
-			if (isMentor && !isSessionManager) {
-				const requestSessions = await this.removeRequestSessions(userId)
-				if (!requestSessions === true) {
-					if (!requestSessions.requestedSessions.length === 0) {
-						result.isRequestedSessionMentorNotified = await this.NotifySessionRequestedUsers(
-							requestSessions.requestedSessions,
-							false,
-							true
-						)
-					}
-					if (!requestSessions.receivedSessions.length === 0) {
-						result.isRequestedSessionMenteeNotified = await this.NotifySessionRequestedUsers(
-							requestSessions.receivedSessions,
-							true
-						)
-					}
-				}
-				removedUserDetails = await mentorQueries.removeMentorDetails(userId)
-				const removedSessionsDetail = await sessionQueries.removeAndReturnMentorSessions(userId)
-				result.isAttendeesNotified = await this.unenrollAndNotifySessionAttendees(
-					removedSessionsDetail,
-					userInfo.organization_id ? userInfo.organization_id : ''
-				)
-			} else if (!isMentor && !isSessionManager) {
-				const requestSessions = await this.removeRequestSessions(userId)
-				if (!requestSessions === true) {
-					if (!requestSessions.requestedSessions.length === 0) {
-						result.isRequestedSessionMentorNotified = await this.NotifySessionRequestedUsers(
-							requestSessions.requestedSessions,
-							false,
-							true
-						)
-					}
-				}
-				removedUserDetails = await menteeQueries.removeMenteeDetails(userId)
-			} else if ((isMentor && isSessionManager) || (!isMentor && isSessionManager)) {
+			// Prevent deletion of session manager directly
+			if (isSessionManager) {
 				return responses.failureResponse({
 					statusCode: httpStatusCode.bad_request,
 					message: 'SESSION_MANAGER_DELETION_UNSUCCESSFUL',
@@ -132,9 +85,89 @@ module.exports = class AdminHelper {
 				})
 			}
 
-			result.areUserDetailsCleared = removedUserDetails > 0
-			result.isUnenrolledFromSessions = await this.unenrollFromUpcomingSessions(userId)
+			// Step 4: Check for user connections
+			const connectionExists = await connectionQueries.getConnectionsCount('', userId, [
+				decodedToken.organization_id,
+			]) // filter, userId = "1", organizationIds = ["1", "2"]
 
+			if (connectionExists.count !== 0) {
+				// Soft delete in communication service
+				const removeChatUser = await communicationHelper.setActiveStatus(userId, false) // ( userId = "1", activeStatus = "true" or "false")
+
+				// Update user name to 'User Not Found'
+				const updateChatUserName = await communicationHelper.updateUser(userId, common.USER_NOT_FOUND) // userId: "1", name: "User Name"
+
+				result.isChatUserRemoved = removeChatUser?.result?.success === true
+				result.isChatNameUpdated = updateChatUserName?.result?.success === true
+
+				// Delete user connections and requests from DB
+				result.isConnectionsAndRequestsRemoved = await connectionQueries.deleteUserConnectionsAndRequests(
+					userId
+				) // userId = "1"
+			}
+
+			// Step 5: Session Request Deletion & Notifications
+			const requestSessions = await this.findAllRequestSessions(userId) // userId = "1"
+
+			const defaultOrgId = await getDefaultOrgId()
+			if (!defaultOrgId)
+				return responses.failureResponse({
+					message: 'DEFAULT_ORG_ID_NOT_SET',
+					statusCode: httpStatusCode.bad_request,
+					responseCode: 'CLIENT_ERROR',
+				})
+
+			if (requestSessions !== true) {
+				const { allSessionRequestIds = [], requestedSessions = [], receivedSessions = [] } = requestSessions
+
+				// Collect all session request IDs for deletion
+				result.isRequestedSessionRemoved = await requestSessionQueries.markRequestsAsDeleted(
+					allSessionRequestIds
+				) // allSessionRequestIds = ["1", "2"]
+
+				if (requestedSessions.length > 0) {
+					result.isRequestedSessionMentorNotified = await this.NotifySessionRequestedUsers(
+						requestedSessions,
+						false,
+						true,
+						defaultOrgId
+					) // (sessionsDetails, received = true or false, sent = true or false , orgId = "1")
+				}
+
+				if (isMentor && receivedSessions.length > 0) {
+					result.isRequestedSessionMenteeNotified = await this.NotifySessionRequestedUsers(
+						receivedSessions,
+						true,
+						false,
+						defaultOrgId
+					) // (sessionsDetails, received = true or false, sent = true or false , orgId = "1")
+				}
+			}
+
+			// Step 6: Remove user and sessions
+			let removedUserDetails = 0
+
+			if (isMentor) {
+				// Remove mentor from DB
+				removedUserDetails = await mentorQueries.removeMentorDetails(userId) // userId = "1"
+
+				// Unenroll and notify attendees of sessions created by mentor
+				const removedSessionsDetail = await sessionQueries.removeAndReturnMentorSessions(userId) // userId = "1"
+				result.isAttendeesNotified = await this.unenrollAndNotifySessionAttendees(
+					removedSessionsDetail,
+					userInfo.organization_id || ''
+				) //removedSessionsDetail , orgId : "1")
+			} else {
+				// Remove mentee from DB
+				removedUserDetails = await menteeQueries.removeMenteeDetails(userId) // userId = "1"
+			}
+
+			result.areUserDetailsCleared = removedUserDetails > 0
+
+			// Step 7: Unenroll from any upcoming sessions as attendee
+			result.isUnenrolledFromSessions = await this.unenrollFromUpcomingSessions(userId) // userId = "1"
+
+			// Step 8: Final Response
 			if (result.isUnenrolledFromSessions && result.areUserDetailsCleared) {
 				return responses.successResponse({
 					statusCode: httpStatusCode.ok,
@@ -299,11 +332,6 @@ module.exports = class AdminHelper {
 				await Promise.all(sendEmailPromises)
 			}
 
-			// Collect all session request IDs for deletion
-			const AllSessionRequestIds = sessionsDetails.map((session) => session.id)
-
-			await requestSessionQueries.markRequestsAsDeleted(AllSessionRequestIds)
-
 			return true
 		} catch (error) {
 			console.error('An error occurred in NotifySessionRequestedUsers:', error)
@@ -382,25 +410,33 @@ module.exports = class AdminHelper {
 		}
 	}
 
-	static async removeRequestSessions(userId) {
-		const findAllRequests = await requestSessionsService.list(
-			userId,
-			common.DEFAULT_PAGE_NO,
-			common.DEFAULT_PAGE_SIZE,
-			common.CONNECTIONS_STATUS.REQUESTED,
-			true
-		)
+	static async findAllRequestSessions(userId) {
+		const findAllRequests = await requestSessionsService.list(userId, '', '', common.CONNECTIONS_STATUS.REQUESTED) // (userId: "1", pageNo, pageSize, status: "requested")
+
 		if (!findAllRequests || findAllRequests.result.count === 0) {
 			return true
 		}
 
-		const AllSessionRequestIds = findAllRequests.result.data.map((sessionRequest) => sessionRequest.id)
-		const requestedSessions = findAllRequests.result.sent
-		const receivedSessions = findAllRequests.result.recived
+		const allData = findAllRequests.result.data || []
+
+		const allSessionRequestIds = []
+		const requestedSessions = []
+		const receivedSessions = []
+
+		for (const sessionRequest of allData) {
+			allSessionRequestIds.push(sessionRequest.id)
+
+			if (sessionRequest.request_type === 'sent') {
+				requestedSessions.push(sessionRequest) // full data
+			} else if (sessionRequest.request_type === 'received') {
+				receivedSessions.push(sessionRequest) // full data
+			}
+		}
 
 		return {
-			requestedSessions,
-			receivedSessions,
+			allSessionRequestIds, // array of IDs
+			requestedSessions, // array of objects
+			receivedSessions, // array of objects
 		}
 	}
 

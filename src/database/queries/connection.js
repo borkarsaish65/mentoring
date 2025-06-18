@@ -195,33 +195,34 @@ exports.checkPendingRequest = async (userId, friendId) => {
 	}
 }
 
-exports.fetchAndDeletePendingConnectionRequests = async (userId) => {
+exports.deleteUserConnectionsAndRequests = async (userId) => {
 	try {
-		const requests = await ConnectionRequest.findAll({
-			where: {
-				[Op.or]: [{ user_id: userId }, { friend_id: userId }],
-				status: common.CONNECTIONS_STATUS.REQUESTED,
-			},
-			raw: true,
-		})
+		const now = new Date()
 
-		// If there are any requests, mark them as deleted
-		if (requests.length > 0) {
-			const requestIds = requests.map((req) => req.id)
+		const modelsToUpdate = [
+			{ model: ConnectionRequest, status: common.CONNECTIONS_STATUS.REQUESTED },
+			{ model: Connection, status: common.CONNECTIONS_STATUS.ACCEPTED },
+		]
 
-			await ConnectionRequest.update(
-				{ deleted_at: new Date() },
+		let deleted = false
+
+		for (const { model, status } of modelsToUpdate) {
+			const [affectedRows] = await model.update(
+				{ deleted_at: now },
 				{
 					where: {
-						id: {
-							[Op.in]: requestIds,
-						},
+						[Op.or]: [{ user_id: userId }, { friend_id: userId }],
+						status,
 					},
 				}
 			)
+
+			if (affectedRows > 0) {
+				deleted = true
+			}
 		}
 
-		return requests.length == 0 || requests.length > 0 ? true : false
+		return deleted
 	} catch (error) {
 		throw error
 	}
@@ -405,16 +406,10 @@ exports.updateConnection = async (userId, friendId, updateBody) => {
 	}
 }
 
-exports.getConnectionsCount = async (filter, searchText = '', userId, organizationIds = [], roles = []) => {
+exports.getConnectionsCount = async (filter, userId, organizationIds = []) => {
 	try {
-		let additionalFilter = ''
 		let orgFilter = ''
 		let filterClause = ''
-		let rolesFilter = ''
-
-		if (searchText) {
-			additionalFilter = `AND ue.name ILIKE :search`
-		}
 
 		if (organizationIds.length > 0) {
 			orgFilter = `AND ue.organization_id IN (:organizationIds)`
@@ -422,14 +417,6 @@ exports.getConnectionsCount = async (filter, searchText = '', userId, organizati
 
 		if (filter?.query?.length > 0) {
 			filterClause = filter.query.startsWith('AND') ? filter.query : 'AND ' + filter.query
-		}
-
-		if (roles.includes('mentor') && roles.includes('mentee')) {
-			// No filter
-		} else if (roles.includes('mentor')) {
-			rolesFilter = `AND ue.is_mentor = true`
-		} else if (roles.includes('mentee')) {
-			rolesFilter = `AND ue.is_mentor = false`
 		}
 
 		const userFilterClause = `ue.user_id IN (SELECT friend_id FROM ${Connection.tableName} WHERE user_id = :userId)`
@@ -441,14 +428,11 @@ exports.getConnectionsCount = async (filter, searchText = '', userId, organizati
 			ON c.friend_id = ue.user_id AND c.user_id = :userId
 			WHERE ${userFilterClause}
 			${orgFilter}
-			${filterClause}
-			${rolesFilter}
-			${additionalFilter};
+			${filterClause};
 		`
 
 		const replacements = {
 			...filter?.replacements,
-			search: `%${searchText}%`,
 			userId,
 			organizationIds,
 		}

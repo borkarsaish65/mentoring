@@ -201,7 +201,7 @@ exports.getUserId = async (userId) => {
  * const result = await setActiveStatus('5HmCfpoB7jp2uibTC', false, true);
  * // result => { result: { success: true }, statusCode: 200, message: 'NAME_UPDATED' }
  */
-exports.setActiveStatus = async (userId, active_status, confirm_relinquish) => {
+exports.setActiveStatus = async (userId, active_status, confirm_relinquish = false) => {
 	try {
 		const url = apiEndpoints.COMMUNICATION_USERS_SET_ACTIVE_STATUS
 		const body = { user_id: userId, activeStatus: active_status, confirmRelinquish: confirm_relinquish }
