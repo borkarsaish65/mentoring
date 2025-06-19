@@ -110,8 +110,8 @@
 	"ORGANIZATION_NOT_FOUND": "Organization not found",
 	"SESSION_DEACTIVATED_SUCCESSFULLY": "Session deactivated successfully.",
 	"SUCCESSFULLY_UNENROLLED_FROM_UPCOMING_SESSION": "Unrolled from upcoming sessions successfully.",
-	"PROFILE_RESTRICTED": "User can't access this profile",
-	"SESSION_RESTRICTED": "User can't access this session",
+	"PROFILE_RESTRICTED": "You do not have access to this profile",
+	"SESSION_RESTRICTED": "You do not have access to this session",
 	"MATERIALIZED_VIEW_GENERATED_SUCCESSFULLY": "Materialized views generated successfully",
 	"MATERIALIZED_VIEW_REFRESH_INITIATED_SUCCESSFULLY": "Materialized views refresh initiated successfully",
 	"RELATED_ORG_UPDATED": "Related organizations updated successfully",
@@ -223,5 +223,8 @@
 	"ORG_THEME_UPDATED_SUCCESSFULLY": "Organization theme updated successfully.",
 	"MENTOR_AVAILABILITY": "mentor availibilty featched successfully",
 	"SESSION_REQUEST_EXPIRED": "Session request expired successfully.",
-	"DATE_EXCEEDS_ALLOWED_RANGE": "Session should start and end before {{limitedTime}} months"
+	"USER_UNDER_DELETION": "User deletion is intiated.",
+	"USER_ALREADY_UNDER_DELETION": "User deletion is already intiated.",
+	"DATE_EXCEEDS_ALLOWED_RANGE": "Session should start and end before {{limitedTime}} months",
+	"SESSION_MANAGER_DELETION_UNSUCCESSFUL": "Session Manager Cannot be Deleted."
 }

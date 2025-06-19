@@ -55,6 +55,7 @@ module.exports = {
 		'/users/update',
 		'/sessions/removeAllSessions',
 		'/mentoring/v1/users/add',
+		'/mentoring/v1/users/delete',
 	],
 	COMPLETED_STATUS: 'COMPLETED',
 	UNFULFILLED_STATUS: 'UNFULFILLED',
@@ -232,4 +233,6 @@ module.exports = {
 	},
 	SESSION_POST_RESOURCE_TYPE: 'post',
 	SESSION_PRE_RESOURCE_TYPE: 'pre',
+	USER_NOT_FOUND: 'USER NOT FOUND',
+	UNDER_DELETION_STATUS: 'UNDER_DELETION',
 }

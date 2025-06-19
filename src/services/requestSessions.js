@@ -197,86 +197,79 @@ module.exports = class requestSessionsHelper {
 	static async list(userId, pageNo, pageSize, status) {
 		try {
 			const allRequestSession = await sessionRequestQueries.getAllRequests(userId, status)
-
-			const sessionRequestData = allRequestSession.rows.map((session) => session)
+			const sessionRequestData = allRequestSession.rows
 
 			const sessionRequestMapping = await sessionRequestMappingQueries.getSessionsMapping(userId)
-
-			const sessionRequestIds = sessionRequestMapping.map((session) => session.request_session_id)
+			const sessionRequestIds = sessionRequestMapping.map((s) => s.request_session_id)
 
 			const sessionMappingDetails = await sessionRequestQueries.getSessionMappingDetails(
 				sessionRequestIds,
 				status
 			)
-
-			const sessionMappingDetailsData = sessionMappingDetails.map((session) => session.dataValues)
+			const sessionMappingDetailsData = sessionMappingDetails.map((s) => s.dataValues)
 
 			const combinedData = [...sessionRequestData, ...sessionMappingDetailsData]
-
 			const totalCount = combinedData.length
 
-			// Apply pagination
-			const offset = (pageNo - 1) * pageSize
-			const paginatedData = combinedData.slice(offset, offset + pageSize)
+			let paginatedData = combinedData
+			if (pageNo && pageSize) {
+				const offset = (pageNo - 1) * pageSize
+				paginatedData = combinedData.slice(offset, offset + pageSize)
+			}
 
-			if (paginatedData.length === 0) {
+			if (!paginatedData.length) {
 				return responses.successResponse({
 					statusCode: httpStatusCode.ok,
 					message: 'SESSION_REQUESTS_LIST',
-					result: { data: [], count: 0, pageNo, pageSize },
+					result: { data: [], count: 0 },
 				})
 			}
 
-			// Get opposite user ID for each session
-			const oppositeUserIds = paginatedData.map((session) =>
-				session.requestor_id === userId ? session.requestee_id : session.requestor_id
+			const oppositeUserIds = paginatedData.map((s) =>
+				s.requestor_id === userId ? s.requestee_id : s.requestor_id
 			)
 
-			// Fetch user details for opposite users
 			let oppositeUserDetails = await userExtensionQueries.getUsersByUserIds(oppositeUserIds, {
 				attributes: ['user_id', 'image', 'name', 'experience', 'designation', 'organization_id'],
 			})
 
-			const userExtensionsModelName = await userExtensionQueries.getModelName()
-			const uniqueOrgIds = [...new Set(oppositeUserDetails.map((obj) => obj.organization_id))]
+			const uniqueOrgIds = [...new Set(oppositeUserDetails.map((u) => u.organization_id))]
+			const modelName = await userExtensionQueries.getModelName()
 
 			oppositeUserDetails = await entityTypeService.processEntityTypesToAddValueLabels(
 				oppositeUserDetails,
 				uniqueOrgIds,
-				userExtensionsModelName,
+				modelName,
 				'organization_id'
 			)
 
-			const userDetailsMap = oppositeUserDetails.reduce((acc, user) => {
-				acc[user.user_id] = user
-				return acc
-			}, {})
-
+			const userDetailsMap = Object.fromEntries(oppositeUserDetails.map((u) => [u.user_id, u]))
 			const userIds = oppositeUserIds.map((id) => String(id))
+
 			const userDetails = await userExtensionQueries.getUsersByUserIds(userIds, {}, true)
 
 			await Promise.all(
-				userDetails.map(async function (userMap) {
-					if (userMap.image) {
-						userMap.image = await utils.getDownloadableUrl(userMap.image)
-					}
-					return userMap
+				userDetails.map(async (u) => {
+					if (u.image) u.image = await utils.getDownloadableUrl(u.image)
 				})
 			)
 
-			const userDetailsFullMap = new Map(userDetails.map((u) => [String(u.user_id), u]))
+			const fullMap = new Map(userDetails.map((u) => [String(u.user_id), u]))
 
-			const requestSessionWithDetails = paginatedData
+			const data = paginatedData
 				.map((session) => {
-					const oppositeUserId = session.requestor_id === userId ? session.requestee_id : session.requestor_id
-					const baseDetails = userDetailsMap[oppositeUserId] || null
+					const isSent = session.requestor_id === userId
+					const oppositeUserId = isSent ? session.requestee_id : session.requestor_id
+					const user = userDetailsMap[oppositeUserId]
+					const fullUser = fullMap.get(String(oppositeUserId))
 
-					if (baseDetails && userDetailsFullMap.has(String(oppositeUserId))) {
-						baseDetails.image = userDetailsFullMap.get(String(oppositeUserId)).image
+					if (user && fullUser) {
+						user.image = fullUser.image
 						return {
 							...session,
-							id: session.id?.toString(),
-							user_details: baseDetails,
+							id: String(session.id),
+							user_details: user,
+							request_type: isSent ? 'sent' : 'received',
 						}
 					}
 					return null
@@ -287,7 +280,7 @@ module.exports = class requestSessionsHelper {
 				statusCode: httpStatusCode.ok,
 				message: 'SESSION_REQUESTS_LIST',
 				result: {
-					data: requestSessionWithDetails,
+					data,
 					count: totalCount,
 				},
 			})
