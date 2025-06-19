@@ -669,11 +669,12 @@ function createMentorAvailabilityResponse(data) {
 	const availability = {}
 
 	data.forEach((session) => {
-		const dateKey = session.start_date.format('YYYY-MM-DD')
+		const startDate = moment.unix(Number(session.start_date))
+		const dateKey = startDate.format('YYYY-MM-DD')
 
 		const timeSlot = {
 			startTime: session.start_date,
-			endTime: session.start_date,
+			endTime: session.end_date,
 			title: session.title || '',
 		}
 
