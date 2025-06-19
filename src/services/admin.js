@@ -117,7 +117,7 @@ module.exports = class AdminHelper {
 					responseCode: 'CLIENT_ERROR',
 				})
 
-			if (requestSessions !== true) {
+			if (requestSessions.allSessionRequestIds.length > 0) {
 				const { allSessionRequestIds = [], requestedSessions = [], receivedSessions = [] } = requestSessions
 
 				// Collect all session request IDs for deletion
