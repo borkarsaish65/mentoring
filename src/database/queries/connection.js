@@ -195,16 +195,34 @@ exports.checkPendingRequest = async (userId, friendId) => {
 	}
 }
 
-exports.getSentAndReceivedRequests = async (userId) => {
+exports.deleteUserConnectionsAndRequests = async (userId) => {
 	try {
-		const result = await Connection.findAll({
-			where: {
-				[Op.or]: [{ user_id: userId }, { friend_id: userId }],
-				status: common.CONNECTIONS_STATUS.REQUESTED,
-			},
-			raw: true,
-		})
-		return result
+		const now = new Date()
+
+		const modelsToUpdate = [
+			{ model: ConnectionRequest, status: common.CONNECTIONS_STATUS.REQUESTED },
+			{ model: Connection, status: common.CONNECTIONS_STATUS.ACCEPTED },
+		]
+
+		let deleted = false
+
+		for (const { model, status } of modelsToUpdate) {
+			const [affectedRows] = await model.update(
+				{ deleted_at: now },
+				{
+					where: {
+						[Op.or]: [{ user_id: userId }, { friend_id: userId }],
+						status,
+					},
+				}
+			)
+
+			if (affectedRows > 0) {
+				deleted = true
+			}
+		}
+
+		return deleted
 	} catch (error) {
 		throw error
 	}
@@ -300,7 +318,9 @@ exports.getConnectionsDetails = async (
 		mv.image,
 		mv.custom_entity_text::JSONB AS custom_entity_text,
 		mv.meta::JSONB AS user_meta,
-		c.meta::JSONB AS connection_meta
+		c.meta::JSONB AS connection_meta,
+		mv.deleted_at AS user_deleted_at,
+		c.deleted_at AS connections_deleted_at
 		`
 
 		let query = `
@@ -381,6 +401,48 @@ exports.updateConnection = async (userId, friendId, updateBody) => {
 		)
 
 		return targetConnection
+	} catch (error) {
+		throw error
+	}
+}
+
+exports.getConnectionsCount = async (filter, userId, organizationIds = []) => {
+	try {
+		let orgFilter = ''
+		let filterClause = ''
+
+		if (organizationIds.length > 0) {
+			orgFilter = `AND ue.organization_id IN (:organizationIds)`
+		}
+
+		if (filter?.query?.length > 0) {
+			filterClause = filter.query.startsWith('AND') ? filter.query : 'AND ' + filter.query
+		}
+
+		const userFilterClause = `ue.user_id IN (SELECT friend_id FROM ${Connection.tableName} WHERE user_id = :userId)`
+
+		const countQuery = `
+			SELECT COUNT(*) AS count
+			FROM ${UserExtension.tableName} ue
+			LEFT JOIN ${Connection.tableName} c 
+			ON c.friend_id = ue.user_id AND c.user_id = :userId
+			WHERE ${userFilterClause}
+			${orgFilter}
+			${filterClause};
+		`
+
+		const replacements = {
+			...filter?.replacements,
+			userId,
+			organizationIds,
+		}
+
+		const result = await sequelize.query(countQuery, {
+			type: QueryTypes.SELECT,
+			replacements,
+		})
+
+		return Number(result[0].count)
 	} catch (error) {
 		throw error
 	}

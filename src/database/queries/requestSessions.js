@@ -69,6 +69,7 @@ exports.getAllRequests = async (userId, status) => {
 				status: statusFilter,
 			},
 			raw: true,
+			order: [['created_at', 'DESC']],
 		})
 
 		return sessionRequest
@@ -99,6 +100,7 @@ exports.getSessionMappingDetails = async (sessionRequestIds, status) => {
 				},
 				status: statusFilter, // Your status filter
 			},
+			order: [['created_at', 'DESC']],
 		})
 
 		return result
@@ -229,6 +231,32 @@ exports.getRequestSessions = async (requestSessionId) => {
 			where: whereClause,
 			raw: true,
 		})
+	} catch (error) {
+		throw error
+	}
+}
+
+exports.markRequestsAsDeleted = async (requestSessionIds = []) => {
+	try {
+		const currentDateTime = moment().format('YYYY-MM-DD HH:mm:ssZ')
+
+		const [, updatedRows] = await requestSession.update(
+			{
+				deleted_at: currentDateTime,
+			},
+			{
+				where: {
+					id: {
+						[Op.in]: requestSessionIds,
+					},
+				},
+				returning: true, // Only works with PostgreSQL
+			}
+		)
+
+		const deletedIds = updatedRows.map((row) => row.id)
+
+		return deletedIds.length == 0 || deletedIds.length > 0 ? true : false
 	} catch (error) {
 		throw error
 	}

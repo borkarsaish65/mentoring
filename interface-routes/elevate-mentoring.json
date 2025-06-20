@@ -4369,6 +4369,19 @@
 			]
 		},
 		{
+			"sourceRoute": "/user/v1/tenant/userBulkUpload",
+			"type": "POST",
+			"priority": "MUST_HAVE",
+			"inSequence": false,
+			"orchestrated": false,
+			"targetPackages": [
+				{
+					"basePackageName": "mentoring",
+					"packageName": "elevate-mentoring"
+				}
+			]
+		},
+		{
 			"sourceRoute": "/user/v1/tenant/list",
 			"type": "GET",
 			"priority": "MUST_HAVE",
@@ -4420,6 +4433,23 @@
 				}
 			]
 		},
+    		{
+			"sourceRoute": "/mentoring/v1/users/delete",
+			"type": "POST",
+			"priority": "MUST_HAVE",
+			"inSequence": false,
+			"orchestrated": false,
+			"requiresCustomHandling": true,
+			"targetPackages": [
+				{
+					"basePackageName": "mentoring",
+					"packageName": "elevate-mentoring"
+				}
+			],
+			"rateLimit": {
+				"type": "internal"
+			}
+		},
 		{
 			"sourceRoute": "/mentoring/v1/users/add",
 			"type": "POST",
@@ -4450,6 +4480,7 @@
 					"packageName": "elevate-mentoring"
 				}
 			]
+		}
 		},
 		        {
             "sourceRoute": "/user/v1/user/profileById",

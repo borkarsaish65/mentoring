@@ -21,6 +21,7 @@ const menteeServices = require('@services/mentees')
 const mentorService = require('@services/mentors')
 const mentorQueries = require('@database/queries/mentorExtension')
 const schedulerRequest = require('@requests/scheduler')
+const communicationHelper = require('@helpers/communications')
 
 module.exports = class requestSessionsHelper {
 	static async checkConnectionRequestExists(userId, targetUserId) {
@@ -87,6 +88,22 @@ module.exports = class requestSessionsHelper {
 			if (elapsedMinutes > 1440) {
 				return responses.failureResponse({
 					message: 'EXCEEDED_MAXIMUM_SESSION_TIME',
+					statusCode: httpStatusCode.bad_request,
+					responseCode: 'CLIENT_ERROR',
+				})
+			}
+
+			const maxAllowedDate = moment().add(process.env.LIMIT_FOR_SESSION_REQUEST_MONTH, 'months')
+			const sessionStartDate = moment.unix(bodyData.start_date)
+			const sessionEndDate = moment.unix(bodyData.end_date)
+
+			if (sessionStartDate.isAfter(maxAllowedDate) || sessionEndDate.isAfter(maxAllowedDate)) {
+				const errorMessage = {
+					key: 'DATE_EXCEEDS_ALLOWED_RANGE',
+					interpolation: { limitedTime: process.env.LIMIT_FOR_SESSION_REQUEST_MONTH },
+				}
+				return responses.failureResponse({
+					message: errorMessage,
 					statusCode: httpStatusCode.bad_request,
 					responseCode: 'CLIENT_ERROR',
 				})
@@ -180,76 +197,79 @@ module.exports = class requestSessionsHelper {
 	static async list(userId, pageNo, pageSize, status) {
 		try {
 			const allRequestSession = await sessionRequestQueries.getAllRequests(userId, status)
-
-			const sessionRequestData = allRequestSession.rows.map((session) => session)
+			const sessionRequestData = allRequestSession.rows
 
 			const sessionRequestMapping = await sessionRequestMappingQueries.getSessionsMapping(userId)
-
-			const sessionRequestIds = sessionRequestMapping.map((session) => session.request_session_id)
+			const sessionRequestIds = sessionRequestMapping.map((s) => s.request_session_id)
 
 			const sessionMappingDetails = await sessionRequestQueries.getSessionMappingDetails(
 				sessionRequestIds,
 				status
 			)
-
-			const sessionMappingDetailsData = sessionMappingDetails.map((session) => session.dataValues)
+			const sessionMappingDetailsData = sessionMappingDetails.map((s) => s.dataValues)
 
 			const combinedData = [...sessionRequestData, ...sessionMappingDetailsData]
-
 			const totalCount = combinedData.length
 
-			// Apply pagination
-			const offset = (pageNo - 1) * pageSize
-			const paginatedData = combinedData.slice(offset, offset + pageSize)
+			let paginatedData = combinedData
+			if (pageNo && pageSize) {
+				const offset = (pageNo - 1) * pageSize
+				paginatedData = combinedData.slice(offset, offset + pageSize)
+			}
 
-			if (paginatedData.length === 0) {
+			if (!paginatedData.length) {
 				return responses.successResponse({
 					statusCode: httpStatusCode.ok,
 					message: 'SESSION_REQUESTS_LIST',
-					result: { data: [], count: 0, pageNo, pageSize },
+					result: { data: [], count: 0 },
 				})
 			}
 
-			// Get opposite user ID for each session
-			const oppositeUserIds = paginatedData.map((session) =>
-				session.requestor_id === userId ? session.requestee_id : session.requestor_id
+			const oppositeUserIds = paginatedData.map((s) =>
+				s.requestor_id === userId ? s.requestee_id : s.requestor_id
 			)
 
-			// Fetch user details for opposite users
 			let oppositeUserDetails = await userExtensionQueries.getUsersByUserIds(oppositeUserIds, {
 				attributes: ['user_id', 'image', 'name', 'experience', 'designation', 'organization_id'],
 			})
 
-			const userExtensionsModelName = await userExtensionQueries.getModelName()
-			const uniqueOrgIds = [...new Set(oppositeUserDetails.map((obj) => obj.organization_id))]
+			const uniqueOrgIds = [...new Set(oppositeUserDetails.map((u) => u.organization_id))]
+			const modelName = await userExtensionQueries.getModelName()
 
 			oppositeUserDetails = await entityTypeService.processEntityTypesToAddValueLabels(
 				oppositeUserDetails,
 				uniqueOrgIds,
-				userExtensionsModelName,
+				modelName,
 				'organization_id'
 			)
 
-			const userDetailsMap = oppositeUserDetails.reduce((acc, user) => {
-				acc[user.user_id] = user
-				return acc
-			}, {})
-
+			const userDetailsMap = Object.fromEntries(oppositeUserDetails.map((u) => [u.user_id, u]))
 			const userIds = oppositeUserIds.map((id) => String(id))
+
 			const userDetails = await userExtensionQueries.getUsersByUserIds(userIds, {}, true)
-			const userDetailsFullMap = new Map(userDetails.map((u) => [String(u.user_id), u]))
 
-			const requestSessionWithDetails = paginatedData
+			await Promise.all(
+				userDetails.map(async (u) => {
+					if (u.image) u.image = await utils.getDownloadableUrl(u.image)
+				})
+			)
+
+			const fullMap = new Map(userDetails.map((u) => [String(u.user_id), u]))
+
+			const data = paginatedData
 				.map((session) => {
-					const oppositeUserId = session.requestor_id === userId ? session.requestee_id : session.requestor_id
-					const baseDetails = userDetailsMap[oppositeUserId] || null
+					const isSent = session.requestor_id === userId
+					const oppositeUserId = isSent ? session.requestee_id : session.requestor_id
+					const user = userDetailsMap[oppositeUserId]
+					const fullUser = fullMap.get(String(oppositeUserId))
 
-					if (baseDetails && userDetailsFullMap.has(String(oppositeUserId))) {
-						baseDetails.image = userDetailsFullMap.get(String(oppositeUserId)).image
+					if (user && fullUser) {
+						user.image = fullUser.image
 						return {
 							...session,
-							id: session.id?.toString(),
-							user_details: baseDetails,
+							id: String(session.id),
+							user_details: user,
+							request_type: isSent ? 'sent' : 'received',
 						}
 					}
 					return null
@@ -260,7 +280,7 @@ module.exports = class requestSessionsHelper {
 				statusCode: httpStatusCode.ok,
 				message: 'SESSION_REQUESTS_LIST',
 				result: {
-					data: requestSessionWithDetails,
+					data,
 					count: totalCount,
 				},
 			})
@@ -439,6 +459,9 @@ module.exports = class requestSessionsHelper {
 				statusCode: httpStatusCode.created,
 				message: !connectionExists ? 'SESSION_REQUEST_APPROVED_AND_CONNECTED' : 'SESSION_REQUEST_APPROVED',
 				result: approveSessionRequest[0]?.dataValues?.status,
+				interpolation: !connectionExists
+					? { MenteeName: userExists.name } // Pass your dynamic value here
+					: undefined,
 			})
 		} catch (error) {
 			console.error(error)
@@ -647,12 +670,11 @@ function createMentorAvailabilityResponse(data) {
 
 	data.forEach((session) => {
 		const startDate = moment.unix(Number(session.start_date))
-		const endDate = moment.unix(Number(session.end_date))
 		const dateKey = startDate.format('YYYY-MM-DD')
 
 		const timeSlot = {
-			startTime: startDate.format('HH:mm:ss'),
-			endTime: endDate.format('HH:mm:ss'),
+			startTime: session.start_date,
+			endTime: session.end_date,
 			title: session.title || '',
 		}
 
@@ -699,8 +721,8 @@ async function emailForAcceptAndReject(templateCode, orgId, requestor_id, mentor
 				to: menteeDetails[0].email,
 				subject: templateData.subject,
 				body: utils.composeEmailBody(templateData.body, {
-					name,
-					mentorName: mentorDetails[0].name,
+					name: name,
+					mentorName: mentorDetails.name,
 				}),
 			},
 		}
