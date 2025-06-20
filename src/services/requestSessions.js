@@ -17,8 +17,6 @@ const { getDefaultOrgId } = require('@helpers/getDefaultOrgId')
 const entityTypeQueries = require('@database/queries/entityType')
 const { Op } = require('sequelize')
 const { removeDefaultOrgEntityTypes } = require('@generics/utils')
-const menteeServices = require('@services/mentees')
-const mentorService = require('@services/mentors')
 const mentorQueries = require('@database/queries/mentorExtension')
 const schedulerRequest = require('@requests/scheduler')
 const communicationHelper = require('@helpers/communications')
@@ -608,6 +606,9 @@ module.exports = class requestSessionsHelper {
 
 	static async userAvailability(userId, page, limit, search, status, roles, startDate, endDate) {
 		try {
+			const menteeServices = require('@services/mentees')
+			const mentorService = require('@services/mentors')
+
 			// Fetch both mentor and mentee sessions in parallel
 			const [enrolledSessions, mentoringSessions] = await Promise.all([
 				menteeServices.getMySessions(page, limit, search, userId, startDate, endDate),
