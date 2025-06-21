@@ -20,6 +20,7 @@ const { removeDefaultOrgEntityTypes } = require('@generics/utils')
 const mentorQueries = require('@database/queries/mentorExtension')
 const schedulerRequest = require('@requests/scheduler')
 const communicationHelper = require('@helpers/communications')
+const sessionFetcher = require('@helpers/sessionFetcher')
 
 module.exports = class requestSessionsHelper {
 	static async checkConnectionRequestExists(userId, targetUserId) {
@@ -530,6 +531,13 @@ module.exports = class requestSessionsHelper {
 		try {
 			const requestSessions = await sessionRequestQueries.getRequestSessions(requestSessionId, userId)
 
+			if (!requestSessions) {
+				return responses.failureResponse({
+					statusCode: httpStatusCode.not_found,
+					message: 'REQUEST_SESSION_NOT_FOUND',
+				})
+			}
+
 			const defaultOrgId = await getDefaultOrgId()
 			if (!defaultOrgId) {
 				return responses.failureResponse({
@@ -567,8 +575,13 @@ module.exports = class requestSessionsHelper {
 				})
 			}
 			if (userDetails.image) {
-				const imageData = await userRequests.getDownloadableUrl(userDetails.image)
-				userDetails.image = imageData?.result
+				try {
+					const imageData = await userRequests.getDownloadableUrl(userDetails.image)
+					userDetails.image = imageData?.result
+				} catch (imageError) {
+					console.error('Failed to process user image:', imageError)
+					userDetails.image = null // Set to null if image processing fails
+				}
 			}
 
 			// Fetch entity types associated with the user
@@ -606,28 +619,97 @@ module.exports = class requestSessionsHelper {
 
 	static async userAvailability(userId, page, limit, search, status, roles, startDate, endDate) {
 		try {
-			const menteeServices = require('@services/mentees')
-			const mentorService = require('@services/mentors')
+			console.log('=============== UserAvailability Debug ===============')
+			console.log('UserId:', userId)
+			console.log('StartDate:', startDate, 'EndDate:', endDate)
+			console.log(
+				'Date range from',
+				new Date(parseInt(startDate) * 1000),
+				'to',
+				new Date(parseInt(endDate) * 1000)
+			)
 
-			// Fetch both mentor and mentee sessions in parallel
-			const [enrolledSessions, mentoringSessions] = await Promise.all([
-				menteeServices.getMySessions(page, limit, search, userId, startDate, endDate),
-				mentorService.createdSessions(userId, page, limit, search, status, roles, startDate, endDate),
-			])
+			const { Op } = require('sequelize')
+			const sessions = require('@database/models/index').Session
+			const sessionAttendees = require('@database/models/index').SessionAttendee
 
-			// Merge the two session arrays into one
-			const allSessions = [...(mentoringSessions?.result?.data || []), ...(enrolledSessions?.rows || [])]
+			// Get sessions where user is mentor (created/mentoring sessions)
+			const mentorSessions = await sessions.findAll({
+				where: {
+					mentor_id: userId,
+					[Op.and]: [
+						{ start_date: { [Op.lte]: endDate } }, // Session starts before or at the end of our range
+						{ end_date: { [Op.gte]: startDate } }, // Session ends after or at the start of our range
+					],
+					deleted_at: null,
+				},
+				raw: true,
+			})
+
+			// Find sessions where user is enrolled as attendee
+			const enrolledSessionIds = await sessionAttendees.findAll({
+				where: {
+					mentee_id: userId,
+					deleted_at: null,
+				},
+				attributes: ['session_id'],
+				raw: true,
+			})
+
+			const enrolledIds = enrolledSessionIds.map((item) => item.session_id)
+			console.log('=============== Enrolled Session IDs:', enrolledIds)
+
+			let enrolledSessions = []
+			if (enrolledIds.length > 0) {
+				enrolledSessions = await sessions.findAll({
+					where: {
+						id: { [Op.in]: enrolledIds },
+						[Op.and]: [
+							{ start_date: { [Op.lte]: endDate } }, // Session starts before or at the end of our range
+							{ end_date: { [Op.gte]: startDate } }, // Session ends after or at the start of our range
+						],
+						deleted_at: null,
+					},
+					raw: true,
+				})
+			}
+
+			// Combine both session types
+			const mentorSessionsList = mentorSessions || []
+
+			// Merge sessions and remove duplicates based on session ID
+			const allUserSessions = [...enrolledSessions, ...mentorSessionsList]
+			const uniqueSessions = allUserSessions.filter(
+				(session, index, self) => index === self.findIndex((s) => s.id === session.id)
+			)
+
+			console.log('=============== Enrolled Sessions:', enrolledSessions.length)
+			console.log('=============== Mentor Sessions:', mentorSessionsList.length)
+			console.log('=============== Total Unique Sessions:', uniqueSessions.length)
+			console.log(
+				'=============== Session details:',
+				uniqueSessions.map((s) => ({
+					id: s.id,
+					title: s.title,
+					start_date: s.start_date,
+					end_date: s.end_date,
+				}))
+			)
 
 			// Generate combined availability
-			const availability = await createMentorAvailabilityResponse(allSessions)
+			const availability = createMentorAvailabilityResponse(uniqueSessions)
 
 			return responses.successResponse({
-				statusCode: httpStatusCode.created,
-				message: 'MENTOR_AVAILABILITY',
+				statusCode: httpStatusCode.ok,
+				message: 'USER_AVAILABILITY',
 				result: availability.result,
 			})
 		} catch (error) {
-			return error
+			console.error('Error in userAvailability:', error)
+			return responses.failureResponse({
+				statusCode: httpStatusCode.internal_server_error,
+				message: 'FAILED_TO_FETCH_USER_AVAILABILITY',
+			})
 		}
 	}
 
@@ -668,6 +750,15 @@ module.exports = class requestSessionsHelper {
 
 function createMentorAvailabilityResponse(data) {
 	const availability = {}
+
+	// Ensure data is an array
+	if (!Array.isArray(data)) {
+		console.error('createMentorAvailabilityResponse: Expected array but received:', typeof data)
+		return {
+			Message: 'mentor availibilty featched successfully',
+			result: [],
+		}
+	}
 
 	data.forEach((session) => {
 		const startDate = moment.unix(Number(session.start_date))

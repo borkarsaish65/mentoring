@@ -550,11 +550,68 @@ exports.getMentorsUpcomingSessions = async (page, limit, search, mentorId) => {
 	}
 }
 
+// exports.getUpcomingSessions = async (page, limit, search, userId, startDate, endDate) => {
+// 	try {
+// 		const currentEpochTime = moment().unix()
+// 		let whereCondition = {
+// 			[Op.or]: [{ title: { [Op.iLike]: `%${search}%` } }],
+// 			mentor_id: { [Op.ne]: userId },
+// 			end_date: {
+// 				[Op.gt]: currentEpochTime,
+// 			},
+// 			status: {
+// 				[Op.in]: [common.PUBLISHED_STATUS, common.LIVE_STATUS],
+// 			},
+// 		}
+
+// 		if (startDate && endDate) {
+// 			const startEpoch = startDate
+// 			const endEpoch = endDate
+
+// 			// Log to debug
+// 			console.log('Filtering sessions between:', startEpoch, 'and', endEpoch)
+
+// 			whereCondition.start_date = {
+// 				[Op.gte]: startEpoch,
+// 				[Op.lte]: endEpoch,
+// 			}
+// 		}
+
+// 		const sessionData = await Session.findAndCountAll({
+// 			where: whereCondition,
+// 			order: [['start_date', 'ASC']],
+// 			attributes: [
+// 				'id',
+// 				'title',
+// 				'description',
+// 				'start_date',
+// 				'end_date',
+// 				'status',
+// 				'image',
+// 				'mentor_id',
+// 				'created_at',
+// 				'meeting_info',
+// 				'visibility',
+// 				'mentor_organization_id',
+// 				/* ['meetingInfo.platform', 'meetingInfo.platform'],
+// 				['meetingInfo.value', 'meetingInfo.value'], */
+// 			],
+// 			offset: limit * (page - 1),
+// 			limit: limit,
+// 			raw: true,
+// 		})
+// 		return sessionData
+// 	} catch (error) {
+// 		console.error(error)
+// 		return error
+// 	}
+// }
+
 exports.getUpcomingSessions = async (page, limit, search, userId, startDate, endDate) => {
 	try {
 		const currentEpochTime = moment().unix()
 		let whereCondition = {
-			[Op.or]: [{ title: { [Op.iLike]: `%${search}%` } }],
+			[Op.or]: [{ title: { [Op.iLike]: `%${search || ''}%` } }],
 			mentor_id: { [Op.ne]: userId },
 			end_date: {
 				[Op.gt]: currentEpochTime,
@@ -577,6 +634,7 @@ exports.getUpcomingSessions = async (page, limit, search, userId, startDate, end
 			}
 		}
 
+		// Fetch sessions with pagination
 		const sessionData = await Session.findAndCountAll({
 			where: whereCondition,
 			order: [['start_date', 'ASC']],
