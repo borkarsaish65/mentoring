@@ -619,30 +619,50 @@ module.exports = class requestSessionsHelper {
 
 	static async userAvailability(userId, page, limit, search, status, roles, startDate, endDate) {
 		try {
-			console.log('=============== UserAvailability Debug ===============')
-			console.log('UserId:', userId)
-			console.log('StartDate:', startDate, 'EndDate:', endDate)
-			console.log(
-				'Date range from',
-				new Date(parseInt(startDate) * 1000),
-				'to',
-				new Date(parseInt(endDate) * 1000)
-			)
-
 			const { Op } = require('sequelize')
 			const sessions = require('@database/models/index').Session
 			const sessionAttendees = require('@database/models/index').SessionAttendee
 
+			// Set pagination defaults
+			const currentPage = page ? parseInt(page) : 1
+			const pageSize = limit ? parseInt(limit) : 10
+			const offset = (currentPage - 1) * pageSize
+
+			// Add search condition
+			let searchCondition = {}
+			if (search && search.trim()) {
+				searchCondition = {
+					[Op.or]: [{ title: { [Op.iLike]: `%${search}%` } }, { description: { [Op.iLike]: `%${search}%` } }],
+				}
+			}
+
+			// Add status condition for sessions
+			let statusCondition = {}
+			if (status && status.length > 0) {
+				const statusArray = Array.isArray(status) ? status : status.split(',').map((s) => s.trim())
+				statusCondition = { status: { [Op.in]: statusArray } }
+			}
+
+			// Build base where condition for date range
+			const dateRangeCondition = {
+				[Op.and]: [
+					{ start_date: { [Op.lte]: endDate } }, // Session starts before or at the end of our range
+					{ end_date: { [Op.gte]: startDate } }, // Session ends after or at the start of our range
+				],
+				deleted_at: null,
+				...searchCondition,
+				...statusCondition,
+			}
+
 			// Get sessions where user is mentor (created/mentoring sessions)
-			const mentorSessions = await sessions.findAll({
+			const mentorSessions = await sessions.findAndCountAll({
 				where: {
 					mentor_id: userId,
-					[Op.and]: [
-						{ start_date: { [Op.lte]: endDate } }, // Session starts before or at the end of our range
-						{ end_date: { [Op.gte]: startDate } }, // Session ends after or at the start of our range
-					],
-					deleted_at: null,
+					...dateRangeCondition,
 				},
+				order: [['start_date', 'ASC']],
+				limit: pageSize,
+				offset: offset,
 				raw: true,
 			})
 
@@ -657,59 +677,50 @@ module.exports = class requestSessionsHelper {
 			})
 
 			const enrolledIds = enrolledSessionIds.map((item) => item.session_id)
-			console.log('=============== Enrolled Session IDs:', enrolledIds)
 
-			let enrolledSessions = []
+			let enrolledSessions = { rows: [], count: 0 }
 			if (enrolledIds.length > 0) {
-				enrolledSessions = await sessions.findAll({
+				enrolledSessions = await sessions.findAndCountAll({
 					where: {
 						id: { [Op.in]: enrolledIds },
-						[Op.and]: [
-							{ start_date: { [Op.lte]: endDate } }, // Session starts before or at the end of our range
-							{ end_date: { [Op.gte]: startDate } }, // Session ends after or at the start of our range
-						],
-						deleted_at: null,
+						...dateRangeCondition,
 					},
+					order: [['start_date', 'ASC']],
+					limit: pageSize,
+					offset: offset,
 					raw: true,
 				})
 			}
 
 			// Combine both session types
-			const mentorSessionsList = mentorSessions || []
+			const mentorSessionsList = mentorSessions.rows || []
+			const enrolledSessionsList = enrolledSessions.rows || []
 
 			// Merge sessions and remove duplicates based on session ID
-			const allUserSessions = [...enrolledSessions, ...mentorSessionsList]
+			const allUserSessions = [...mentorSessionsList, ...enrolledSessionsList]
 			const uniqueSessions = allUserSessions.filter(
 				(session, index, self) => index === self.findIndex((s) => s.id === session.id)
 			)
 
-			console.log('=============== Enrolled Sessions:', enrolledSessions.length)
-			console.log('=============== Mentor Sessions:', mentorSessionsList.length)
-			console.log('=============== Total Unique Sessions:', uniqueSessions.length)
-			console.log(
-				'=============== Session details:',
-				uniqueSessions.map((s) => ({
-					id: s.id,
-					title: s.title,
-					start_date: s.start_date,
-					end_date: s.end_date,
-				}))
-			)
+			// Sort by start_date
+			uniqueSessions.sort((a, b) => parseInt(a.start_date) - parseInt(b.start_date))
+
+			// Apply pagination to combined results
+			const totalCount = mentorSessions.count + enrolledSessions.count
+			const paginatedSessions = uniqueSessions.slice(0, pageSize)
 
 			// Generate combined availability
-			const availability = createMentorAvailabilityResponse(uniqueSessions)
+			const availability = createMentorAvailabilityResponse(paginatedSessions)
 
 			return responses.successResponse({
 				statusCode: httpStatusCode.ok,
-				message: 'USER_AVAILABILITY',
-				result: availability.result,
+				message: 'MENTOR_AVAILABILITY',
+				result: {
+					data: availability.result,
+				},
 			})
 		} catch (error) {
-			console.error('Error in userAvailability:', error)
-			return responses.failureResponse({
-				statusCode: httpStatusCode.internal_server_error,
-				message: 'FAILED_TO_FETCH_USER_AVAILABILITY',
-			})
+			return error
 		}
 	}
 

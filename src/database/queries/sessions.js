@@ -453,38 +453,6 @@ exports.getHostedSessionsCountInDateRange = async (mentorId, startDate, endDate)
 	}
 }
 
-/* exports.getMentorsUpcomingSessions = async (mentorId) => {
-	try {
-		const foundSessionOwnerships = await SessionOwnership.findAll({
-			attributes: ['session_id'],
-			where: {
-				mentor_id: mentorId,
-			},
-			raw: true,
-		})
-
-		const sessionIds = foundSessionOwnerships.map((ownership) => ownership.session_id)
-		const currentEpochTime = moment().unix()
-		console.log(sessionIds)
-		console.log(currentEpochTime)
-		return await Session.findAll({
-			where: {
-				id: { [Op.in]: sessionIds },
-				status: 'PUBLISHED',
-				start_date: {
-					[Op.gt]: currentEpochTime,
-				},
-				started_at: {
-					[Op.eq]: null,
-				},
-			},
-			raw: true,
-		})
-	} catch (error) {
-		throw error
-	}
-} */
-
 exports.getMentorsUpcomingSessions = async (page, limit, search, mentorId) => {
 	try {
 		const filter = {
@@ -549,63 +517,6 @@ exports.getMentorsUpcomingSessions = async (page, limit, search, mentorId) => {
 		return error
 	}
 }
-
-// exports.getUpcomingSessions = async (page, limit, search, userId, startDate, endDate) => {
-// 	try {
-// 		const currentEpochTime = moment().unix()
-// 		let whereCondition = {
-// 			[Op.or]: [{ title: { [Op.iLike]: `%${search}%` } }],
-// 			mentor_id: { [Op.ne]: userId },
-// 			end_date: {
-// 				[Op.gt]: currentEpochTime,
-// 			},
-// 			status: {
-// 				[Op.in]: [common.PUBLISHED_STATUS, common.LIVE_STATUS],
-// 			},
-// 		}
-
-// 		if (startDate && endDate) {
-// 			const startEpoch = startDate
-// 			const endEpoch = endDate
-
-// 			// Log to debug
-// 			console.log('Filtering sessions between:', startEpoch, 'and', endEpoch)
-
-// 			whereCondition.start_date = {
-// 				[Op.gte]: startEpoch,
-// 				[Op.lte]: endEpoch,
-// 			}
-// 		}
-
-// 		const sessionData = await Session.findAndCountAll({
-// 			where: whereCondition,
-// 			order: [['start_date', 'ASC']],
-// 			attributes: [
-// 				'id',
-// 				'title',
-// 				'description',
-// 				'start_date',
-// 				'end_date',
-// 				'status',
-// 				'image',
-// 				'mentor_id',
-// 				'created_at',
-// 				'meeting_info',
-// 				'visibility',
-// 				'mentor_organization_id',
-// 				/* ['meetingInfo.platform', 'meetingInfo.platform'],
-// 				['meetingInfo.value', 'meetingInfo.value'], */
-// 			],
-// 			offset: limit * (page - 1),
-// 			limit: limit,
-// 			raw: true,
-// 		})
-// 		return sessionData
-// 	} catch (error) {
-// 		console.error(error)
-// 		return error
-// 	}
-// }
 
 exports.getUpcomingSessions = async (page, limit, search, userId, startDate, endDate) => {
 	try {

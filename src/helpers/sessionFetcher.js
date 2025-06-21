@@ -36,7 +36,6 @@ module.exports = class SessionFetcherHelper {
 				userId,
 				upcomingSessionIds
 			)
-			console.log('==============-----', usersUpcomingSessions)
 			let sessionAndMenteeMap = {}
 			usersUpcomingSessions.forEach((session) => {
 				sessionAndMenteeMap[session.session_id] = session.type
