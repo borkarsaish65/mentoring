@@ -715,9 +715,7 @@ module.exports = class requestSessionsHelper {
 			return responses.successResponse({
 				statusCode: httpStatusCode.ok,
 				message: 'MENTOR_AVAILABILITY',
-				result: {
-					data: availability.result,
-				},
+				result: availability.result,
 			})
 		} catch (error) {
 			return error
