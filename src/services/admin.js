@@ -78,13 +78,13 @@ module.exports = class AdminHelper {
 			// }
 
 			// Prevent deletion of session manager directly
-			// if (isSessionManager) {
-			// 	return responses.failureResponse({
-			// 		statusCode: httpStatusCode.bad_request,
-			// 		message: 'SESSION_MANAGER_DELETION_UNSUCCESSFUL',
-			// 		result,
-			// 	})
-			// }
+			if (isSessionManager) {
+				return responses.failureResponse({
+					statusCode: httpStatusCode.bad_request,
+					message: 'SESSION_MANAGER_DELETION_UNSUCCESSFUL',
+					result,
+				})
+			}
 
 			// Step 4: Check for user connections
 			const connectionExists = await connectionQueries.getConnectionsCount('', userId, [
@@ -92,14 +92,14 @@ module.exports = class AdminHelper {
 			]) // filter, userId = "1", organizationIds = ["1", "2"]
 
 			if (connectionExists.count !== 0) {
-				// // Soft delete in communication service
-				// const removeChatUser = await communicationHelper.setActiveStatus(userId, false) // ( userId = "1", activeStatus = "true" or "false")
+				// Soft delete in communication service
+				const removeChatUser = await communicationHelper.setActiveStatus(userId, false) // ( userId = "1", activeStatus = "true" or "false")
 
-				// // Update user name to 'User Not Found'
-				// const updateChatUserName = await communicationHelper.updateUser(userId, common.USER_NOT_FOUND) // userId: "1", name: "User Name"
+				// Update user name to 'User Not Found'
+				const updateChatUserName = await communicationHelper.updateUser(userId, common.USER_NOT_FOUND) // userId: "1", name: "User Name"
 
-				// result.isChatUserRemoved = removeChatUser?.result?.success === true
-				// result.isChatNameUpdated = updateChatUserName?.result?.success === true
+				result.isChatUserRemoved = removeChatUser?.result?.success === true
+				result.isChatNameUpdated = updateChatUserName?.result?.success === true
 
 				// Delete user connections and requests from DB
 				result.isConnectionsAndRequestsRemoved = await connectionQueries.deleteUserConnectionsAndRequests(
