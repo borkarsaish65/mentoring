@@ -17,6 +17,7 @@ const organisationExtensionQueries = require('@database/queries/organisationExte
 const communicationHelper = require('@helpers/communications')
 const moment = require('moment')
 const connectionQueries = require('@database/queries/connection')
+const { getDefaultOrgId } = require('@helpers/getDefaultOrgId')
 
 module.exports = class AdminHelper {
 	/**
@@ -77,13 +78,13 @@ module.exports = class AdminHelper {
 			// }
 
 			// Prevent deletion of session manager directly
-			if (isSessionManager) {
-				return responses.failureResponse({
-					statusCode: httpStatusCode.bad_request,
-					message: 'SESSION_MANAGER_DELETION_UNSUCCESSFUL',
-					result,
-				})
-			}
+			// if (isSessionManager) {
+			// 	return responses.failureResponse({
+			// 		statusCode: httpStatusCode.bad_request,
+			// 		message: 'SESSION_MANAGER_DELETION_UNSUCCESSFUL',
+			// 		result,
+			// 	})
+			// }
 
 			// Step 4: Check for user connections
 			const connectionExists = await connectionQueries.getConnectionsCount('', userId, [
@@ -91,14 +92,14 @@ module.exports = class AdminHelper {
 			]) // filter, userId = "1", organizationIds = ["1", "2"]
 
 			if (connectionExists.count !== 0) {
-				// Soft delete in communication service
-				const removeChatUser = await communicationHelper.setActiveStatus(userId, false) // ( userId = "1", activeStatus = "true" or "false")
+				// // Soft delete in communication service
+				// const removeChatUser = await communicationHelper.setActiveStatus(userId, false) // ( userId = "1", activeStatus = "true" or "false")
 
-				// Update user name to 'User Not Found'
-				const updateChatUserName = await communicationHelper.updateUser(userId, common.USER_NOT_FOUND) // userId: "1", name: "User Name"
+				// // Update user name to 'User Not Found'
+				// const updateChatUserName = await communicationHelper.updateUser(userId, common.USER_NOT_FOUND) // userId: "1", name: "User Name"
 
-				result.isChatUserRemoved = removeChatUser?.result?.success === true
-				result.isChatNameUpdated = updateChatUserName?.result?.success === true
+				// result.isChatUserRemoved = removeChatUser?.result?.success === true
+				// result.isChatNameUpdated = updateChatUserName?.result?.success === true
 
 				// Delete user connections and requests from DB
 				result.isConnectionsAndRequestsRemoved = await connectionQueries.deleteUserConnectionsAndRequests(
@@ -411,14 +412,18 @@ module.exports = class AdminHelper {
 	}
 
 	static async findAllRequestSessions(userId) {
-		const findAllRequests = await requestSessionsService.list(userId, '', '', common.CONNECTIONS_STATUS.REQUESTED) // (userId: "1", pageNo, pageSize, status: "requested")
+		const findAllRequests = await requestSessionsService.list(userId, '', '', common.CONNECTIONS_STATUS.REQUESTED)
 
 		if (!findAllRequests || findAllRequests.result.count === 0) {
-			return true
+			// Return consistent structure instead of `true`
+			return {
+				allSessionRequestIds: [],
+				requestedSessions: [],
+				receivedSessions: [],
+			}
 		}
 
 		const allData = findAllRequests.result.data || []
-
 		const allSessionRequestIds = []
 		const requestedSessions = []
 		const receivedSessions = []
@@ -427,16 +432,16 @@ module.exports = class AdminHelper {
 			allSessionRequestIds.push(sessionRequest.id)
 
 			if (sessionRequest.request_type === 'sent') {
-				requestedSessions.push(sessionRequest) // full data
+				requestedSessions.push(sessionRequest)
 			} else if (sessionRequest.request_type === 'received') {
-				receivedSessions.push(sessionRequest) // full data
+				receivedSessions.push(sessionRequest)
 			}
 		}
 
 		return {
-			allSessionRequestIds, // array of IDs
-			requestedSessions, // array of objects
-			receivedSessions, // array of objects
+			allSessionRequestIds,
+			requestedSessions,
+			receivedSessions,
 		}
 	}
 

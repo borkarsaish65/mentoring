@@ -423,9 +423,7 @@ exports.getConnectionsCount = async (filter, userId, organizationIds = []) => {
 
 		const countQuery = `
 			SELECT COUNT(*) AS count
-			FROM ${UserExtension.tableName} ue
-			LEFT JOIN ${Connection.tableName} c 
-			ON c.friend_id = ue.user_id AND c.user_id = :userId
+			FROM ${MenteeExtension.tableName} ue
 			WHERE ${userFilterClause}
 			${orgFilter}
 			${filterClause};

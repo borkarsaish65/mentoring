@@ -3,8 +3,19 @@
 const axios = require('axios')
 const apiEndpoints = require('@constants/endpoints')
 
-const baseUrl = process.env.COMMUNICATION_SERVICE_HOST + process.env.COMMUNICATION_SERVICE_BASE_URL
+const baseUrl =
+	(process.env.COMMUNICATION_SERVICE_HOST || '') + (process.env.COMMUNICATION_SERVICE_BASE_URL || '/communications/')
 const internalAccessToken = process.env.INTERNAL_ACCESS_TOKEN
+
+// Validate required environment variables
+const validateEnvironment = () => {
+	if (!process.env.COMMUNICATION_SERVICE_HOST) {
+		throw new Error('COMMUNICATION_SERVICE_HOST environment variable is not defined')
+	}
+	if (!internalAccessToken) {
+		throw new Error('INTERNAL_ACCESS_TOKEN environment variable is not defined')
+	}
+}
 
 // Create Axios instance with default configurations for base URL and headers
 const apiClient = axios.create({
@@ -203,6 +214,8 @@ exports.getUserId = async (userId) => {
  */
 exports.setActiveStatus = async (userId, active_status, confirm_relinquish = false) => {
 	try {
+		validateEnvironment()
+
 		const url = apiEndpoints.COMMUNICATION_USERS_SET_ACTIVE_STATUS
 		const body = { user_id: userId, activeStatus: active_status, confirmRelinquish: confirm_relinquish }
 
