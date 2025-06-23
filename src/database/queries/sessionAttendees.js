@@ -136,13 +136,9 @@ exports.removeUserFromAllSessions = async (userId) => {
 			},
 		})
 
-		console.log(
-			`Removed user ${userId} from ${attendeeResult} session attendees and ${enrollmentResult} session enrollments`
-		)
 		return { attendeeResult, enrollmentResult }
 	} catch (error) {
-		console.error('An error occurred in removeUserFromAllSessions:', error)
-		throw error
+		return error
 	}
 }
 exports.countEnrolledSessions = async (mentee_id) => {

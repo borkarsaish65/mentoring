@@ -682,8 +682,8 @@ function createMentorAvailabilityResponse(data) {
 		const dateKey = startDateMoment.format('YYYY-MM-DD')
 
 		const timeSlot = {
-			startTime: startDateMoment.toISOString(), // Convert to ISO format: "2025-06-05T05:39:56.366Z"
-			endTime: endDateMoment.toISOString(), // Convert to ISO format: "2025-06-05T05:39:56.366Z"
+			startTime: startDateMoment.toISOString(),
+			endTime: endDateMoment.toISOString(),
 			title: session.title || '',
 		}
 

@@ -245,11 +245,10 @@ module.exports = class MenteeExtensionQueries {
 					user_id: userId,
 				},
 			})
-			console.log(`Deleted mentee extension for user ${userId}, records deleted: ${result}`)
+
 			return result
 		} catch (error) {
-			console.error('An error occurred in deleteMenteeExtension:', error)
-			throw error
+			return error
 		}
 	}
 
