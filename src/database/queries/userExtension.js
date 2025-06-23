@@ -216,7 +216,7 @@ module.exports = class MenteeExtensionQueries {
 				if (attribute.type.constructor.name === 'ARRAY') {
 					fieldsToNullify[key] = []
 				} else if (attribute.type.key === 'JSON' || attribute.type.key === 'JSONB') {
-					fieldsToNullify[key] = {} // Or `{}` if you prefer default object
+					fieldsToNullify[key] = null // Or `{}` if you prefer default object
 				} else if (key === 'deleted_at') {
 					fieldsToNullify[key] = new Date() // Timestamp field
 				} else if (key === 'name') {

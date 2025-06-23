@@ -76,10 +76,6 @@ exports.updateUser = async (userId, name) => {
 	try {
 		await communicationRequests.updateUser(userId, name)
 	} catch (error) {
-		if (error.code === 'ECONNREFUSED') {
-			console.warn(`Communication service unavailable for user ${userId}. Skipping user update.`)
-			return { result: { success: false, reason: 'Communication service unavailable' } }
-		}
 		console.error(`Error updating user ${userId}:`, error.message)
 		throw error
 	}
@@ -252,10 +248,6 @@ exports.setActiveStatus = async (userId, activeStatus, confirmRelinquish) => {
 		const setUserActiveStatus = await communicationRequests.setActiveStatus(userId, activeStatus, confirmRelinquish)
 		return setUserActiveStatus
 	} catch (error) {
-		if (error.code === 'ECONNREFUSED') {
-			console.warn(`Communication service unavailable for user ${userId}. Skipping active status update.`)
-			return { result: { success: false, reason: 'Communication service unavailable' } }
-		}
 		console.error(`Error updating user ${userId}:`, error.message)
 		throw error
 	}
