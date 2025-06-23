@@ -497,7 +497,37 @@ let enviromentVariables = {
 		message: 'Required session manager private session deletion template code',
 		optional: true,
 		default: 'session_manager_private_session_deletion_email',
-  },
+	},
+	MENTEE_DELETION_NOTIFICATION_EMAIL_TEMPLATE: {
+		message: 'Required mentee deletion notification email template code',
+		optional: true,
+		default: 'mentee_deletion_notification_email',
+	},
+	MENTOR_DELETION_NOTIFICATION_EMAIL_TEMPLATE: {
+		message: 'Required mentor deletion notification email template code',
+		optional: true,
+		default: 'mentor_deletion_notification_email',
+	},
+	PRIVATE_SESSION_CANCELLED_EMAIL_TEMPLATE: {
+		message: 'Required private session cancelled email template code',
+		optional: true,
+		default: 'private_session_cancelled_email',
+	},
+	SESSION_REQUEST_REJECTED_MENTOR_DELETION_EMAIL_TEMPLATE: {
+		message: 'Required session request rejected due to mentor deletion email template code',
+		optional: true,
+		default: 'session_request_rejected_mentor_deletion_email',
+	},
+	SESSION_MANAGER_MENTOR_DELETION_EMAIL_TEMPLATE: {
+		message: 'Required session manager mentor deletion notification email template code',
+		optional: true,
+		default: 'session_manager_mentor_deletion_email',
+	},
+	SESSION_DELETED_MENTOR_DELETION_EMAIL_TEMPLATE: {
+		message: 'Required session deleted due to mentor deletion email template code',
+		optional: true,
+		default: 'session_deleted_mentor_deletion_email',
+	},
 	LIMIT_FOR_SESSION_REQUEST_MONTH: {
 		message: 'Request Session Allowed Limit in months',
 		optional: true,

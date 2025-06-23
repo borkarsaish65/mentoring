@@ -146,7 +146,7 @@ module.exports = class MentorExtensionQueries {
 				if (attribute.type.constructor.name === 'ARRAY') {
 					fieldsToNullify[key] = []
 				} else if (attribute.type.key === 'JSON' || attribute.type.key === 'JSONB') {
-					fieldsToNullify[key] = null // Or `{}` if you prefer default object
+					fieldsToNullify[key] = {} // Or `{}` if you prefer default object
 				} else if (key === 'deleted_at') {
 					fieldsToNullify[key] = new Date() // Timestamp field
 				} else if (key === 'name') {

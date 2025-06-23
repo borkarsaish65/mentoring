@@ -209,6 +209,14 @@ module.exports = class requestSessionsHelper {
 			const sessionMappingDetailsData = sessionMappingDetails.map((s) => s.dataValues)
 
 			const combinedData = [...sessionRequestData, ...sessionMappingDetailsData]
+
+			// Sort combined data by created_at in descending order (most recent first)
+			combinedData.sort((a, b) => {
+				const dateA = new Date(a.created_at)
+				const dateB = new Date(b.created_at)
+				return dateB - dateA // Descending order
+			})
+
 			const totalCount = combinedData.length
 
 			let paginatedData = combinedData
@@ -618,10 +626,10 @@ module.exports = class requestSessionsHelper {
 			const allSessions = [...(mentoringSessions?.result?.data || []), ...(enrolledSessions?.rows || [])]
 
 			// Generate combined availability
-			const availability = await createMentorAvailabilityResponse(allSessions)
+			const availability = createMentorAvailabilityResponse(allSessions)
 
 			return responses.successResponse({
-				statusCode: httpStatusCode.created,
+				statusCode: httpStatusCode.ok,
 				message: 'MENTOR_AVAILABILITY',
 				result: availability.result,
 			})
@@ -669,12 +677,13 @@ function createMentorAvailabilityResponse(data) {
 	const availability = {}
 
 	data.forEach((session) => {
-		const startDate = moment.unix(Number(session.start_date))
-		const dateKey = startDate.format('YYYY-MM-DD')
+		const startDateMoment = moment.unix(Number(session.start_date))
+		const endDateMoment = moment.unix(Number(session.end_date))
+		const dateKey = startDateMoment.format('YYYY-MM-DD')
 
 		const timeSlot = {
-			startTime: session.start_date,
-			endTime: session.end_date,
+			startTime: startDateMoment.toISOString(), // Convert to ISO format: "2025-06-05T05:39:56.366Z"
+			endTime: endDateMoment.toISOString(), // Convert to ISO format: "2025-06-05T05:39:56.366Z"
 			title: session.title || '',
 		}
 
@@ -685,13 +694,17 @@ function createMentorAvailabilityResponse(data) {
 		availability[dateKey].push(timeSlot)
 	})
 
-	const resultData = Object.keys(availability).map((date) => ({
-		date,
-		bookedSlots: availability[date],
-	}))
+	const resultData = Object.keys(availability).map((date) => {
+		// Convert date to epoch timestamp (start of day)
+		const dateEpoch = moment(date).startOf('day').unix().toString()
+
+		return {
+			date: dateEpoch, // Date in epoch format as string
+			bookedSlots: availability[date],
+		}
+	})
 
 	return {
-		Message: 'mentor availibilty featched successfully',
 		result: resultData,
 	}
 }
