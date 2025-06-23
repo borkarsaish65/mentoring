@@ -221,10 +221,16 @@
 	"ORG_THEME_FETCHED_SUCCESSFULLY": "Organization theme fetched successfully.",
 	"SESSION_RESOURCE_CANT_UPDATE": "Session Resources can't be updated",
 	"ORG_THEME_UPDATED_SUCCESSFULLY": "Organization theme updated successfully.",
-	"MENTOR_AVAILABILITY": "mentor availibilty featched successfully",
+	"MENTOR_AVAILABILITY": "Mentor availability fetched successfully",
 	"SESSION_REQUEST_EXPIRED": "Session request expired successfully.",
 	"USER_UNDER_DELETION": "User deletion is intiated.",
 	"USER_ALREADY_UNDER_DELETION": "User deletion is already intiated.",
 	"DATE_EXCEEDS_ALLOWED_RANGE": "Scheduling is allowed only up to {{limitedTime}} months in advance.",
-	"SESSION_MANAGER_DELETION_UNSUCCESSFUL": "Session Manager Cannot be Deleted."
+	"SESSION_MANAGER_DELETION_UNSUCCESSFUL": "Session Manager Cannot be Deleted.",
+	"MENTEE_DELETION_NOTIFICATION": "Your connected mentee has been removed from the platform.",
+	"PRIVATE_SESSION_CANCELLED_DUE_TO_MENTEE_DELETION": "Private session cancelled due to mentee deletion.",
+	"MENTOR_DELETION_NOTIFICATION": "Your connected mentor has been removed from the platform.",
+	"SESSION_DELETED_DUE_TO_MENTOR_DELETION": "Session deleted due to mentor unavailability.",
+	"SESSION_REQUEST_REJECTED_DUE_TO_MENTOR_DELETION": "Session request rejected due to mentor unavailability.",
+	"SESSION_MANAGER_MENTOR_DELETION_NOTIFICATION": "Action Required - Mentor Deleted."
 }

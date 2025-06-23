@@ -216,7 +216,7 @@ module.exports = class MenteeExtensionQueries {
 				if (attribute.type.constructor.name === 'ARRAY') {
 					fieldsToNullify[key] = []
 				} else if (attribute.type.key === 'JSON' || attribute.type.key === 'JSONB') {
-					fieldsToNullify[key] = null // Or `{}` if you prefer default object
+					fieldsToNullify[key] = {} // Or `{}` if you prefer default object
 				} else if (key === 'deleted_at') {
 					fieldsToNullify[key] = new Date() // Timestamp field
 				} else if (key === 'name') {
@@ -234,6 +234,21 @@ module.exports = class MenteeExtensionQueries {
 		} catch (error) {
 			console.error('An error occurred:', error)
 			throw error
+		}
+	}
+
+	static async deleteMenteeExtension(userId) {
+		try {
+			// Completely delete the mentee extension record
+			const result = await MenteeExtension.destroy({
+				where: {
+					user_id: userId,
+				},
+			})
+
+			return result
+		} catch (error) {
+			return error
 		}
 	}
 
