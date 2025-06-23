@@ -9,7 +9,7 @@ const httpStatusCode = require('@generics/http-status')
 const notificationQueries = require('@database/queries/notificationTemplate')
 const entityTypeService = require('@services/entity-type')
 const userRequests = require('@requests/user')
-const sessionService = require('@services/sessions')
+const SessionCreationHelper = require('@helpers/sessionCreationHelper')
 const mentorExtensionQueries = require('@database/queries/mentorExtension')
 const utils = require('@generics/utils')
 const kafkaCommunication = require('@generics/kafka-communication')
@@ -333,7 +333,14 @@ module.exports = class requestSessionsHelper {
 			})
 
 			// Create session
-			const sessionCreation = await sessionService.create(bodyData, mentorUserId, orgId, isMentor, true, true)
+			const sessionCreation = await SessionCreationHelper.createSessionFromRequest(
+				bodyData,
+				mentorUserId,
+				orgId,
+				isMentor,
+				true,
+				true
+			)
 
 			// If session creation fails
 			if (sessionCreation.statusCode !== httpStatusCode.created) {
