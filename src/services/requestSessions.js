@@ -682,8 +682,8 @@ function createMentorAvailabilityResponse(data) {
 		const dateKey = startDateMoment.format('YYYY-MM-DD')
 
 		const timeSlot = {
-			startTime: startDateMoment.toISOString(),
-			endTime: endDateMoment.toISOString(),
+			startTime: session.start_date,
+			endTime: session.end_date,
 			title: session.title || '',
 		}
 
@@ -695,11 +695,8 @@ function createMentorAvailabilityResponse(data) {
 	})
 
 	const resultData = Object.keys(availability).map((date) => {
-		// Convert date to epoch timestamp (start of day)
-		const dateEpoch = moment(date).startOf('day').unix().toString()
-
 		return {
-			date: dateEpoch, // Date in epoch format as string
+			date: date,
 			bookedSlots: availability[date],
 		}
 	})
