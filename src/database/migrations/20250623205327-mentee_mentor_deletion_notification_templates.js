@@ -16,7 +16,6 @@ module.exports = {
 					<p>Hi,</p>
 					<p>Your connected mentee has been removed from the platform.</p>
 					<p>The connection history will remain available in your chat, but the mentee will no longer be accessible for new conversations or sessions.</p>
-					<p>Best regards,<br>Team MentorED</p>
 				`,
 			},
 			{
@@ -26,7 +25,6 @@ module.exports = {
 					<p>Hi,</p>
 					<p>The session <strong>{sessionName}</strong>, scheduled for {sessionDate} at {sessionTime}, has been cancelled and deleted as the mentee is no longer part of the organisation.</p>
 					<p>For more details, please visit MentorED.</p>
-					<p>Best regards,<br>Team MentorED</p>
 				`,
 			},
 
@@ -39,7 +37,6 @@ module.exports = {
 					<p>Your connected mentor <strong>{mentorName}</strong> has been removed from the platform.</p>
 					<p>The connection history will remain available in your chat, but the mentor will no longer be accessible for new conversations or sessions.</p>
 					<p>You can continue to search for other mentors on the platform.</p>
-					<p>Best regards,<br>Team MentorED</p>
 				`,
 			},
 			{
@@ -50,7 +47,6 @@ module.exports = {
 					<p><strong>{sessionName}</strong></p>
 					<p>This session request has been rejected and deleted. Requested Mentor for this session is no longer available.</p>
 					<p>You can search for other mentors and send new session requests.</p>
-					<p>Best regards,<br>Team MentorED</p>
 				`,
 			},
 			{
@@ -63,7 +59,6 @@ module.exports = {
 						{sessionList}
 					</div>
 					<p>Please reassign a mentor to continue the sessions or cancel the session to notify attendees.</p>
-					<p>Best regards,<br>Team MentorED</p>
 				`,
 			},
 			{
@@ -74,7 +69,6 @@ module.exports = {
 					<p><strong>{sessionName}</strong></p>
 					<p>This session has been deleted. Mentor for this session is no longer available.</p>
 					<p>You can search for other sessions or mentors on the platform.</p>
-					<p>Best regards,<br>Team MentorED</p>
 				`,
 			},
 		]

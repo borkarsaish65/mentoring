@@ -15,7 +15,6 @@ module.exports = {
 					<p>Dear {menteeName},</p>
 					<p>We regret to inform you that your connection request to <strong>{mentorName}</strong> has been rejected.</p>
 					<p>You can continue to search for other mentors and send new connection requests on the platform.</p>
-					<p>Regards,<br>Team MentorED</p>
 				`,
 			},
 		]
