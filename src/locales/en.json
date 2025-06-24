@@ -233,6 +233,5 @@
 	"MENTOR_DELETION_NOTIFICATION": "Your connected mentor has been removed from the platform.",
 	"SESSION_DELETED_DUE_TO_MENTOR_DELETION": "Session deleted due to mentor unavailability.",
 	"SESSION_REQUEST_REJECTED_DUE_TO_MENTOR_DELETION": "Session request rejected due to mentor unavailability.",
-	"SESSION_MANAGER_MENTOR_DELETION_NOTIFICATION": "Action Required - Mentor Deleted.",
-	"": ""
+	"SESSION_MANAGER_MENTOR_DELETION_NOTIFICATION": "Action Required - Mentor Deleted."
 }
