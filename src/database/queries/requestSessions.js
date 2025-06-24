@@ -5,6 +5,7 @@ const sequelize = require('@database/models/index').sequelize
 const common = require('@constants/common')
 const MenteeExtension = require('@database/models/index').UserExtension
 const { QueryTypes } = require('sequelize')
+const moment = require('moment')
 
 exports.getColumns = async () => {
 	try {
