@@ -49,7 +49,7 @@
 
     - name: Get config.json 
       shell: "curl --location --request GET '{{ vaultAddress }}mentoringConfig' --header 'X-Vault-Token: {{ slurpfile['content'] | b64decode }}' | jq '.data.data' > '{{ release_path 
-}}/mentoringConfig.json'"
+}}/config.json'"
 
     - name: Delete Old Folder & create folder
       shell: rm -rf {{ current_path }} &&  cd {{ project_path }} && mkdir mentoring
