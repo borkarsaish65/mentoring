@@ -82,7 +82,7 @@ module.exports = class Connection {
 	 */
 	async reject(req) {
 		try {
-			return await connectionsService.reject(req.body, req.decodedToken.id)
+			return await connectionsService.reject(req.body, req.decodedToken.id, req.decodedToken.organization_id)
 		} catch (error) {
 			throw error
 		}

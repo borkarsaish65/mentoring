@@ -93,7 +93,7 @@ module.exports = class SessionsHelper {
 
 			if (bodyData.type == common.SESSION_TYPE.PRIVATE && menteeIdsToEnroll.length === 0) {
 				return responses.failureResponse({
-					message: 'MENTEES_NOT_FOUND',
+					message: 'SELECT_AT_LEAST_ONE_MENTEE',
 					statusCode: httpStatusCode.bad_request,
 					responseCode: 'CLIENT_ERROR',
 				})

@@ -12,6 +12,9 @@ const { removeDefaultOrgEntityTypes } = require('@generics/utils')
 const utils = require('@generics/utils')
 const communicationHelper = require('@helpers/communications')
 const userRequests = require('@requests/user')
+const notificationQueries = require('@database/queries/notificationTemplate')
+const kafkaCommunication = require('@generics/kafka-communication')
+const mentorExtensionQueries = require('@database/queries/mentorExtension')
 
 module.exports = class ConnectionHelper {
 	/**
@@ -328,7 +331,7 @@ module.exports = class ConnectionHelper {
 	 * @param {string} userId - The ID of the authenticated user.
 	 * @returns {Promise<Object>} A success response indicating the request was rejected.
 	 */
-	static async reject(bodyData, userId) {
+	static async reject(bodyData, userId, orgId) {
 		try {
 			const connectionRequest = await this.checkConnectionRequestExists(userId, bodyData.user_id)
 			if (!connectionRequest)
@@ -347,6 +350,10 @@ module.exports = class ConnectionHelper {
 					responseCode: 'CLIENT_ERROR',
 				})
 			}
+
+			// Send notification to the mentee who requested the connection
+			await this.sendConnectionRejectionNotification(bodyData.user_id, userId, orgId)
+
 			return responses.successResponse({
 				statusCode: httpStatusCode.created,
 				message: 'CONNECTION_REQUEST_REJECTED',
@@ -444,6 +451,64 @@ module.exports = class ConnectionHelper {
 		} catch (error) {
 			console.error('Error in list function:', error)
 			throw error
+		}
+	}
+
+	/**
+	 * Send email notification to mentee when connection request is rejected
+	 * @param {string} menteeId - ID of the mentee who sent the connection request
+	 * @param {string} mentorId - ID of the mentor who rejected the request
+	 * @param {string} orgId - Organization ID
+	 */
+	static async sendConnectionRejectionNotification(menteeId, mentorId, orgId) {
+		try {
+			const templateCode = process.env.CONNECTION_REQUEST_REJECTION_EMAIL_TEMPLATE
+			if (!templateCode) {
+				console.log('CONNECTION_REQUEST_REJECTION_EMAIL_TEMPLATE not configured, skipping notification')
+				return
+			}
+
+			// Get mentee details
+			const menteeDetails = await userExtensionQueries.getUsersByUserIds([menteeId], {
+				attributes: ['name', 'email', 'user_id'],
+			})
+
+			// Get mentor details
+			const mentorDetails = await mentorExtensionQueries.getMentorExtension(mentorId, ['name'], true)
+
+			if (!menteeDetails || menteeDetails.length === 0 || !mentorDetails) {
+				console.log('Unable to fetch user details for connection rejection notification')
+				return
+			}
+
+			// Get email template
+			const templateData = await notificationQueries.findOneEmailTemplate(templateCode, orgId.toString())
+
+			if (templateData) {
+				const menteeName = menteeDetails[0].name
+				const mentorName = mentorDetails.name
+
+				// Create email payload
+				const payload = {
+					type: 'email',
+					email: {
+						to: menteeDetails[0].email,
+						subject: templateData.subject,
+						body: utils.composeEmailBody(templateData.body, {
+							menteeName: menteeName,
+							mentorName: mentorName,
+						}),
+					},
+				}
+
+				console.log('CONNECTION REJECTION EMAIL PAYLOAD: ', payload)
+				await kafkaCommunication.pushEmailToKafka(payload)
+			} else {
+				console.log(`Email template not found for code: ${templateCode}`)
+			}
+		} catch (error) {
+			console.error('Error sending connection rejection notification:', error)
+			// Don't throw error to avoid breaking the main rejection flow
 		}
 	}
 }

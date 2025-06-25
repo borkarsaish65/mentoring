@@ -137,6 +137,11 @@ let enviromentVariables = {
 		optional: process.env.ENABLE_EMAIL_FOR_REPORT_ISSUE === 'true' ? false : true,
 		default: 'user_issue_reported',
 	},
+	CONNECTION_REQUEST_REJECTION_EMAIL_TEMPLATE: {
+		message: 'Required email template code to send email when connection request is rejected',
+		optional: true,
+		default: 'connection_request_rejected',
+	},
 	BIG_BLUE_BUTTON_BASE_URL: {
 		message: 'Big blue button base url',
 		optional: true,
