@@ -47,6 +47,10 @@
       shell: "curl --location --request GET '{{ vaultAddress }}gcp' --header 'X-Vault-Token: {{ slurpfile['content'] | b64decode }}' | jq '.data.data' > '{{ release_path 
 }}/gcp.json'"
 
+    - name: Get config.json 
+      shell: "curl --location --request GET '{{ vaultAddress }}mentoringConfig' --header 'X-Vault-Token: {{ slurpfile['content'] | b64decode }}' | jq '.data.data' > '{{ release_path 
+}}/mentoringConfig.json'"
+
     - name: Delete Old Folder & create folder
       shell: rm -rf {{ current_path }} &&  cd {{ project_path }} && mkdir mentoring
 
@@ -63,6 +67,9 @@
 
     - name: move gcp credentials 
       shell: mv {{ current_path }}/gcp.json  {{ current_path }}/src/
+
+    - name: move config.json  
+      shell: mv {{ current_path }}/config.json  {{ current_path }}/src/
 
     - name: generate api-doc 
       shell: cd {{current_path}}/src && npx redoc-cli@0.13.21 build ./api-doc/api-doc.yaml -o ./api-doc/index.html
