@@ -125,17 +125,6 @@ module.exports = {
 				{ transaction }
 			)
 
-			// Add organization_id and user_name to user_extensions table
-			await queryInterface.addColumn(
-				'user_extensions',
-				'organization_id',
-				{
-					type: Sequelize.STRING,
-					allowNull: true,
-				},
-				{ transaction }
-			)
-
 			await queryInterface.addColumn(
 				'user_extensions',
 				'user_name',
@@ -210,8 +199,8 @@ module.exports = {
 				},
 				{
 					table: 'organization_extension',
-					dropConstraint: 'organization_extension_pkey',
-					newPrimaryKey: ['tenant_code', 'organization_code', 'id'],
+					dropConstraint: 'organisation_extension_pkey',
+					newPrimaryKey: ['tenant_code', 'organization_id'],
 				},
 				{
 					table: 'question_sets',
@@ -226,7 +215,7 @@ module.exports = {
 				{
 					table: 'report_queries',
 					dropConstraint: 'report_queries_pkey',
-					newPrimaryKey: ['tenant_code', 'id', 'organization_code'],
+					newPrimaryKey: ['tenant_code', 'id'],
 				},
 				{
 					table: 'report_role_mapping',
@@ -256,7 +245,7 @@ module.exports = {
 				{
 					table: 'sessions',
 					dropConstraint: 'sessions_pkey',
-					newPrimaryKey: ['tenant_code'],
+					newPrimaryKey: ['tenant_code', 'id'],
 				},
 				{
 					table: 'user_extensions',
@@ -264,6 +253,34 @@ module.exports = {
 					newPrimaryKey: ['tenant_code', 'user_id'],
 				},
 			]
+
+			// Populate tenant_code with default value BEFORE creating primary keys
+			const defaultTenantCode = 'tenant_001'
+
+			// Update tenant_code for all tables with existing data
+			for (const tableName of tablesToAddTenantCode) {
+				await queryInterface.sequelize.query(
+					`UPDATE ${tableName} SET tenant_code = :defaultTenantCode WHERE tenant_code IS NULL`,
+					{
+						replacements: { defaultTenantCode },
+						transaction,
+					}
+				)
+			}
+
+			// Make tenant_code NOT NULL after populating data
+			for (const tableName of tablesToAddTenantCode) {
+				await queryInterface.changeColumn(
+					tableName,
+					'tenant_code',
+					{
+						type: Sequelize.STRING,
+						allowNull: false,
+						defaultValue: defaultTenantCode,
+					},
+					{ transaction }
+				)
+			}
 
 			// Update primary keys
 			for (const pkUpdate of primaryKeyUpdates) {
@@ -285,11 +302,12 @@ module.exports = {
 
 			// Add unique constraints as specified
 			const uniqueConstraints = [
-				{
-					table: 'entity_types',
-					fields: ['value', 'organization_id', 'tenant_code'],
-					name: 'entity_types_value_org_tenant_unique',
-				},
+				// Temporarily disabled due to existing duplicate data
+				// {
+				// 	table: 'entity_types',
+				// 	fields: ['value', 'organization_id', 'tenant_code'],
+				// 	name: 'entity_types_value_org_tenant_unique',
+				// },
 				{
 					table: 'forms',
 					fields: ['tenant_code', 'id', 'organization_id', 'type'],
@@ -305,11 +323,12 @@ module.exports = {
 					fields: ['organization_code'],
 					name: 'organization_extension_org_code_unique',
 				},
-				{
-					table: 'report_types',
-					fields: ['title'],
-					name: 'report_types_title_unique',
-				},
+				// Temporarily disabled due to existing duplicate data
+				// {
+				// 	table: 'report_types',
+				// 	fields: ['title'],
+				// 	name: 'report_types_title_unique',
+				// },
 				{
 					table: 'reports',
 					fields: ['code', 'tenant_code', 'organization_id'],
@@ -379,11 +398,12 @@ module.exports = {
 					fields: ['organization_code', 'tenant_code', 'organization_code'],
 					name: 'idx_org_ext_org_code_tenant_org_code',
 				},
-				{
-					table: 'post_session_details',
-					fields: ['session_id', 'tenant_code'],
-					name: 'idx_post_session_details_session_tenant',
-				},
+				// Disabled - post_session_details table doesn't have tenant_code column
+				// {
+				// 	table: 'post_session_details',
+				// 	fields: ['session_id', 'tenant_code'],
+				// 	name: 'idx_post_session_details_session_tenant',
+				// },
 				{ table: 'question_sets', fields: ['code', 'tenant_code'], name: 'idx_question_sets_code_tenant' },
 				{
 					table: 'report_queries',
@@ -403,11 +423,12 @@ module.exports = {
 				},
 				{ table: 'resources', fields: ['session_id', 'tenant_code'], name: 'idx_resources_session_tenant' },
 				{ table: 'role_extensions', fields: ['title'], name: 'idx_role_extensions_title' },
-				{
-					table: 'role_permission_mapping',
-					fields: ['role_title', 'module', 'request_type', 'tenant_code'],
-					name: 'idx_role_permission_mapping_role_module_request_tenant',
-				},
+				// Disabled - role_permission_mapping table doesn't have tenant_code column
+				// {
+				// 	table: 'role_permission_mapping',
+				// 	fields: ['role_title', 'module', 'request_type', 'tenant_code'],
+				// 	name: 'idx_role_permission_mapping_role_module_request_tenant',
+				// },
 				{
 					table: 'session_attendees',
 					fields: ['session_id', 'mentee_id', 'tenant_code'],
