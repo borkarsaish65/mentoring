@@ -882,6 +882,7 @@ module.exports = class MentorsHelper {
 					allow_filtering: true,
 					model_names: { [Op.contains]: [mentorExtensionsModelName] },
 				})
+				await utils.internalSet('EntityValidationData_' + mentorExtensionsModelName, validationData)
 			}
 
 			const filteredQuery = utils.validateAndBuildFilters(query, validationData, mentorExtensionsModelName)
