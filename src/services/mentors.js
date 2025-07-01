@@ -875,11 +875,14 @@ module.exports = class MentorsHelper {
 			const query = utils.processQueryParametersWithExclusions(queryParams)
 			const mentorExtensionsModelName = await mentorQueries.getModelName()
 
-			let validationData = await entityTypeQueries.findAllEntityTypesAndEntities({
-				status: 'ACTIVE',
-				allow_filtering: true,
-				model_names: { [Op.contains]: [mentorExtensionsModelName] },
-			})
+			let validationData = await utils.internalGet('EntityValidationData_' + mentorExtensionsModelName)
+			if (!validationData) {
+				validationData = await entityTypeQueries.findAllEntityTypesAndEntities({
+					status: 'ACTIVE',
+					allow_filtering: true,
+					model_names: { [Op.contains]: [mentorExtensionsModelName] },
+				})
+			}
 
 			const filteredQuery = utils.validateAndBuildFilters(query, validationData, mentorExtensionsModelName)
 
@@ -952,15 +955,20 @@ module.exports = class MentorsHelper {
 			//Query organization table (only if there are IDs to query)
 			let organizationDetails = []
 			if (organizationIds.length > 0) {
-				const orgFilter = {
-					organization_id: {
-						[Op.in]: organizationIds,
-					},
-				}
-				organizationDetails = await organisationExtensionQueries.findAll(orgFilter, {
-					attributes: ['name', 'organization_id'],
-					raw: true, // Ensure plain objects
+				// const orgFilter = {
+				// 	organization_id: {
+				// 		[Op.in]: organizationIds,
+				// 	},
+				// }
+				organizationIds.map(async function (orgId) {
+					let orgInfo = await organisationExtensionQueries.findOneById(orgId)
+					organizationDetails.push(orgInfo)
 				})
+
+				// organizationDetails = await organisationExtensionQueries.findAll(orgFilter, {
+				// 	attributes: ['name', 'organization_id'],
+				// 	raw: true, // Ensure plain objects
+				// })
 			}
 
 			//Create a map of organization_id to organization details
