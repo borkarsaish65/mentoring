@@ -240,8 +240,10 @@ module.exports = class ConnectionHelper {
 			})
 
 			const userIds = connectionsWithDetails.map((item) => item.friend_id)
-			const userDetails = await userRequests.getListOfUserDetails(userIds, true)
-			const userDetailsMap = new Map(userDetails.result.map((userDetail) => [String(userDetail.id), userDetail]))
+			const userDetails = await userRequests.getUserDetailedList(userIds)
+			const userDetailsMap = new Map(
+				userDetails.result.map((userDetail) => [String(userDetail.user_id), userDetail])
+			)
 			connectionsWithDetails = connectionsWithDetails.filter((connectionsWithDetail) => {
 				const user_id = String(connectionsWithDetail.friend_id)
 
@@ -431,8 +433,10 @@ module.exports = class ConnectionHelper {
 				)
 			}
 			const userIds = extensionDetails.data.map((item) => item.user_id)
-			const userDetails = await userRequests.getListOfUserDetails(userIds, true)
-			const userDetailsMap = new Map(userDetails.result.map((userDetail) => [String(userDetail.id), userDetail]))
+			const userDetails = await userRequests.getUserDetailedList(userIds)
+			const userDetailsMap = new Map(
+				userDetails.result.map((userDetail) => [String(userDetail.user_id), userDetail])
+			)
 			extensionDetails.data = extensionDetails.data.filter((extensionDetail) => {
 				const user_id = String(extensionDetail.user_id)
 				if (userDetailsMap.has(user_id)) {
