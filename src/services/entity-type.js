@@ -223,7 +223,8 @@ module.exports = class EntityHelper {
 			}
 
 			let entityTypesWithEntities
-			const cacheKey = `ENTITY_TYPES_orgs_${orgIds.join(',')}_models_${modelName.join(',')}`
+			const modelNames = Array.isArray(modelName) ? modelName : [modelName]
+			const cacheKey = `ENTITY_TYPES_orgs_${orgIds.join(',')}_models_${modelNames.join(',')}`
 
 			console.log('cacheKey --------- ', cacheKey)
 
