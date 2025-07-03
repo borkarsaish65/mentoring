@@ -223,7 +223,9 @@ module.exports = class EntityHelper {
 			}
 
 			let entityTypesWithEntities
-			const cacheKey = `ENTITY_TYPES_orgs_${orgIds.join(',')}_models_${modelNames.join(',')}`
+			const cacheKey = `ENTITY_TYPES_orgs_${orgIds.join(',')}_models_${modelName.join(',')}`
+
+			console.log('cacheKey --------- ', cacheKey)
 
 			let entityCacheData = await utils.internalGet(cacheKey)
 			if (entityCacheData) {
@@ -234,6 +236,7 @@ module.exports = class EntityHelper {
 			}
 			// get entityTypes with entities data
 
+			console.log('-----------------------------', entityTypesWithEntities)
 			entityTypesWithEntities = JSON.parse(JSON.stringify(entityTypesWithEntities))
 			if (!entityTypesWithEntities.length > 0) {
 				return responseData
