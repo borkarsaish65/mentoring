@@ -23,14 +23,14 @@ const fs = require('fs')
 const path = require('path')
 
 console.log('\n📁 CSV Files Status:')
-const csvFiles = ['organizations.csv', 'users.csv', 'user_organizations.csv']
+const csvFiles = ['data_codes.csv']
 let allFilesExist = true
 
 csvFiles.forEach((file) => {
 	const filePath = path.join(__dirname, 'data', file)
 	const exists = fs.existsSync(filePath)
 	console.log(`   ${file}: ${exists ? '✅ Found' : '❌ Missing'}`)
-	if (!allFilesExist) allFilesExist = false
+	if (!exists) allFilesExist = false
 
 	if (exists) {
 		const stats = fs.statSync(filePath)
@@ -41,24 +41,25 @@ csvFiles.forEach((file) => {
 
 // Migration plan
 console.log('\n📋 Migration Plan:')
-console.log('   Tables to process: 11 (with organization_id)')
-console.log('   Update strategy: Undistribute → Update → Redistribute')
-console.log('   Batch size: 1000 records per batch')
-console.log('   Estimated time: 2-4 hours for 30 lakh records')
-console.log('   Safety: All operations are transactional with retry logic')
+console.log('   Phase 1: Tables with organization_id using GROUP BY strategy')
+console.log('   Phase 2: Tables with user_id using user_extensions data')
+console.log('   Phase 3: Citus distribution (conditional on Citus presence)')
+console.log('   Update strategy: Efficient bulk updates with JOINs')
+console.log('   Estimated time: 30-60 minutes for large datasets')
+console.log('   Safety: All operations are transactional')
 
 console.log('\n⚠️  IMPORTANT WARNINGS:')
-console.log('   • This will temporarily undistribute tables (causes brief unavailability)')
-console.log('   • Updates are applied to organization_code only (tenant_code preserved)')
-console.log('   • Process can be interrupted and resumed safely')
-console.log('   • Database will be locked during batch updates')
-console.log('   • Monitor disk space for redistribution operations')
+console.log('   • Uses data_codes.csv with organization_id, organization_code, tenant_code columns')
+console.log('   • First updates tables with organization_id using GROUP BY')
+console.log('   • Then updates tables with user_id using user_extensions')
+console.log('   • Only executes Citus distribution if Citus is present')
+console.log('   • Much faster than previous batch processing approach')
 
 if (!allFilesExist) {
 	console.log('\n❌ MISSING CSV FILES:')
-	console.log('   Please export data from user service first:')
-	console.log('   1. Run queries from export-queries.sql in user service')
-	console.log('   2. Save results as CSV files in ./data/ directory')
+	console.log('   Please export data_codes.csv from user service first:')
+	console.log('   1. Create data_codes.csv with columns: organization_id, organization_code, tenant_code')
+	console.log('   2. Save file in ./data/ directory')
 	console.log('   3. Re-run this script')
 	process.exit(1)
 }

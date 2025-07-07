@@ -79,7 +79,7 @@ module.exports = {
 						await queryInterface.addColumn(tableName, 'tenant_code', {
 							type: Sequelize.STRING(255),
 							allowNull: false,
-							defaultValue: 'DEFAULT_TENANT',
+							defaultValue: process.env.DEFAULT_ORGANISATION_CODE || 'DEFAULT_TENANT',
 						})
 						console.log(`✅ Added tenant_code to ${tableName}`)
 					} else {
@@ -119,6 +119,30 @@ module.exports = {
 				try {
 					switch (tableName) {
 						case 'connection_requests':
+							// Drop existing constraints
+							await queryInterface.sequelize.query(
+								`ALTER TABLE ${tableName} DROP CONSTRAINT IF EXISTS ${tableName}_pkey CASCADE`
+							)
+							// Check if the table has id column or specific structure
+							const [connectionReqColumns] = await queryInterface.sequelize.query(`
+								SELECT column_name FROM information_schema.columns 
+								WHERE table_name = 'connection_requests' AND table_schema = 'public'
+							`)
+							const hasIdColumn = connectionReqColumns.some((col) => col.column_name === 'id')
+
+							if (hasIdColumn) {
+								// Use id as part of primary key
+								await queryInterface.sequelize.query(
+									`ALTER TABLE ${tableName} ADD PRIMARY KEY (tenant_code, id)`
+								)
+							} else {
+								// Use user_id, friend_id pattern
+								await queryInterface.sequelize.query(
+									`ALTER TABLE ${tableName} ADD PRIMARY KEY (tenant_code, user_id, friend_id)`
+								)
+							}
+							break
+
 						case 'connections':
 							// Drop existing constraints
 							await queryInterface.sequelize.query(
@@ -279,6 +303,39 @@ module.exports = {
 				console.log(`⚠️  Error adding user_name to user_extensions: ${error.message}`)
 			}
 
+			// Add organization_code columns to question_sets and questions tables
+			console.log('\n📝 Adding organization_code columns to question_sets and questions...')
+			const questionTables = ['question_sets', 'questions']
+
+			for (const tableName of questionTables) {
+				try {
+					const tableExists = await queryInterface.sequelize.query(
+						`SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = '${tableName}')`,
+						{ type: Sequelize.QueryTypes.SELECT }
+					)
+
+					if (tableExists[0].exists) {
+						// Check if organization_code column already exists
+						const columnExists = await queryInterface.sequelize.query(
+							`SELECT EXISTS (SELECT FROM information_schema.columns WHERE table_name = '${tableName}' AND column_name = 'organization_code')`,
+							{ type: Sequelize.QueryTypes.SELECT }
+						)
+
+						if (!columnExists[0].exists) {
+							await queryInterface.addColumn(tableName, 'organization_code', {
+								type: Sequelize.STRING(255),
+								allowNull: true,
+							})
+							console.log(`✅ Added organization_code to ${tableName}`)
+						} else {
+							console.log(`✅ ${tableName} already has organization_code column`)
+						}
+					}
+				} catch (error) {
+					console.log(`⚠️  Error adding organization_code to ${tableName}: ${error.message}`)
+				}
+			}
+
 			console.log(
 				`\n✅ Phase 1 Complete: Processed ${processedCount}/${tablesToProcess.length} tables with tenant_code`
 			)
@@ -356,20 +413,37 @@ module.exports = {
 								break
 
 							case 'forms':
-								// Drop all existing constraints and indexes that might conflict
-								await queryInterface.sequelize.query(`DROP INDEX IF EXISTS unique_type_subtype_orgid`)
-								await queryInterface.sequelize.query(`DROP INDEX IF EXISTS unique_type_sub_type_org_id`)
-								await queryInterface.sequelize.query(`DROP INDEX IF EXISTS forms_type_key`)
-								await queryInterface.sequelize.query(`DROP INDEX IF EXISTS forms_type_unique`)
+								// Get all constraints on forms table first
+								const [formsConstraints] = await queryInterface.sequelize.query(`
+									SELECT constraint_name, constraint_type 
+									FROM information_schema.table_constraints 
+									WHERE table_name = 'forms' AND table_schema = 'public'
+									AND constraint_type IN ('UNIQUE', 'CHECK')
+								`)
+
+								// Drop all unique constraints first (this will also drop dependent indexes)
+								for (const constraint of formsConstraints) {
+									try {
+										await queryInterface.sequelize.query(
+											`ALTER TABLE forms DROP CONSTRAINT IF EXISTS ${constraint.constraint_name} CASCADE`
+										)
+										console.log(`  Dropped constraint: ${constraint.constraint_name}`)
+									} catch (e) {
+										console.log(
+											`  Could not drop constraint ${constraint.constraint_name}: ${e.message}`
+										)
+									}
+								}
+
+								// Then drop any remaining indexes
 								await queryInterface.sequelize.query(
-									`ALTER TABLE forms DROP CONSTRAINT IF EXISTS unique_type_sub_type_org_id CASCADE`
+									`DROP INDEX IF EXISTS unique_type_subtype_orgid CASCADE`
 								)
 								await queryInterface.sequelize.query(
-									`ALTER TABLE forms DROP CONSTRAINT IF EXISTS forms_type_key CASCADE`
+									`DROP INDEX IF EXISTS unique_type_sub_type_org_id CASCADE`
 								)
-								await queryInterface.sequelize.query(
-									`ALTER TABLE forms DROP CONSTRAINT IF EXISTS forms_type_unique CASCADE`
-								)
+								await queryInterface.sequelize.query(`DROP INDEX IF EXISTS forms_type_key CASCADE`)
+								await queryInterface.sequelize.query(`DROP INDEX IF EXISTS forms_type_unique CASCADE`)
 
 								// Create new unique constraint with tenant_code (only if not exists)
 								const [existingIndex] = await queryInterface.sequelize.query(`
@@ -605,6 +679,204 @@ module.exports = {
 			} else {
 				console.log('\n⚠️  PHASE 2 SKIPPED: Citus not enabled, tables remain local')
 			}
+
+			// =============================================================================
+			// PHASE 2.5: POPULATE DATA WITH OPTIMIZED GROUP BY UPDATES
+			// =============================================================================
+			console.log('\n🔄 PHASE 2.5: Populating tenant_code and organization_code data...')
+			console.log('='.repeat(70))
+
+			// Load data_codes.csv data
+			const fs = require('fs')
+			const path = require('path')
+			const csv = require('csv-parser')
+
+			const orgLookupCache = new Map()
+			const csvPath = path.join(__dirname, '../../data/data_codes.csv')
+
+			if (fs.existsSync(csvPath)) {
+				console.log('📂 Loading data_codes.csv...')
+				await new Promise((resolve, reject) => {
+					fs.createReadStream(csvPath)
+						.pipe(csv())
+						.on('data', (row) => {
+							if (row.organization_id && row.organization_code && row.tenant_code) {
+								orgLookupCache.set(row.organization_id, {
+									organization_code: row.organization_code,
+									tenant_code: row.tenant_code,
+								})
+							}
+						})
+						.on('end', () => {
+							console.log(`✅ Loaded ${orgLookupCache.size} organization mappings`)
+							resolve()
+						})
+						.on('error', reject)
+				})
+
+				// Phase 2.5.1: Update tables with organization_id using efficient GROUP BY
+				console.log('\n📊 Updating tables with organization_id using GROUP BY...')
+				console.log('🚀 Optimized for high-volume processing (30 lac+ records)')
+				const tablesWithOrgId = [
+					'availabilities',
+					'default_rules',
+					'entity_types',
+					'file_uploads',
+					'forms',
+					'notification_templates',
+					'organization_extension',
+					'report_queries',
+					'reports',
+					'role_extensions',
+					'user_extensions',
+					'question_sets',
+					'questions',
+				]
+
+				for (const tableName of tablesWithOrgId) {
+					try {
+						console.log(`  Updating ${tableName}...`)
+
+						// Check if table exists and has data
+						const [tableInfo] = await queryInterface.sequelize.query(`
+							SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = '${tableName}') as exists,
+							(SELECT COUNT(*) FROM ${tableName}) as row_count
+						`)
+
+						if (!tableInfo[0].exists || tableInfo[0].row_count === 0) {
+							console.log(`    ⚠️  ${tableName} doesn't exist or is empty, skipping`)
+							continue
+						}
+
+						// Create temporary lookup table with index for performance
+						await queryInterface.sequelize.query(`DROP TABLE IF EXISTS temp_org_lookup`)
+						await queryInterface.sequelize.query(`
+							CREATE TEMP TABLE temp_org_lookup AS
+							SELECT DISTINCT 
+								organization_id::text as org_id,
+								organization_code,
+								tenant_code
+							FROM (VALUES ${Array.from(orgLookupCache.entries())
+								.map(
+									([orgId, data]) =>
+										`('${orgId}', '${data.organization_code}', '${data.tenant_code}')`
+								)
+								.join(', ')}) AS t(organization_id, organization_code, tenant_code)
+						`)
+
+						// Create index for performance on large datasets
+						await queryInterface.sequelize.query(`
+							CREATE INDEX temp_org_lookup_idx ON temp_org_lookup(org_id)
+						`)
+
+						// Check if already migrated
+						const [checkResult] = await queryInterface.sequelize.query(`
+							SELECT COUNT(*) as migrated_count
+							FROM ${tableName} t
+							JOIN temp_org_lookup tol ON t.organization_id::text = tol.org_id
+							WHERE t.tenant_code = tol.tenant_code
+						`)
+
+						if (checkResult[0].migrated_count > 0) {
+							console.log(
+								`    ✅ ${tableName} already has ${checkResult[0].migrated_count} migrated records, skipping`
+							)
+							continue
+						}
+
+						// Efficient bulk update using JOIN with progress tracking
+						const startTime = Date.now()
+						const [updateResult] = await queryInterface.sequelize.query(`
+							UPDATE ${tableName} 
+							SET 
+								tenant_code = tol.tenant_code,
+								organization_code = tol.organization_code,
+								updated_at = NOW()
+							FROM temp_org_lookup tol
+							WHERE ${tableName}.organization_id::text = tol.org_id
+							AND (${tableName}.tenant_code IS NULL OR ${tableName}.tenant_code != tol.tenant_code)
+						`)
+						const duration = ((Date.now() - startTime) / 1000).toFixed(2)
+
+						const updatedRows = updateResult.rowCount || 0
+						console.log(`    ✅ Updated ${updatedRows} rows in ${tableName} (${duration}s)`)
+					} catch (error) {
+						console.log(`    ❌ Error updating ${tableName}: ${error.message}`)
+					}
+				}
+
+				// Phase 2.5.2: Update tables with user_id using user_extensions lookup
+				console.log('\n👤 Updating tables with user_id using user_extensions...')
+				const tablesWithUserId = [
+					{ name: 'sessions', userColumn: 'created_by' },
+					{ name: 'feedbacks', userColumn: 'user_id' },
+					{ name: 'connection_requests', userColumn: 'created_by' },
+					{ name: 'connections', userColumn: 'created_by' },
+				]
+
+				for (const tableConfig of tablesWithUserId) {
+					try {
+						console.log(`  Updating ${tableConfig.name}...`)
+
+						// Check if table exists and has data
+						const [tableInfo] = await queryInterface.sequelize.query(`
+							SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = '${tableConfig.name}') as exists,
+							(SELECT COUNT(*) FROM ${tableConfig.name}) as row_count
+						`)
+
+						if (!tableInfo[0].exists || tableInfo[0].row_count === 0) {
+							console.log(`    ⚠️  ${tableConfig.name} doesn't exist or is empty, skipping`)
+							continue
+						}
+
+						// Efficient bulk update using user_extensions with progress tracking
+						const startTime = Date.now()
+						const [updateResult] = await queryInterface.sequelize.query(`
+							UPDATE ${tableConfig.name} 
+							SET 
+								tenant_code = ue.tenant_code,
+								updated_at = NOW()
+							FROM user_extensions ue
+							WHERE ${tableConfig.name}.${tableConfig.userColumn} = ue.user_id
+							AND ue.tenant_code IS NOT NULL
+							AND (${tableConfig.name}.tenant_code IS NULL OR ${tableConfig.name}.tenant_code != ue.tenant_code)
+						`)
+						const duration = ((Date.now() - startTime) / 1000).toFixed(2)
+
+						const updatedRows = updateResult.rowCount || 0
+						console.log(`    ✅ Updated ${updatedRows} rows in ${tableConfig.name} (${duration}s)`)
+					} catch (error) {
+						console.log(`    ❌ Error updating ${tableConfig.name}: ${error.message}`)
+					}
+				}
+
+				// Phase 2.5.3: Handle session_attendees using sessions lookup
+				try {
+					console.log(`  Updating session_attendees via sessions...`)
+
+					const startTime = Date.now()
+					const [updateResult] = await queryInterface.sequelize.query(`
+						UPDATE session_attendees 
+						SET 
+							tenant_code = s.tenant_code,
+							updated_at = NOW()
+						FROM sessions s
+						WHERE session_attendees.session_id = s.id
+						AND s.tenant_code IS NOT NULL
+						AND (session_attendees.tenant_code IS NULL OR session_attendees.tenant_code != s.tenant_code)
+					`)
+					const duration = ((Date.now() - startTime) / 1000).toFixed(2)
+
+					const updatedRows = updateResult.rowCount || 0
+					console.log(`    ✅ Updated ${updatedRows} rows in session_attendees (${duration}s)`)
+				} catch (error) {
+					console.log(`    ❌ Error updating session_attendees: ${error.message}`)
+				}
+			} else {
+				console.log('⚠️  data_codes.csv not found, skipping data population')
+			}
+
+			console.log('\n✅ Phase 2.5 Complete: Data population finished')
 
 			// =============================================================================
 			// PHASE 3: CLEANUP OBSOLETE TABLES

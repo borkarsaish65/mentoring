@@ -50,12 +50,12 @@ class CitusMentoringDataMigrator {
 			startTime: Date.now(),
 		}
 
-		// Tables to process - UPDATE BOTH tenant_code AND organization_code
-		this.tablesToProcess = [
+		// Tables with organization_id - process first using GROUP BY organization_id
+		this.tablesWithOrgId = [
 			{
 				name: 'availabilities',
-				columns: { organization_id: 'organization_id', user_id: 'user_id' },
-				updateColumns: ['tenant_code', 'organization_code'], // Update both
+				columns: { organization_id: 'organization_id' },
+				updateColumns: ['tenant_code', 'organization_code'],
 				hasPartitionKey: true,
 			},
 			{
@@ -72,7 +72,7 @@ class CitusMentoringDataMigrator {
 			},
 			{
 				name: 'file_uploads',
-				columns: { organization_id: 'organization_id', user_id: 'created_by' },
+				columns: { organization_id: 'organization_id' },
 				updateColumns: ['tenant_code', 'organization_code'],
 				hasPartitionKey: true,
 			},
@@ -93,7 +93,19 @@ class CitusMentoringDataMigrator {
 				columns: { organization_id: 'organization_id' },
 				updateColumns: ['tenant_code', 'organization_code'],
 				hasPartitionKey: true,
-				primaryKey: ['tenant_code', 'organization_id'], // Composite primary key
+				primaryKey: ['tenant_code', 'organization_id'],
+			},
+			{
+				name: 'question_sets',
+				columns: { organization_id: 'organization_id' },
+				updateColumns: ['tenant_code', 'organization_code'],
+				hasPartitionKey: true,
+			},
+			{
+				name: 'questions',
+				columns: { organization_id: 'organization_id' },
+				updateColumns: ['tenant_code', 'organization_code'],
+				hasPartitionKey: true,
 			},
 			{
 				name: 'report_queries',
@@ -113,24 +125,29 @@ class CitusMentoringDataMigrator {
 				updateColumns: ['tenant_code', 'organization_code'],
 				hasPartitionKey: true,
 			},
+		]
+
+		// Tables with only user_id - process second using user_extensions updated data
+		this.tablesWithUserId = [
 			{
 				name: 'user_extensions',
 				columns: { user_id: 'user_id' },
 				updateColumns: ['tenant_code', 'organization_code'],
 				hasPartitionKey: true,
-				primaryKey: ['tenant_code', 'user_id'], // Composite primary key
+				primaryKey: ['tenant_code', 'user_id'],
 			},
 			{
 				name: 'sessions',
-				columns: { organization_id: 'mentor_organization_id', user_id: 'mentor_user_id' },
+				columns: { user_id: 'created_by' },
 				updateColumns: ['tenant_code'],
 				hasPartitionKey: true,
 			},
 			{
 				name: 'session_attendees',
-				columns: { user_id: 'user_id' },
+				columns: { session_id: 'session_id' },
 				updateColumns: ['tenant_code'],
 				hasPartitionKey: true,
+				useSessionLookup: true, // Special flag to indicate session-based lookup
 			},
 			{
 				name: 'feedbacks',
@@ -140,13 +157,43 @@ class CitusMentoringDataMigrator {
 			},
 			{
 				name: 'connection_requests',
-				columns: { user_id: 'user_id' },
+				columns: { user_id: 'created_by' },
 				updateColumns: ['tenant_code'],
 				hasPartitionKey: true,
 			},
 			{
 				name: 'connections',
-				columns: { user_id: 'user_id' },
+				columns: { user_id: 'created_by' },
+				updateColumns: ['tenant_code'],
+				hasPartitionKey: true,
+			},
+			{
+				name: 'entities',
+				columns: { user_id: 'created_by' },
+				updateColumns: ['tenant_code'],
+				hasPartitionKey: true,
+			},
+			{
+				name: 'issues',
+				columns: { user_id: 'created_by' },
+				updateColumns: ['tenant_code'],
+				hasPartitionKey: true,
+			},
+			{
+				name: 'post_session_details',
+				columns: { user_id: 'created_by' },
+				updateColumns: ['tenant_code'],
+				hasPartitionKey: true,
+			},
+			{
+				name: 'resources',
+				columns: { user_id: 'created_by' },
+				updateColumns: ['tenant_code'],
+				hasPartitionKey: true,
+			},
+			{
+				name: 'session_request',
+				columns: { user_id: 'created_by' },
 				updateColumns: ['tenant_code'],
 				hasPartitionKey: true,
 			},
@@ -154,30 +201,26 @@ class CitusMentoringDataMigrator {
 	}
 
 	/**
-	 * Load lookup data from CSV files
+	 * Load lookup data from data_codes.csv file
 	 */
 	async loadLookupData() {
-		console.log('🔄 Loading lookup data from CSV files...')
+		console.log('🔄 Loading lookup data from data_codes.csv...')
 
 		try {
-			await this.loadOrganizationData()
-			await this.loadUserData()
-			await this.loadUserOrganizationData()
+			await this.loadDataCodesData()
 
 			console.log(`✅ Loaded lookup data:`)
-			console.log(`   - Organizations: ${this.orgLookupCache.size}`)
-			console.log(`   - Users: ${this.userLookupCache.size}`)
-			console.log(`   - User-Org mappings: ${this.userOrgCache.size}`)
+			console.log(`   - Organization codes: ${this.orgLookupCache.size}`)
 		} catch (error) {
 			console.error('❌ Failed to load lookup data:', error)
 			throw error
 		}
 	}
 
-	async loadOrganizationData() {
-		const csvPath = path.join(__dirname, 'data', 'organizations.csv')
+	async loadDataCodesData() {
+		const csvPath = path.join(__dirname, '../data/data_codes.csv')
 		if (!fs.existsSync(csvPath)) {
-			console.log('⚠️  organizations.csv not found, using defaults')
+			console.log('⚠️  data_codes.csv not found, using defaults')
 			return
 		}
 
@@ -185,74 +228,33 @@ class CitusMentoringDataMigrator {
 			fs.createReadStream(csvPath)
 				.pipe(csv())
 				.on('data', (row) => {
-					if (row.id && row.code && row.tenant_code) {
-						this.orgLookupCache.set(row.id, {
-							organization_code: row.code,
-							tenant_code: row.tenant_code,
-						})
-					}
-				})
-				.on('end', () => {
-					console.log(`✅ Loaded ${this.orgLookupCache.size} organizations`)
-					resolve()
-				})
-				.on('error', reject)
-		})
-	}
-
-	async loadUserData() {
-		const csvPath = path.join(__dirname, 'data', 'users.csv')
-		if (!fs.existsSync(csvPath)) {
-			console.log('⚠️  users.csv not found')
-			return
-		}
-
-		return new Promise((resolve, reject) => {
-			fs.createReadStream(csvPath)
-				.pipe(csv())
-				.on('data', (row) => {
-					if (row.id && row.tenant_code) {
-						this.userLookupCache.set(row.id, {
-							tenant_code: row.tenant_code,
-						})
-					}
-				})
-				.on('end', () => {
-					console.log(`✅ Loaded ${this.userLookupCache.size} users`)
-					resolve()
-				})
-				.on('error', reject)
-		})
-	}
-
-	async loadUserOrganizationData() {
-		const csvPath = path.join(__dirname, 'data', 'user_organizations.csv')
-		if (!fs.existsSync(csvPath)) {
-			console.log('⚠️  user_organizations.csv not found')
-			return
-		}
-
-		return new Promise((resolve, reject) => {
-			fs.createReadStream(csvPath)
-				.pipe(csv())
-				.on('data', (row) => {
-					if (row.user_id && row.organization_code && row.tenant_code) {
-						const userId = row.user_id
-						if (!this.userOrgCache.has(userId)) {
-							this.userOrgCache.set(userId, [])
-						}
-						this.userOrgCache.get(userId).push({
+					if (row.organization_id && row.organization_code && row.tenant_code) {
+						this.orgLookupCache.set(row.organization_id, {
 							organization_code: row.organization_code,
 							tenant_code: row.tenant_code,
 						})
 					}
 				})
 				.on('end', () => {
-					console.log(`✅ Loaded user-organization relationships`)
+					console.log(`✅ Loaded ${this.orgLookupCache.size} organization codes`)
 					resolve()
 				})
 				.on('error', reject)
 		})
+	}
+
+	/**
+	 * Check if Citus is enabled
+	 */
+	async isCitusEnabled() {
+		try {
+			const [result] = await this.sequelize.query(`
+				SELECT EXISTS(SELECT 1 FROM pg_extension WHERE extname = 'citus') as enabled
+			`)
+			return result[0].enabled
+		} catch (error) {
+			return false
+		}
 	}
 
 	/**
@@ -306,7 +308,294 @@ class CitusMentoringDataMigrator {
 	}
 
 	/**
-	 * Get lookup data for a record
+	 * Process tables with organization_id using GROUP BY strategy
+	 */
+	async processTablesWithOrgId() {
+		console.log('\n🔄 PHASE 1: Processing tables with organization_id using GROUP BY strategy...')
+		console.log('='.repeat(70))
+
+		for (const tableConfig of this.tablesWithOrgId) {
+			await this.processTableWithOrgId(tableConfig)
+		}
+	}
+
+	/**
+	 * Process a single table with organization_id using efficient GROUP BY updates
+	 */
+	async processTableWithOrgId(tableConfig) {
+		const { name, updateColumns, hasPartitionKey } = tableConfig
+		console.log(`\n🔄 Processing table with organization_id: ${name}`)
+
+		try {
+			// Check if table exists and has target columns
+			const existingColumns = await this.checkTableColumns(name)
+			const availableUpdateColumns = updateColumns.filter((col) => existingColumns.includes(col))
+
+			if (availableUpdateColumns.length === 0) {
+				console.log(`⚠️  Table ${name} has no target columns, skipping`)
+				return
+			}
+
+			console.log(`📋 Available columns for update: ${availableUpdateColumns.join(', ')}`)
+
+			// Check if we need to update tenant_code (partition key)
+			const needsTenantCodeUpdate = availableUpdateColumns.includes('tenant_code')
+			const citusEnabled = await this.isCitusEnabled()
+
+			// Step 1: Undistribute table if we need to update partition key
+			let wasDistributed = false
+			if (citusEnabled && hasPartitionKey && needsTenantCodeUpdate) {
+				wasDistributed = await this.undistributeTable(name)
+				console.log(`🔄 Undistributed ${name} to update partition key`)
+			}
+
+			try {
+				// Step 2: Use efficient GROUP BY update strategy
+				await this.executeGroupByUpdates(name, availableUpdateColumns)
+
+				// Step 3: Redistribute table if it was distributed before
+				if (citusEnabled && wasDistributed && needsTenantCodeUpdate) {
+					console.log(`🔄 Redistributing ${name} with updated tenant_code...`)
+					await this.redistributeTable(name)
+				}
+			} catch (error) {
+				console.error(`❌ Error updating table ${name}:`, error)
+
+				// Try to redistribute table even if updates failed
+				if (citusEnabled && wasDistributed && needsTenantCodeUpdate) {
+					console.log(`🔄 Attempting to redistribute ${name} after error...`)
+					await this.redistributeTable(name)
+				}
+				throw error
+			}
+
+			console.log(`✅ Completed ${name}`)
+		} catch (error) {
+			console.error(`❌ Error processing table ${name}:`, error)
+			throw error
+		}
+	}
+
+	/**
+	 * Execute efficient GROUP BY updates for tables with organization_id
+	 */
+	async executeGroupByUpdates(tableName, availableUpdateColumns) {
+		console.log(`📊 Executing GROUP BY updates for ${tableName}...`)
+
+		const transaction = await this.sequelize.transaction()
+
+		try {
+			// Build the SET clause dynamically
+			const setClauses = []
+
+			if (availableUpdateColumns.includes('tenant_code')) {
+				setClauses.push(`tenant_code = dc.tenant_code`)
+			}
+
+			if (availableUpdateColumns.includes('organization_code')) {
+				setClauses.push(`organization_code = dc.organization_code`)
+			}
+
+			if (setClauses.length === 0) {
+				console.log(`⚠️  No valid columns to update in ${tableName}`)
+				await transaction.commit()
+				return
+			}
+
+			// Drop temp table if it exists
+			await this.sequelize.query(`DROP TABLE IF EXISTS temp_data_codes`, { transaction })
+
+			// Create temporary table with data codes for join
+			await this.sequelize.query(
+				`
+				CREATE TEMP TABLE temp_data_codes AS
+				SELECT DISTINCT 
+					organization_id::text,
+					organization_code,
+					tenant_code
+				FROM (VALUES ${Array.from(this.orgLookupCache.entries())
+					.map(([orgId, data]) => `('${orgId}', '${data.organization_code}', '${data.tenant_code}')`)
+					.join(', ')}) AS t(organization_id, organization_code, tenant_code)
+			`,
+				{ transaction }
+			)
+
+			// Check if table is already migrated by looking for matching tenant_code/organization_code
+			const checkQuery = `
+				SELECT COUNT(*) as already_migrated
+				FROM ${tableName} t
+				JOIN temp_data_codes dc ON t.organization_id::text = dc.organization_id
+				WHERE t.tenant_code = dc.tenant_code 
+				${availableUpdateColumns.includes('organization_code') ? 'AND t.organization_code = dc.organization_code' : ''}
+			`
+
+			const [checkResult] = await this.sequelize.query(checkQuery, { transaction })
+			const alreadyMigrated = parseInt(checkResult[0].already_migrated)
+
+			if (alreadyMigrated > 0) {
+				console.log(
+					`✅ ${tableName} appears to be already migrated (${alreadyMigrated} records match), skipping updates`
+				)
+				await transaction.commit()
+				return
+			}
+
+			// Execute UPDATE - simple approach since table needs migration
+			const updateQuery = `
+				UPDATE ${tableName} 
+				SET ${setClauses.join(', ')}, updated_at = NOW()
+				FROM temp_data_codes dc
+				WHERE ${tableName}.organization_id::text = dc.organization_id
+			`
+
+			const [result] = await this.sequelize.query(updateQuery, { transaction })
+			const updatedRows = result.rowCount || 0
+
+			console.log(`✅ Updated ${updatedRows} rows in ${tableName}`)
+			this.stats.successfulUpdates += updatedRows
+
+			// Clean up temp table
+			await this.sequelize.query(`DROP TABLE IF EXISTS temp_data_codes`, { transaction })
+
+			await transaction.commit()
+		} catch (error) {
+			await transaction.rollback()
+			throw error
+		}
+	}
+
+	/**
+	 * Process tables with user_id using user_extensions updated data
+	 */
+	async processTablesWithUserId() {
+		console.log('\n🔄 PHASE 2: Processing tables with user_id using user_extensions data...')
+		console.log('='.repeat(70))
+
+		// First process user_extensions to get updated data
+		const userExtConfig = this.tablesWithUserId.find((t) => t.name === 'user_extensions')
+		if (userExtConfig) {
+			await this.processUserExtensions(userExtConfig)
+		}
+
+		// Then process other tables with user_id
+		for (const tableConfig of this.tablesWithUserId) {
+			if (tableConfig.name !== 'user_extensions') {
+				await this.processTableWithUserId(tableConfig)
+			}
+		}
+	}
+
+	/**
+	 * Process user_extensions table using organization_id lookup from user service
+	 */
+	async processUserExtensions(tableConfig) {
+		console.log(`\n🔄 Processing user_extensions with organization_id lookup...`)
+
+		// For user_extensions, we need to get organization_id from user service data
+		// This requires a different approach - we'll use the individual record processing
+		await this.processTable(tableConfig)
+	}
+
+	/**
+	 * Process table with user_id using user_extensions updated data
+	 */
+	async processTableWithUserId(tableConfig) {
+		const { name, updateColumns, hasPartitionKey } = tableConfig
+		console.log(`\n🔄 Processing table with user_id: ${name}`)
+
+		try {
+			// Check if table exists and has target columns
+			const existingColumns = await this.checkTableColumns(name)
+			const availableUpdateColumns = updateColumns.filter((col) => existingColumns.includes(col))
+
+			if (availableUpdateColumns.length === 0) {
+				console.log(`⚠️  Table ${name} has no target columns, skipping`)
+				return
+			}
+
+			// Only update tenant_code for user_id tables
+			if (availableUpdateColumns.includes('tenant_code')) {
+				const citusEnabled = await this.isCitusEnabled()
+
+				// Undistribute if needed
+				let wasDistributed = false
+				if (citusEnabled && hasPartitionKey) {
+					wasDistributed = await this.undistributeTable(name)
+				}
+
+				try {
+					await this.executeUserIdUpdates(name)
+
+					// Redistribute if needed
+					if (citusEnabled && wasDistributed) {
+						await this.redistributeTable(name)
+					}
+				} catch (error) {
+					if (citusEnabled && wasDistributed) {
+						await this.redistributeTable(name)
+					}
+					throw error
+				}
+			}
+
+			console.log(`✅ Completed ${name}`)
+		} catch (error) {
+			console.error(`❌ Error processing table ${name}:`, error)
+			throw error
+		}
+	}
+
+	/**
+	 * Execute updates for tables with user_id using user_extensions data
+	 */
+	async executeUserIdUpdates(tableName) {
+		console.log(`📊 Executing user_id updates for ${tableName}...`)
+
+		const transaction = await this.sequelize.transaction()
+
+		try {
+			// Get table configuration
+			const tableConfig = this.tablesWithUserId.find((t) => t.name === tableName)
+
+			let updateQuery
+
+			if (tableConfig.useSessionLookup) {
+				// For session_attendees: get tenant_code from sessions table based on session_id
+				const sessionIdColumn = tableConfig.columns.session_id
+				updateQuery = `
+					UPDATE ${tableName} 
+					SET tenant_code = s.tenant_code, updated_at = NOW()
+					FROM sessions s
+					WHERE ${tableName}.${sessionIdColumn} = s.id
+					AND s.tenant_code IS NOT NULL
+				`
+			} else {
+				// Standard user_id lookup using user_extensions
+				const userIdColumn = tableConfig.columns.user_id
+				updateQuery = `
+					UPDATE ${tableName} 
+					SET tenant_code = ue.tenant_code, updated_at = NOW()
+					FROM user_extensions ue
+					WHERE ${tableName}.${userIdColumn} = ue.user_id
+					AND ue.tenant_code IS NOT NULL
+				`
+			}
+
+			const [result] = await this.sequelize.query(updateQuery, { transaction })
+			const updatedRows = result.rowCount || 0
+
+			console.log(`✅ Updated ${updatedRows} rows in ${tableName}`)
+			this.stats.successfulUpdates += updatedRows
+
+			await transaction.commit()
+		} catch (error) {
+			await transaction.rollback()
+			throw error
+		}
+	}
+
+	/**
+	 * Get lookup data for a record (legacy method for individual processing)
 	 */
 	getLookupData(record, tableConfig) {
 		const { columns } = tableConfig
@@ -321,24 +610,6 @@ class CitusMentoringDataMigrator {
 				tenantCode = orgData.tenant_code
 				organizationCode = orgData.organization_code
 				return { tenantCode, organizationCode, source: 'organization_id' }
-			}
-		}
-
-		// Try user_id lookup
-		if (columns.user_id && record[columns.user_id]) {
-			const userId = record[columns.user_id]
-
-			const userData = this.userLookupCache.get(userId)
-			if (userData) {
-				tenantCode = userData.tenant_code
-			}
-
-			const userOrgs = this.userOrgCache.get(userId)
-			if (userOrgs && userOrgs.length > 0) {
-				const firstOrg = userOrgs[0]
-				organizationCode = firstOrg.organization_code
-				tenantCode = firstOrg.tenant_code
-				return { tenantCode, organizationCode, source: 'user_id' }
 			}
 		}
 
@@ -379,12 +650,16 @@ class CitusMentoringDataMigrator {
 			// Check if we need to update tenant_code (partition key)
 			const needsTenantCodeUpdate = availableUpdateColumns.includes('tenant_code')
 
-			// Step 1: Undistribute table if we need to update partition key or if it's distributed
+			// Check if Citus is enabled before doing any distribution logic
+			const citusEnabled = await this.isCitusEnabled()
+			console.log(`🔧 Citus enabled: ${citusEnabled ? 'Yes' : 'No'}`)
+
+			// Step 1: Undistribute table if we need to update partition key or if it's distributed (Citus only)
 			let wasDistributed = false
-			if (hasPartitionKey && needsTenantCodeUpdate) {
+			if (citusEnabled && hasPartitionKey && needsTenantCodeUpdate) {
 				wasDistributed = await this.undistributeTable(name)
 				console.log(`🔄 Undistributed ${name} to update partition key (tenant_code)`)
-			} else if (hasPartitionKey) {
+			} else if (citusEnabled && hasPartitionKey) {
 				wasDistributed = await this.isTableDistributed(name)
 			}
 
@@ -392,16 +667,16 @@ class CitusMentoringDataMigrator {
 				// Step 2: Process all updates (including tenant_code when undistributed)
 				await this.processTableUpdates(tableConfig, totalRecords, availableUpdateColumns)
 
-				// Step 3: Redistribute table if it was distributed before
-				if (wasDistributed && needsTenantCodeUpdate) {
+				// Step 3: Redistribute table if it was distributed before (Citus only)
+				if (citusEnabled && wasDistributed && needsTenantCodeUpdate) {
 					console.log(`🔄 Redistributing ${name} with updated tenant_code...`)
 					await this.redistributeTable(name)
 				}
 			} catch (error) {
 				console.error(`❌ Error updating table ${name}:`, error)
 
-				// Try to redistribute table even if updates failed
-				if (wasDistributed && needsTenantCodeUpdate) {
+				// Try to redistribute table even if updates failed (Citus only)
+				if (citusEnabled && wasDistributed && needsTenantCodeUpdate) {
 					console.log(`🔄 Attempting to redistribute ${name} after error...`)
 					await this.redistributeTable(name)
 				}
@@ -644,17 +919,29 @@ class CitusMentoringDataMigrator {
 	 */
 	async execute() {
 		try {
-			console.log('🚀 Starting Citus-Compatible Mentoring Service Data Migration...')
+			console.log('🚀 Starting Data Migration with data_codes.csv strategy...')
 			console.log('='.repeat(60))
 
 			await this.sequelize.authenticate()
 			console.log('✅ Database connection established')
 
+			// Check if Citus is enabled
+			const citusEnabled = await this.isCitusEnabled()
+			console.log(`🔧 Citus enabled: ${citusEnabled ? 'Yes' : 'No'}`)
+
 			await this.loadLookupData()
 
-			// Process each table
-			for (const tableConfig of this.tablesToProcess) {
-				await this.processTable(tableConfig)
+			// PHASE 1: Process tables with organization_id using GROUP BY strategy
+			await this.processTablesWithOrgId()
+
+			// PHASE 2: Process tables with user_id using user_extensions data
+			await this.processTablesWithUserId()
+
+			// PHASE 3: Handle Citus distribution if enabled
+			if (citusEnabled) {
+				await this.handleCitusDistribution()
+			} else {
+				console.log('\n⚠️  Citus not enabled, skipping distribution logic')
 			}
 
 			this.printStats()
@@ -664,6 +951,38 @@ class CitusMentoringDataMigrator {
 		} finally {
 			await this.sequelize.close()
 		}
+	}
+
+	/**
+	 * Handle Citus distribution logic (only if Citus is present)
+	 */
+	async handleCitusDistribution() {
+		console.log('\n🔄 PHASE 3: Handling Citus distribution...')
+		console.log('='.repeat(70))
+
+		const allTables = [...this.tablesWithOrgId, ...this.tablesWithUserId]
+		let distributedCount = 0
+
+		for (const tableConfig of allTables) {
+			const { name, hasPartitionKey } = tableConfig
+
+			if (hasPartitionKey) {
+				try {
+					const isDistributed = await this.isTableDistributed(name)
+
+					if (!isDistributed) {
+						await this.redistributeTable(name)
+						distributedCount++
+					} else {
+						console.log(`✅ Table ${name} already distributed`)
+					}
+				} catch (error) {
+					console.log(`⚠️  Could not distribute ${name}: ${error.message}`)
+				}
+			}
+		}
+
+		console.log(`✅ Distribution complete: ${distributedCount} tables redistributed`)
 	}
 }
 
