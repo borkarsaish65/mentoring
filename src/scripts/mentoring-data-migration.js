@@ -602,9 +602,7 @@ class CitusMentoringDataMigrator {
 						await this.redistributeTable(name)
 					}
 				} catch (error) {
-					if (citusEnabled && wasDistributed) {
-						await this.redistributeTable(name)
-					}
+					console.error(`❌ Error during updates for ${name}:`, error.message)
 					throw error
 				}
 			}
