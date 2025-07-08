@@ -144,7 +144,7 @@ class CitusMentoringDataMigrator {
 			},
 			{
 				name: 'session_attendees',
-				columns: { session_id: 'session_id' },
+				columns: { mentee_id: 'mentee_id' },
 				updateColumns: ['tenant_code'],
 				hasPartitionKey: true,
 				useSessionLookup: true, // Special flag to indicate session-based lookup
@@ -207,7 +207,7 @@ class CitusMentoringDataMigrator {
 		console.log('🔄 Loading lookup data from data_codes.csv...')
 
 		try {
-			await this.loadDataCodesData()
+			await this.loadTenantAndOrgCsv()
 
 			console.log(`✅ Loaded lookup data:`)
 			console.log(`   - Organization codes: ${this.orgLookupCache.size}`)
@@ -217,25 +217,57 @@ class CitusMentoringDataMigrator {
 		}
 	}
 
-	async loadDataCodesData() {
+	async loadTenantAndOrgCsv() {
 		const csvPath = path.join(__dirname, '../data/data_codes.csv')
 		if (!fs.existsSync(csvPath)) {
 			console.log('⚠️  data_codes.csv not found, using defaults')
 			return
 		}
 
+		const requiredHeaders = ['tenant_code', 'organization_code', 'organization_id']
+		let isHeaderValidated = false
+
 		return new Promise((resolve, reject) => {
 			fs.createReadStream(csvPath)
 				.pipe(csv())
+				.on('headers', (headers) => {
+					console.log('📋 CSV Headers found:', headers)
+
+					// Validate required headers
+					const missingHeaders = requiredHeaders.filter((header) => !headers.includes(header))
+					if (missingHeaders.length > 0) {
+						reject(
+							new Error(
+								`❌ Missing required CSV headers: ${missingHeaders.join(
+									', '
+								)}. Required headers: ${requiredHeaders.join(', ')}`
+							)
+						)
+						return
+					}
+
+					console.log('✅ CSV headers validation passed')
+					isHeaderValidated = true
+				})
 				.on('data', (row) => {
+					if (!isHeaderValidated) {
+						return // Skip processing until headers are validated
+					}
+
 					if (row.organization_id && row.organization_code && row.tenant_code) {
 						this.orgLookupCache.set(row.organization_id, {
 							organization_code: row.organization_code,
 							tenant_code: row.tenant_code,
 						})
+					} else {
+						console.warn('⚠️  Skipping invalid row:', row)
 					}
 				})
 				.on('end', () => {
+					if (!isHeaderValidated) {
+						reject(new Error('❌ CSV headers could not be validated'))
+						return
+					}
 					console.log(`✅ Loaded ${this.orgLookupCache.size} organization codes`)
 					resolve()
 				})

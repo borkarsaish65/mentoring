@@ -221,6 +221,75 @@ module.exports = {
 							)
 							break
 
+						case 'issues':
+							// issues table - composite primary key with tenant_code, id
+							await queryInterface.sequelize.query(
+								`ALTER TABLE ${tableName} DROP CONSTRAINT IF EXISTS ${tableName}_pkey CASCADE`
+							)
+							await queryInterface.sequelize.query(
+								`ALTER TABLE ${tableName} ADD PRIMARY KEY (tenant_code, id)`
+							)
+							break
+
+						case 'question_sets':
+							// question_sets table - composite primary key with code, tenant_code
+							const questionSetColumns = await queryInterface.describeTable(tableName)
+							if (questionSetColumns.code && questionSetColumns.tenant_code) {
+								await queryInterface.sequelize.query(
+									`ALTER TABLE ${tableName} DROP CONSTRAINT IF EXISTS ${tableName}_pkey CASCADE`
+								)
+								await queryInterface.sequelize.query(
+									`ALTER TABLE ${tableName} ADD PRIMARY KEY (code, tenant_code)`
+								)
+							} else {
+								console.log(`⚠️  Missing required columns for ${tableName} primary key`)
+							}
+							break
+
+						case 'questions':
+							// questions table - keep id as primary key (no change needed)
+							console.log(`✅ ${tableName} primary key unchanged (id only)`)
+							break
+
+						case 'report_queries':
+							// report_queries table - composite primary key with report_code, tenant_code, organization_code
+							const reportQueryColumns = await queryInterface.describeTable(tableName)
+							if (
+								reportQueryColumns.report_code &&
+								reportQueryColumns.tenant_code &&
+								reportQueryColumns.organization_code
+							) {
+								await queryInterface.sequelize.query(
+									`ALTER TABLE ${tableName} DROP CONSTRAINT IF EXISTS ${tableName}_pkey CASCADE`
+								)
+								await queryInterface.sequelize.query(
+									`ALTER TABLE ${tableName} ADD PRIMARY KEY (report_code, tenant_code, organization_code)`
+								)
+							} else {
+								console.log(`⚠️  Missing required columns for ${tableName} primary key`)
+							}
+							break
+
+						case 'report_role_mapping':
+							// report_role_mapping table - keep existing primary key (role_title, report_code)
+							console.log(`✅ ${tableName} primary key unchanged (role_title, report_code)`)
+							break
+
+						case 'report_types':
+							// report_types table - composite primary key with title, tenant_code
+							const reportTypeColumns = await queryInterface.describeTable(tableName)
+							if (reportTypeColumns.title && reportTypeColumns.tenant_code) {
+								await queryInterface.sequelize.query(
+									`ALTER TABLE ${tableName} DROP CONSTRAINT IF EXISTS ${tableName}_pkey CASCADE`
+								)
+								await queryInterface.sequelize.query(
+									`ALTER TABLE ${tableName} ADD PRIMARY KEY (title, tenant_code)`
+								)
+							} else {
+								console.log(`⚠️  Missing required columns for ${tableName} primary key`)
+							}
+							break
+
 						default:
 							// For most tables, use (tenant_code, id) as primary key
 							await queryInterface.sequelize.query(
@@ -508,50 +577,6 @@ module.exports = {
 								}
 								break
 
-							case 'report_queries':
-								await queryInterface.sequelize.query(
-									`DROP INDEX IF EXISTS unique_queries_report_code_organization`
-								)
-								await queryInterface.sequelize.query(`
-									CREATE UNIQUE INDEX unique_queries_report_code_organization_tenant 
-									ON report_queries (tenant_code, report_code, organization_id) 
-									WHERE deleted_at IS NULL
-								`)
-								break
-
-							case 'report_types':
-								// Drop all existing title constraints and indexes (including the current one)
-								await queryInterface.sequelize.query(`DROP INDEX IF EXISTS report_types_title_unique`)
-								await queryInterface.sequelize.query(`DROP INDEX IF EXISTS report_types_title`)
-								await queryInterface.sequelize.query(`DROP INDEX IF EXISTS report_types_title_key`)
-								await queryInterface.sequelize.query(
-									`ALTER TABLE report_types DROP CONSTRAINT IF EXISTS report_types_title_unique CASCADE`
-								)
-								await queryInterface.sequelize.query(
-									`ALTER TABLE report_types DROP CONSTRAINT IF EXISTS report_types_title CASCADE`
-								)
-								await queryInterface.sequelize.query(
-									`ALTER TABLE report_types DROP CONSTRAINT IF EXISTS report_types_title_key CASCADE`
-								)
-								await queryInterface.sequelize.query(
-									`ALTER TABLE report_types DROP CONSTRAINT IF EXISTS unique_title CASCADE`
-								)
-
-								// Create new unique constraint with tenant_code (only if not exists)
-								const [existingTitleIndex] = await queryInterface.sequelize.query(`
-									SELECT indexname FROM pg_indexes 
-									WHERE tablename = 'report_types' AND indexname = 'report_types_title_unique_tenant'
-								`)
-
-								if (existingTitleIndex.length === 0) {
-									await queryInterface.sequelize.query(`
-										CREATE UNIQUE INDEX report_types_title_unique_tenant 
-										ON report_types (tenant_code, title) 
-										WHERE deleted_at IS NULL
-									`)
-								}
-								break
-
 							case 'reports':
 								await queryInterface.sequelize.query(
 									`DROP INDEX IF EXISTS report_code_organization_unique`
@@ -570,6 +595,91 @@ module.exports = {
 								)
 								await queryInterface.sequelize.query(
 									`ALTER TABLE ${tableName} ADD PRIMARY KEY (tenant_code, user_id)`
+								)
+								break
+
+							case 'issues':
+								// issues table - add tenant_code to unique constraints if any
+								await queryInterface.sequelize.query(
+									`ALTER TABLE ${tableName} DROP CONSTRAINT IF EXISTS ${tableName}_pkey CASCADE`
+								)
+								await queryInterface.sequelize.query(
+									`ALTER TABLE ${tableName} ADD PRIMARY KEY (tenant_code, id)`
+								)
+								break
+
+							case 'question_sets':
+								// question_sets table - update unique constraints for code + tenant_code
+								await queryInterface.sequelize.query(
+									`ALTER TABLE ${tableName} DROP CONSTRAINT IF EXISTS ${tableName}_pkey CASCADE`
+								)
+								await queryInterface.sequelize.query(
+									`ALTER TABLE ${tableName} ADD PRIMARY KEY (code, tenant_code)`
+								)
+								break
+
+							case 'questions':
+								// questions table - no constraint changes needed (id remains primary key)
+								console.log(`✅ ${tableName} constraints unchanged`)
+								break
+
+							case 'report_queries':
+								// report_queries table - update unique constraints
+								await queryInterface.sequelize.query(
+									`DROP INDEX IF EXISTS report_code_organization_unique_queries`
+								)
+								await queryInterface.sequelize.query(`
+									CREATE UNIQUE INDEX report_code_organization_unique_queries_tenant 
+									ON report_queries (tenant_code, report_code, organization_code) 
+									WHERE deleted_at IS NULL
+								`)
+								await queryInterface.sequelize.query(
+									`ALTER TABLE ${tableName} DROP CONSTRAINT IF EXISTS ${tableName}_pkey CASCADE`
+								)
+								await queryInterface.sequelize.query(
+									`ALTER TABLE ${tableName} ADD PRIMARY KEY (report_code, tenant_code, organization_code)`
+								)
+								break
+
+							case 'report_role_mapping':
+								// report_role_mapping table - no constraint changes needed (existing PK remains)
+								console.log(`✅ ${tableName} constraints unchanged`)
+								break
+
+							case 'report_types':
+								// report_types table - update title unique constraint with tenant_code
+								await queryInterface.sequelize.query(`DROP INDEX IF EXISTS report_types_title_unique`)
+								await queryInterface.sequelize.query(`DROP INDEX IF EXISTS report_types_title`)
+								await queryInterface.sequelize.query(`DROP INDEX IF EXISTS report_types_title_key`)
+								await queryInterface.sequelize.query(
+									`ALTER TABLE report_types DROP CONSTRAINT IF EXISTS report_types_title_unique CASCADE`
+								)
+								await queryInterface.sequelize.query(
+									`ALTER TABLE report_types DROP CONSTRAINT IF EXISTS report_types_title CASCADE`
+								)
+								await queryInterface.sequelize.query(
+									`ALTER TABLE report_types DROP CONSTRAINT IF EXISTS report_types_title_key CASCADE`
+								)
+
+								// Create new unique constraint with tenant_code
+								const [existingTitleIndex] = await queryInterface.sequelize.query(`
+									SELECT indexname FROM pg_indexes 
+									WHERE tablename = 'report_types' AND indexname = 'report_types_title_unique_tenant_new'
+								`)
+
+								if (existingTitleIndex.length === 0) {
+									await queryInterface.sequelize.query(`
+										CREATE UNIQUE INDEX report_types_title_unique_tenant_new 
+										ON report_types (tenant_code, title) 
+										WHERE deleted_at IS NULL
+									`)
+								}
+
+								await queryInterface.sequelize.query(
+									`ALTER TABLE ${tableName} DROP CONSTRAINT IF EXISTS ${tableName}_pkey CASCADE`
+								)
+								await queryInterface.sequelize.query(
+									`ALTER TABLE ${tableName} ADD PRIMARY KEY (title, tenant_code)`
 								)
 								break
 
@@ -595,9 +705,13 @@ module.exports = {
 					'entities',
 					'entity_types',
 					'forms',
+					'issues',
 					'modules',
 					'organization_extension',
+					'question_sets',
+					'questions',
 					'report_queries',
+					'report_role_mapping',
 					'report_types',
 					'reports',
 					'user_extensions',
@@ -696,23 +810,56 @@ module.exports = {
 
 			if (fs.existsSync(csvPath)) {
 				console.log('📂 Loading data_codes.csv...')
-				await new Promise((resolve, reject) => {
-					fs.createReadStream(csvPath)
-						.pipe(csv())
-						.on('data', (row) => {
-							if (row.organization_id && row.organization_code && row.tenant_code) {
-								orgLookupCache.set(row.organization_id, {
-									organization_code: row.organization_code,
-									tenant_code: row.tenant_code,
-								})
-							}
-						})
-						.on('end', () => {
-							console.log(`✅ Loaded ${orgLookupCache.size} organization mappings`)
-							resolve()
-						})
-						.on('error', reject)
-				})
+				try {
+					await new Promise((resolve, reject) => {
+						let rowCount = 0
+						let validRowCount = 0
+
+						fs.createReadStream(csvPath)
+							.pipe(csv())
+							.on('data', (row) => {
+								rowCount++
+								try {
+									if (row.organization_id && row.organization_code && row.tenant_code) {
+										// Sanitize data to prevent SQL injection
+										const sanitizedOrgId = String(row.organization_id).trim()
+										const sanitizedOrgCode = String(row.organization_code)
+											.trim()
+											.replace(/['"]/g, '')
+										const sanitizedTenantCode = String(row.tenant_code).trim().replace(/['"]/g, '')
+
+										if (sanitizedOrgId && sanitizedOrgCode && sanitizedTenantCode) {
+											orgLookupCache.set(sanitizedOrgId, {
+												organization_code: sanitizedOrgCode,
+												tenant_code: sanitizedTenantCode,
+											})
+											validRowCount++
+										}
+									}
+								} catch (rowError) {
+									console.log(`⚠️  Error processing row ${rowCount}: ${rowError.message}`)
+								}
+							})
+							.on('end', () => {
+								console.log(
+									`✅ Loaded ${orgLookupCache.size} organization mappings from ${rowCount} rows (${validRowCount} valid)`
+								)
+								if (orgLookupCache.size === 0) {
+									console.log(
+										'⚠️  No valid organization data found in CSV, migration will use default values'
+									)
+								}
+								resolve()
+							})
+							.on('error', (csvError) => {
+								console.log(`❌ CSV processing error: ${csvError.message}`)
+								resolve() // Don't fail the migration, continue with empty cache
+							})
+					})
+				} catch (csvLoadError) {
+					console.log(`❌ Failed to load CSV file: ${csvLoadError.message}`)
+					console.log('⚠️  Continuing migration with default values')
+				}
 
 				// Phase 2.5.1: Update tables with organization_id using efficient GROUP BY
 				console.log('\n📊 Updating tables with organization_id using GROUP BY...')
@@ -729,8 +876,6 @@ module.exports = {
 					'reports',
 					'role_extensions',
 					'user_extensions',
-					'question_sets',
-					'questions',
 				]
 
 				for (const tableName of tablesWithOrgId) {
@@ -748,20 +893,39 @@ module.exports = {
 							continue
 						}
 
+						const totalRows = tableInfo[0].row_count
+
 						// Create temporary lookup table with index for performance
+						if (orgLookupCache.size === 0) {
+							console.log(`    ⚠️  No organization data available, skipping ${tableName}`)
+							continue
+						}
+
 						await queryInterface.sequelize.query(`DROP TABLE IF EXISTS temp_org_lookup`)
+
+						// Build VALUES clause safely
+						const valuesClause = Array.from(orgLookupCache.entries())
+							.map(([orgId, data]) => {
+								// Additional sanitization for SQL safety
+								const safeOrgId = String(orgId).replace(/'/g, "''")
+								const safeOrgCode = String(data.organization_code).replace(/'/g, "''")
+								const safeTenantCode = String(data.tenant_code).replace(/'/g, "''")
+								return `('${safeOrgId}', '${safeOrgCode}', '${safeTenantCode}')`
+							})
+							.join(', ')
+
+						if (!valuesClause) {
+							console.log(`    ⚠️  No valid organization data for VALUES clause, skipping ${tableName}`)
+							continue
+						}
+
 						await queryInterface.sequelize.query(`
 							CREATE TEMP TABLE temp_org_lookup AS
 							SELECT DISTINCT 
 								organization_id::text as org_id,
 								organization_code,
 								tenant_code
-							FROM (VALUES ${Array.from(orgLookupCache.entries())
-								.map(
-									([orgId, data]) =>
-										`('${orgId}', '${data.organization_code}', '${data.tenant_code}')`
-								)
-								.join(', ')}) AS t(organization_id, organization_code, tenant_code)
+							FROM (VALUES ${valuesClause}) AS t(organization_id, organization_code, tenant_code)
 						`)
 
 						// Create index for performance on large datasets
@@ -799,7 +963,18 @@ module.exports = {
 						const duration = ((Date.now() - startTime) / 1000).toFixed(2)
 
 						const updatedRows = updateResult.rowCount || 0
-						console.log(`    ✅ Updated ${updatedRows} rows in ${tableName} (${duration}s)`)
+
+						// Check how many rows still need updating (failed)
+						const [failedResult] = await queryInterface.sequelize.query(`
+							SELECT COUNT(*) as failed_count
+							FROM ${tableName} 
+							WHERE tenant_code IS NULL OR organization_code IS NULL
+						`)
+						const failedRows = failedResult[0].failed_count || 0
+
+						console.log(
+							`    📊 ${tableName}: ${totalRows} total, ${updatedRows} updated, ${failedRows} failed (${duration}s)`
+						)
 					} catch (error) {
 						console.log(`    ❌ Error updating ${tableName}: ${error.message}`)
 					}
@@ -812,6 +987,13 @@ module.exports = {
 					{ name: 'feedbacks', userColumn: 'user_id' },
 					{ name: 'connection_requests', userColumn: 'created_by' },
 					{ name: 'connections', userColumn: 'created_by' },
+					{ name: 'entities', userColumn: 'created_by' },
+					{ name: 'issues', userColumn: 'user_id' },
+					{ name: 'question_sets', userColumn: 'created_by' },
+					{ name: 'questions', userColumn: 'created_by' },
+					{ name: 'resources', userColumn: 'created_by' },
+					{ name: 'session_request', userColumn: 'created_by' },
+					{ name: 'session_attendees', userColumn: 'mentee_id' },
 				]
 
 				for (const tableConfig of tablesWithUserId) {
@@ -829,12 +1011,15 @@ module.exports = {
 							continue
 						}
 
+						const totalRows = tableInfo[0].row_count
+
 						// Efficient bulk update using user_extensions with progress tracking
 						const startTime = Date.now()
 						const [updateResult] = await queryInterface.sequelize.query(`
 							UPDATE ${tableConfig.name} 
 							SET 
 								tenant_code = ue.tenant_code,
+								organization_code = ue.organization_code,
 								updated_at = NOW()
 							FROM user_extensions ue
 							WHERE ${tableConfig.name}.${tableConfig.userColumn} = ue.user_id
@@ -844,33 +1029,21 @@ module.exports = {
 						const duration = ((Date.now() - startTime) / 1000).toFixed(2)
 
 						const updatedRows = updateResult.rowCount || 0
-						console.log(`    ✅ Updated ${updatedRows} rows in ${tableConfig.name} (${duration}s)`)
+
+						// Check how many rows still need updating (failed)
+						const [failedResult] = await queryInterface.sequelize.query(`
+							SELECT COUNT(*) as failed_count
+							FROM ${tableConfig.name} 
+							WHERE tenant_code IS NULL
+						`)
+						const failedRows = failedResult[0].failed_count || 0
+
+						console.log(
+							`    📊 ${tableConfig.name}: ${totalRows} total, ${updatedRows} updated, ${failedRows} failed (${duration}s)`
+						)
 					} catch (error) {
 						console.log(`    ❌ Error updating ${tableConfig.name}: ${error.message}`)
 					}
-				}
-
-				// Phase 2.5.3: Handle session_attendees using sessions lookup
-				try {
-					console.log(`  Updating session_attendees via sessions...`)
-
-					const startTime = Date.now()
-					const [updateResult] = await queryInterface.sequelize.query(`
-						UPDATE session_attendees 
-						SET 
-							tenant_code = s.tenant_code,
-							updated_at = NOW()
-						FROM sessions s
-						WHERE session_attendees.session_id = s.id
-						AND s.tenant_code IS NOT NULL
-						AND (session_attendees.tenant_code IS NULL OR session_attendees.tenant_code != s.tenant_code)
-					`)
-					const duration = ((Date.now() - startTime) / 1000).toFixed(2)
-
-					const updatedRows = updateResult.rowCount || 0
-					console.log(`    ✅ Updated ${updatedRows} rows in session_attendees (${duration}s)`)
-				} catch (error) {
-					console.log(`    ❌ Error updating session_attendees: ${error.message}`)
 				}
 			} else {
 				console.log('⚠️  data_codes.csv not found, skipping data population')
@@ -1044,9 +1217,14 @@ module.exports = {
 				'entity_types',
 				'file_uploads',
 				'forms',
+				'issues',
 				'notification_templates',
 				'organization_extension',
+				'question_sets',
+				'questions',
 				'report_queries',
+				'report_role_mapping',
+				'report_types',
 				'reports',
 				'role_extensions',
 				'user_extensions',
