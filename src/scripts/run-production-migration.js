@@ -6,7 +6,7 @@
  */
 
 require('dotenv').config({ path: '../.env' })
-const CitusMentoringDataMigrator = require('./mentoring-data-migration')
+const MentoringDataMigrator = require('./mentoring-data-migration')
 const readline = require('readline')
 
 console.log('🎯 Production Mentoring Service Data Migration')
@@ -78,13 +78,13 @@ rl.question('\n🤔 Proceed with production migration? (y/N): ', async (answer) 
 		rl.close()
 
 		try {
-			const migrator = new CitusMentoringDataMigrator()
+			const migrator = new MentoringDataMigrator()
 
-			// Production configuration
-			migrator.batchSize = 1000
-			migrator.maxRetries = 5
-			migrator.retryDelay = 3000
-			migrator.progressInterval = 10000
+			// Production configuration - can be overridden via environment variables
+			migrator.batchSize = parseInt(process.env.BATCH_SIZE) || 5000
+			migrator.maxRetries = parseInt(process.env.MAX_RETRIES) || 5
+			migrator.retryDelay = parseInt(process.env.RETRY_DELAY) || 3000
+			migrator.progressInterval = parseInt(process.env.PROGRESS_INTERVAL) || 10000
 
 			console.log('\n📊 Production Settings:')
 			console.log(`   Batch size: ${migrator.batchSize}`)

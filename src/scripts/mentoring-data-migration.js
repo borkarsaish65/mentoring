@@ -10,7 +10,7 @@ require('dotenv').config({ path: '../.env' })
  * Updates tenant_code and organization_code based on user service data
  */
 
-class CitusMentoringDataMigrator {
+class MentoringDataMigrator {
 	constructor() {
 		this.sequelize = new Sequelize(process.env.DEV_DATABASE_URL, {
 			dialect: 'postgres',
@@ -29,7 +29,7 @@ class CitusMentoringDataMigrator {
 		this.defaultOrgId = process.env.DEFAULT_ORG_ID || '1'
 
 		// Batch processing configuration
-		this.batchSize = 1000
+		this.batchSize = 5000
 		this.maxRetries = 3
 		this.retryDelay = 2000
 		this.progressInterval = 5000
@@ -150,10 +150,9 @@ class CitusMentoringDataMigrator {
 			},
 			{
 				name: 'session_attendees',
-				columns: { session_id: 'session_id', mentee_id: 'mentee_id' },
+				columns: { user_id: 'mentee_id' },
 				updateColumns: ['tenant_code'],
 				hasPartitionKey: true,
-				useSessionLookup: true, // Special flag to indicate session-based lookup
 			},
 			{
 				name: 'feedbacks',
@@ -626,29 +625,15 @@ class CitusMentoringDataMigrator {
 			// Get table configuration
 			const tableConfig = this.tablesWithUserId.find((t) => t.name === tableName)
 
-			let updateQuery
-
-			if (tableConfig.useSessionLookup) {
-				// For session_attendees: get tenant_code from sessions table based on session_id
-				const sessionIdColumn = tableConfig.columns.session_id
-				updateQuery = `
-					UPDATE ${tableName} 
-					SET tenant_code = s.tenant_code, updated_at = NOW()
-					FROM sessions s
-					WHERE ${tableName}.${sessionIdColumn} = s.id
-					AND s.tenant_code IS NOT NULL
-				`
-			} else {
-				// Standard user_id lookup using user_extensions
-				const userIdColumn = tableConfig.columns.user_id
-				updateQuery = `
-					UPDATE ${tableName} 
-					SET tenant_code = ue.tenant_code, updated_at = NOW()
-					FROM user_extensions ue
-					WHERE ${tableName}.${userIdColumn} = ue.user_id
-					AND ue.tenant_code IS NOT NULL
-				`
-			}
+			// Standard user_id lookup using user_extensions
+			const userIdColumn = tableConfig.columns.user_id
+			const updateQuery = `
+				UPDATE ${tableName} 
+				SET tenant_code = ue.tenant_code, updated_at = NOW()
+				FROM user_extensions ue
+				WHERE ${tableName}.${userIdColumn} = ue.user_id
+				AND ue.tenant_code IS NOT NULL
+			`
 
 			const [result] = await this.sequelize.query(updateQuery, { transaction })
 			const updatedRows = result.rowCount || 0
@@ -1090,8 +1075,8 @@ class CitusMentoringDataMigrator {
 
 // Execute migration if run directly
 if (require.main === module) {
-	const migrator = new CitusMentoringDataMigrator()
+	const migrator = new MentoringDataMigrator()
 	migrator.execute()
 }
 
-module.exports = CitusMentoringDataMigrator
+module.exports = MentoringDataMigrator
