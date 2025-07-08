@@ -2,7 +2,7 @@ const { Sequelize } = require('sequelize')
 const fs = require('fs')
 const path = require('path')
 const csv = require('csv-parser')
-require('dotenv').config()
+require('dotenv').config({ path: '../.env' })
 
 /**
  * Citus-Compatible Data Migration Script for Mentoring Service
@@ -96,18 +96,6 @@ class CitusMentoringDataMigrator {
 				primaryKey: ['tenant_code', 'organization_id'],
 			},
 			{
-				name: 'question_sets',
-				columns: { organization_id: 'organization_id' },
-				updateColumns: ['tenant_code', 'organization_code'],
-				hasPartitionKey: true,
-			},
-			{
-				name: 'questions',
-				columns: { organization_id: 'organization_id' },
-				updateColumns: ['tenant_code', 'organization_code'],
-				hasPartitionKey: true,
-			},
-			{
 				name: 'report_queries',
 				columns: { organization_id: 'organization_id' },
 				updateColumns: ['tenant_code', 'organization_code'],
@@ -121,6 +109,24 @@ class CitusMentoringDataMigrator {
 			},
 			{
 				name: 'role_extensions',
+				columns: { organization_id: 'organization_id' },
+				updateColumns: ['tenant_code', 'organization_code'],
+				hasPartitionKey: true,
+			},
+			{
+				name: 'modules',
+				columns: { organization_id: 'organization_id' },
+				updateColumns: ['tenant_code', 'organization_code'],
+				hasPartitionKey: true,
+			},
+			{
+				name: 'report_role_mapping',
+				columns: { organization_id: 'organization_id' },
+				updateColumns: ['tenant_code', 'organization_code'],
+				hasPartitionKey: true,
+			},
+			{
+				name: 'report_types',
 				columns: { organization_id: 'organization_id' },
 				updateColumns: ['tenant_code', 'organization_code'],
 				hasPartitionKey: true,
@@ -144,7 +150,7 @@ class CitusMentoringDataMigrator {
 			},
 			{
 				name: 'session_attendees',
-				columns: { mentee_id: 'mentee_id' },
+				columns: { session_id: 'session_id', mentee_id: 'mentee_id' },
 				updateColumns: ['tenant_code'],
 				hasPartitionKey: true,
 				useSessionLookup: true, // Special flag to indicate session-based lookup
@@ -175,13 +181,7 @@ class CitusMentoringDataMigrator {
 			},
 			{
 				name: 'issues',
-				columns: { user_id: 'created_by' },
-				updateColumns: ['tenant_code'],
-				hasPartitionKey: true,
-			},
-			{
-				name: 'post_session_details',
-				columns: { user_id: 'created_by' },
+				columns: { user_id: 'user_id' },
 				updateColumns: ['tenant_code'],
 				hasPartitionKey: true,
 			},
@@ -196,6 +196,25 @@ class CitusMentoringDataMigrator {
 				columns: { user_id: 'created_by' },
 				updateColumns: ['tenant_code'],
 				hasPartitionKey: true,
+			},
+			{
+				name: 'question_sets',
+				columns: { user_id: 'created_by' },
+				updateColumns: ['tenant_code', 'organization_code'],
+				hasPartitionKey: true,
+			},
+			{
+				name: 'questions',
+				columns: { user_id: 'created_by' },
+				updateColumns: ['tenant_code', 'organization_code'],
+				hasPartitionKey: true,
+			},
+			{
+				name: 'post_session_details',
+				columns: { session_id: 'session_id' },
+				updateColumns: ['tenant_code'],
+				hasPartitionKey: true,
+				useSessionLookup: true,
 			},
 		]
 	}
@@ -383,7 +402,10 @@ class CitusMentoringDataMigrator {
 
 			try {
 				// Step 2: Use efficient GROUP BY update strategy
-				await this.executeGroupByUpdates(name, availableUpdateColumns)
+				const updateResult = await this.executeGroupByUpdates(name, availableUpdateColumns)
+
+				// Add detailed logging like in migration
+				await this.logTableUpdateResults(name)
 
 				// Step 3: Redistribute table if it was distributed before
 				if (citusEnabled && wasDistributed && needsTenantCodeUpdate) {
@@ -413,6 +435,20 @@ class CitusMentoringDataMigrator {
 	 */
 	async executeGroupByUpdates(tableName, availableUpdateColumns) {
 		console.log(`📊 Executing GROUP BY updates for ${tableName}...`)
+
+		// Check if table has organization_id column
+		const [columnCheck] = await this.sequelize.query(`
+			SELECT EXISTS(
+				SELECT 1 FROM information_schema.columns 
+				WHERE table_name = '${tableName}' 
+				AND column_name = 'organization_id'
+			) as has_org_id
+		`)
+
+		if (!columnCheck[0].has_org_id) {
+			console.log(`⚠️  Table ${tableName} does not have organization_id column, skipping GROUP BY update`)
+			return
+		}
 
 		const transaction = await this.sequelize.transaction()
 
@@ -557,6 +593,9 @@ class CitusMentoringDataMigrator {
 
 				try {
 					await this.executeUserIdUpdates(name)
+
+					// Add detailed logging like in migration
+					await this.logTableUpdateResults(name)
 
 					// Redistribute if needed
 					if (citusEnabled && wasDistributed) {
@@ -1015,6 +1054,39 @@ class CitusMentoringDataMigrator {
 		}
 
 		console.log(`✅ Distribution complete: ${distributedCount} tables redistributed`)
+	}
+
+	/**
+	 * Log detailed update results for a table (moved from migration)
+	 */
+	async logTableUpdateResults(tableName) {
+		try {
+			const defaultTenantCode = process.env.DEFAULT_ORGANISATION_CODE || 'default'
+
+			// Get total row count
+			const [totalResult] = await this.sequelize.query(`SELECT COUNT(*) as total_count FROM ${tableName}`)
+			const totalRows = totalResult[0].total_count || 0
+
+			// Get updated row count (non-default tenant_code)
+			const [updatedResult] = await this.sequelize.query(`
+				SELECT COUNT(*) as updated_count 
+				FROM ${tableName} 
+				WHERE tenant_code IS NOT NULL AND tenant_code != '${defaultTenantCode}'
+			`)
+			const updatedRows = updatedResult[0].updated_count || 0
+
+			// Get failed row count (still default or null)
+			const [failedResult] = await this.sequelize.query(`
+				SELECT COUNT(*) as failed_count 
+				FROM ${tableName} 
+				WHERE tenant_code = '${defaultTenantCode}' OR tenant_code IS NULL
+			`)
+			const failedRows = failedResult[0].failed_count || 0
+
+			console.log(`    📊 ${tableName}: ${totalRows} total, ${updatedRows} updated, ${failedRows} failed`)
+		} catch (error) {
+			console.log(`    ⚠️  Could not get detailed stats for ${tableName}: ${error.message}`)
+		}
 	}
 }
 
