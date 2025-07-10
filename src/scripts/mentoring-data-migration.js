@@ -627,7 +627,12 @@ class MentoringDataMigrator {
 				setClauses.push('updated_at = NOW()')
 
 				// Build WHERE conditions based on what columns sessions table actually has
-				const whereConditions = [`${tableName}.${sessionIdColumn} = s.id`, 's.tenant_code IS NOT NULL']
+				// Check for non-default values since migration sets defaults
+				const defaultTenantCode = process.env.DEFAULT_ORGANISATION_CODE || 'default'
+				const whereConditions = [
+					`${tableName}.${sessionIdColumn} = s.id`,
+					`s.tenant_code IS NOT NULL AND s.tenant_code != '${defaultTenantCode}'`,
+				]
 
 				// Only add organization_code condition if we're actually using it
 				if (tableConfig.updateColumns.includes('organization_code')) {
@@ -641,43 +646,74 @@ class MentoringDataMigrator {
 					WHERE ${whereConditions.join(' AND ')}
 				`
 			} else if (tableConfig.useDefaultValues) {
-				// Special case for tables without user_id or organization_id: use default values
-				const setClauses = []
-				if (tableConfig.updateColumns.includes('tenant_code')) {
-					setClauses.push(`tenant_code = '${this.defaultTenantCode}'`)
-				}
-				if (tableConfig.updateColumns.includes('organization_code')) {
-					setClauses.push(`organization_code = '${this.defaultOrgCode}'`)
-				}
-				setClauses.push('updated_at = NOW()')
-
-				updateQuery = `
-					UPDATE ${tableName} 
-					SET ${setClauses.join(', ')}
-					WHERE tenant_code IS NULL OR tenant_code = ''
-				`
+				// REMOVED: Migration already sets default values, skipping this logic
+				console.log(`⚠️  Table ${tableName} uses default values - migration already handled this, skipping`)
+				await transaction.commit()
+				return
 			} else {
-				// Standard user_id lookup using user_extensions
+				// Standard user_id lookup using user_extensions with GROUP BY organization_id approach
 				const userIdColumn = tableConfig.columns.user_id
+				const defaultTenantCode = process.env.DEFAULT_ORGANISATION_CODE || 'default'
 
-				// Build SET clause based on available update columns
-				const setClauses = []
-				if (tableConfig.updateColumns.includes('tenant_code')) {
-					setClauses.push('tenant_code = ue.tenant_code')
-				}
-				if (tableConfig.updateColumns.includes('organization_code')) {
-					setClauses.push('organization_code = ue.organization_code')
-				}
-				setClauses.push('updated_at = NOW()')
-
-				updateQuery = `
-					UPDATE ${tableName} 
-					SET ${setClauses.join(', ')}
+				// Get distinct organizations from user_extensions for this table
+				const [userExtByOrg] = await this.sequelize.query(`
+					SELECT DISTINCT ue.organization_id::text as org_id
 					FROM user_extensions ue
-					WHERE ${tableName}.${userIdColumn} = ue.user_id
+					INNER JOIN ${tableName} t ON t.${userIdColumn} = ue.user_id
+					WHERE ue.organization_id IS NOT NULL
 					AND ue.tenant_code IS NOT NULL
-					AND ue.organization_code IS NOT NULL
-				`
+					AND ue.tenant_code != '${defaultTenantCode}'
+					ORDER BY org_id
+				`)
+
+				console.log(`🔄 Processing ${tableName} with ${userExtByOrg.length} organizations (GROUP BY approach)`)
+
+				if (userExtByOrg.length === 0) {
+					console.log(`⚠️  No organizations found for ${tableName}, skipping updates`)
+					await transaction.commit()
+					return
+				}
+
+				let totalUpdated = 0
+
+				// Process each organization in batches
+				const orgBatchSize = 100
+				for (let i = 0; i < userExtByOrg.length; i += orgBatchSize) {
+					const orgBatch = userExtByOrg.slice(i, i + orgBatchSize)
+
+					// Process each organization individually
+					for (const org of orgBatch) {
+						// Build SET clause based on available update columns
+						const setClauses = []
+						if (tableConfig.updateColumns.includes('tenant_code')) {
+							setClauses.push('tenant_code = ue.tenant_code')
+						}
+						if (tableConfig.updateColumns.includes('organization_code')) {
+							setClauses.push('organization_code = ue.organization_code')
+						}
+						setClauses.push('updated_at = NOW()')
+
+						const [, metadata] = await this.sequelize.query(
+							`
+							UPDATE ${tableName} 
+							SET ${setClauses.join(', ')}
+							FROM user_extensions ue
+							WHERE ${tableName}.${userIdColumn} = ue.user_id
+							AND ue.organization_id::text = '${org.org_id.replace(/'/g, "''")}'
+							AND ue.tenant_code IS NOT NULL
+							AND ue.tenant_code != '${defaultTenantCode}'
+						`,
+							{ transaction }
+						)
+
+						totalUpdated += metadata.rowCount || 0
+					}
+				}
+
+				console.log(`✅ Updated ${totalUpdated} rows in ${tableName} using GROUP BY organization_id approach`)
+				this.stats.successfulUpdates += totalUpdated
+				await transaction.commit()
+				return
 			}
 
 			const [result] = await this.sequelize.query(updateQuery, { transaction })
