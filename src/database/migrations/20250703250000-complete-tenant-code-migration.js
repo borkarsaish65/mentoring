@@ -3,7 +3,7 @@
 module.exports = {
 	up: async (queryInterface, Sequelize) => {
 		try {
-			console.log('🚀 Starting complete tenant-code migration (FIXED VERSION)...')
+			console.log('🚀 Starting complete tenant-code migration (REFRESHED VERSION)...')
 
 			// Check if Citus is enabled
 			const citusEnabled = await queryInterface.sequelize.query(
@@ -310,28 +310,22 @@ module.exports = {
 			// Add organization_code columns to all tables that need them
 			console.log('\n📝 Adding organization_code columns to all required tables...')
 			const allTablesNeedingOrgCode = [
-				'availabilities',
-				'connection_requests',
-				'connections',
-				'default_rules',
-				'entities',
-				'entity_types',
-				'feedbacks',
-				'file_uploads',
-				'forms',
-				'issues',
-				'notification_templates',
-				'organization_extension',
-				'question_sets',
-				'questions',
-				'report_queries',
-				'reports',
-				'resources',
-				'role_extensions',
-				'session_attendees',
-				'session_request',
-				'sessions',
-				'user_extensions',
+				'availabilities', // tenant and Org
+				'default_rules', // tenant and Org
+				'entity_types', // tenant and Org
+				'file_uploads', // tenant and Org
+				'forms', // tenant and Org
+				'issues', // tenant and Org (per user specification)
+				'notification_templates', // tenant and Org
+				'organization_extension', // tenant and Org
+				'question_sets', // tenant and Org
+				'questions', // tenant and Org (per user specification)
+				'report_queries', // tenant and Org
+				'report_role_mapping', // tenant and Org (per user specification)
+				'report_types', // tenant and Org (per user specification)
+				'reports', // tenant and Org
+				'role_extensions', // tenant and Org
+				'user_extensions', // tenant and Org
 			]
 
 			for (const tableName of allTablesNeedingOrgCode) {
@@ -752,39 +746,49 @@ module.exports = {
 					console.log('⚠️  Continuing migration with default values')
 				}
 
-				// Create temporary lookup table for better performance
+				// =============================================================================
+				// CSV DATA PROCESSING (NO VALIDATION - CONTINUES WITH DEFAULTS IF CSV MISSING)
+				// =============================================================================
+				console.log('\n📊 CSV Data Processing: Loading organization mappings...')
+				console.log('='.repeat(70))
+
 				if (orgLookupCache.size > 0) {
-					await queryInterface.sequelize.query(`DROP TABLE IF EXISTS temp_org_lookup`)
-
-					const valuesClause = Array.from(orgLookupCache.entries())
-						.map(([orgId, data]) => {
-							const safeOrgId = String(orgId).replace(/'/g, "''")
-							const safeOrgCode = String(data.organization_code).replace(/'/g, "''")
-							const safeTenantCode = String(data.tenant_code).replace(/'/g, "''")
-							return `('${safeOrgId}', '${safeOrgCode}', '${safeTenantCode}')`
-						})
-						.join(', ')
-
-					if (valuesClause) {
-						await queryInterface.sequelize.query(`
-							CREATE TEMP TABLE temp_org_lookup AS
-							SELECT DISTINCT 
-								organization_id::text as org_id,
-								organization_code,
-								tenant_code
-							FROM (VALUES ${valuesClause}) AS t(organization_id, organization_code, tenant_code)
-						`)
-
-						await queryInterface.sequelize.query(`
-							CREATE INDEX temp_org_lookup_idx ON temp_org_lookup(org_id)
-						`)
-
-						console.log('✅ Created temporary lookup table with index')
-					}
+					console.log(`✅ Successfully loaded ${orgLookupCache.size} organization mappings from CSV`)
+				} else {
+					console.log('⚠️  No CSV data loaded - proceeding with default values for all organizations')
 				}
 
-				// Phase 2.1: Update tables with organization_id
-				console.log('\n📊 Updating tables with organization_id...')
+				// Create temporary lookup table for better performance
+				await queryInterface.sequelize.query(`DROP TABLE IF EXISTS temp_org_lookup`)
+
+				const valuesClause = Array.from(orgLookupCache.entries())
+					.map(([orgId, data]) => {
+						const safeOrgId = String(orgId).replace(/'/g, "''")
+						const safeOrgCode = String(data.organization_code).replace(/'/g, "''")
+						const safeTenantCode = String(data.tenant_code).replace(/'/g, "''")
+						return `('${safeOrgId}', '${safeOrgCode}', '${safeTenantCode}')`
+					})
+					.join(', ')
+
+				if (valuesClause) {
+					await queryInterface.sequelize.query(`
+						CREATE TEMP TABLE temp_org_lookup AS
+						SELECT DISTINCT 
+							organization_id::text as org_id,
+							organization_code,
+							tenant_code
+						FROM (VALUES ${valuesClause}) AS t(organization_id, organization_code, tenant_code)
+					`)
+
+					await queryInterface.sequelize.query(`
+						CREATE INDEX temp_org_lookup_idx ON temp_org_lookup(org_id)
+					`)
+
+					console.log('✅ Created temporary lookup table with index')
+				}
+
+				// Phase 2.1: Update tables with organization_id using batch processing
+				console.log('\n📊 Updating tables with organization_id (batch processing)...')
 				const tablesWithOrgId = [
 					'availabilities',
 					'default_rules',
@@ -799,64 +803,76 @@ module.exports = {
 					'user_extensions',
 				]
 
+				// Get distinct organization_ids for batch processing
+				const [distinctOrgs] = await queryInterface.sequelize.query(`
+					SELECT DISTINCT org_id FROM temp_org_lookup ORDER BY org_id
+				`)
+				console.log(`📦 Processing ${distinctOrgs.length} organizations in batches`)
+
 				for (const tableName of tablesWithOrgId) {
 					try {
 						console.log(`  Updating ${tableName}...`)
 
 						// Check if table exists and has data
 						const [tableInfo] = await queryInterface.sequelize.query(`
-							SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = '${tableName}') as exists,
-							EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name = '${tableName}' AND column_name = 'organization_id') as has_org_id,
-							(SELECT COUNT(*) FROM ${tableName}) as row_count
+							SELECT 
+								EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = '${tableName}') as exists,
+								EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name = '${tableName}' AND column_name = 'organization_id') as has_org_id,
+								(SELECT COUNT(*) FROM ${tableName}) as row_count
 						`)
 
-						if (!tableInfo[0].exists || !tableInfo[0].has_org_id || tableInfo[0].row_count === 0) {
-							console.log(
-								`    ⚠️  ${tableName} doesn't exist, has no organization_id, or is empty, skipping`
-							)
+						if (!tableInfo[0].exists || !tableInfo[0].has_org_id) {
+							console.log(`    ⚠️  ${tableName} doesn't exist or has no organization_id, skipping`)
+							continue
+						}
+
+						if (tableInfo[0].row_count === 0) {
+							console.log(`    ✅ ${tableName} is empty, skipping`)
 							continue
 						}
 
 						const totalRows = tableInfo[0].row_count
+						let totalUpdated = 0
+						const defaultTenantCode = process.env.DEFAULT_ORGANISATION_CODE || 'default'
+						const startTime = Date.now()
 
-						if (orgLookupCache.size === 0) {
-							console.log(`    ⚠️  No organization data available, skipping ${tableName}`)
-							continue
+						// Organization-based batch processing (GROUP BY organization_id approach)
+						const orgBatchSize = 100 // Process 100 organizations at a time
+
+						for (let i = 0; i < distinctOrgs.length; i += orgBatchSize) {
+							const orgBatch = distinctOrgs.slice(i, i + orgBatchSize)
+
+							// Process each organization individually for clean updates
+							for (const org of orgBatch) {
+								const [results, metadata] = await queryInterface.sequelize.query(`
+									UPDATE ${tableName} 
+									SET 
+										tenant_code = tol.tenant_code,
+										organization_code = tol.organization_code,
+										updated_at = NOW()
+									FROM temp_org_lookup tol
+									WHERE ${tableName}.organization_id::text = tol.org_id
+									AND ${tableName}.organization_id::text = '${org.org_id.replace(/'/g, "''")}'
+								`)
+
+								totalUpdated += metadata.rowCount || 0
+							}
 						}
 
-						// Efficient bulk update using JOIN
-						const startTime = Date.now()
-						const defaultTenantCode = process.env.DEFAULT_ORGANISATION_CODE || 'default'
-						const [updateResult] = await queryInterface.sequelize.query(`
-							UPDATE ${tableName} 
-							SET 
-								tenant_code = tol.tenant_code,
-								organization_code = tol.organization_code,
-								updated_at = NOW()
-							FROM temp_org_lookup tol
-							WHERE ${tableName}.organization_id::text = tol.org_id
-							AND (${tableName}.tenant_code = '${defaultTenantCode}' OR ${tableName}.tenant_code IS NULL)
-						`)
 						const duration = ((Date.now() - startTime) / 1000).toFixed(2)
 
-						const updatedRows = updateResult.rowCount || 0
-
-						// Check how many rows still need updating
-						const [failedResult] = await queryInterface.sequelize.query(`
-							SELECT COUNT(*) as failed_count
-							FROM ${tableName} 
-							WHERE tenant_code = '${defaultTenantCode}' OR tenant_code IS NULL
-						`)
-						const failedRows = failedResult[0].failed_count || 0
-
-						// Detailed logging moved to production script
+						console.log(
+							`    ✅ ${tableName}: ${totalUpdated}/${totalRows} updated in ${duration}s (${Math.ceil(
+								distinctOrgs.length / 100
+							)} org batches)`
+						)
 					} catch (error) {
 						console.log(`    ❌ Error updating ${tableName}: ${error.message}`)
 					}
 				}
 
-				// Phase 2.2: Update tables with user_id using user_extensions lookup
-				console.log('\n👤 Updating tables with user_id using user_extensions...')
+				// Phase 2.2: Update tables with user_id using batch processing by organization_id
+				console.log('\n👤 Updating tables with user_id using batch processing by organization_id...')
 				const tablesWithUserId = [
 					{ name: 'sessions', userColumn: 'created_by' },
 					{ name: 'feedbacks', userColumn: 'user_id' },
@@ -871,60 +887,176 @@ module.exports = {
 					{ name: 'session_attendees', userColumn: 'mentee_id' },
 				]
 
+				// Get user_extensions data grouped by organization_id for batch processing
+				const [userExtByOrg] = await queryInterface.sequelize.query(`
+					SELECT DISTINCT ue.organization_id::text as org_id
+					FROM user_extensions ue
+					INNER JOIN temp_org_lookup tol ON ue.organization_id::text = tol.org_id
+					WHERE ue.organization_id IS NOT NULL
+					ORDER BY org_id
+				`)
+				console.log(`📦 Processing ${userExtByOrg.length} organizations with users in batches`)
+
 				for (const tableConfig of tablesWithUserId) {
 					try {
 						console.log(`  Updating ${tableConfig.name}...`)
 
 						// Check if table exists and has data
 						const [tableInfo] = await queryInterface.sequelize.query(`
-							SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = '${tableConfig.name}') as exists,
-							EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name = '${tableConfig.name}' AND column_name = '${tableConfig.userColumn}') as has_user_col,
-							(SELECT COUNT(*) FROM ${tableConfig.name}) as row_count
+							SELECT 
+								EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = '${tableConfig.name}') as exists,
+								EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name = '${tableConfig.name}' AND column_name = '${tableConfig.userColumn}') as has_user_col,
+								(SELECT COUNT(*) FROM ${tableConfig.name}) as row_count
 						`)
 
-						if (!tableInfo[0].exists || !tableInfo[0].has_user_col || tableInfo[0].row_count === 0) {
+						if (!tableInfo[0].exists || !tableInfo[0].has_user_col) {
 							console.log(
-								`    ⚠️  ${tableConfig.name} doesn't exist, has no ${tableConfig.userColumn}, or is empty, skipping`
+								`    ⚠️  ${tableConfig.name} doesn't exist or has no ${tableConfig.userColumn}, skipping`
 							)
 							continue
 						}
 
-						const totalRows = tableInfo[0].row_count
+						if (tableInfo[0].row_count === 0) {
+							console.log(`    ✅ ${tableConfig.name} is empty, skipping`)
+							continue
+						}
 
-						// Efficient bulk update using user_extensions
-						const startTime = Date.now()
+						const totalRows = tableInfo[0].row_count
+						let totalUpdated = 0
 						const defaultTenantCode = process.env.DEFAULT_ORGANISATION_CODE || 'default'
-						const [updateResult] = await queryInterface.sequelize.query(`
-							UPDATE ${tableConfig.name} 
-							SET 
-								tenant_code = ue.tenant_code,
-								organization_code = ue.organization_code,
-								updated_at = NOW()
-							FROM user_extensions ue
-							WHERE ${tableConfig.name}.${tableConfig.userColumn} = ue.user_id
-							AND ue.tenant_code IS NOT NULL
-							AND ue.tenant_code != '${defaultTenantCode}'
-							AND (${tableConfig.name}.tenant_code = '${defaultTenantCode}' OR ${tableConfig.name}.tenant_code IS NULL)
-						`)
+						const startTime = Date.now()
+
+						// Organization-based batch processing for user tables (GROUP BY organization_id approach)
+						const orgBatchSize = 100 // Process 100 organizations at a time
+
+						for (let i = 0; i < userExtByOrg.length; i += orgBatchSize) {
+							const orgBatch = userExtByOrg.slice(i, i + orgBatchSize)
+
+							// Process each organization individually for clean updates
+							for (const org of orgBatch) {
+								const [results, metadata] = await queryInterface.sequelize.query(`
+									UPDATE ${tableConfig.name} 
+									SET 
+										tenant_code = ue.tenant_code,
+										organization_code = ue.organization_code,
+										updated_at = NOW()
+									FROM user_extensions ue
+									WHERE ${tableConfig.name}.${tableConfig.userColumn} = ue.user_id
+									AND ue.organization_id::text = '${org.org_id.replace(/'/g, "''")}'
+									AND ue.tenant_code IS NOT NULL
+									AND ue.tenant_code != '${defaultTenantCode}'
+								`)
+
+								totalUpdated += metadata.rowCount || 0
+							}
+						}
+
 						const duration = ((Date.now() - startTime) / 1000).toFixed(2)
 
-						const updatedRows = updateResult.rowCount || 0
-
-						// Check how many rows still need updating
-						const [failedResult] = await queryInterface.sequelize.query(`
-							SELECT COUNT(*) as failed_count
-							FROM ${tableConfig.name} 
-							WHERE tenant_code = '${defaultTenantCode}' OR tenant_code IS NULL
-						`)
-						const failedRows = failedResult[0].failed_count || 0
-
-						// Detailed logging moved to production script
+						console.log(
+							`    ✅ ${
+								tableConfig.name
+							}: ${totalUpdated}/${totalRows} updated in ${duration}s (${Math.ceil(
+								userExtByOrg.length / 100
+							)} org batches)`
+						)
 					} catch (error) {
 						console.log(`    ❌ Error updating ${tableConfig.name}: ${error.message}`)
 					}
 				}
+
+				// Phase 2.3: Update tables without organization_id or user_id (default values only)
+				console.log('\n🔧 Updating tables without relationship columns (default values)...')
+				const allTablesNeedingTenantCode = [
+					'modules',
+					'post_session_details',
+					'report_role_mapping',
+					'report_types',
+					'permissions',
+					'role_permission_mapping',
+					'notification_templates', // May not have org_id in some setups
+				]
+
+				const defaultTenantCode = process.env.DEFAULT_ORGANISATION_CODE || 'default'
+				const defaultOrgCode = process.env.DEFAULT_ORG_CODE || 'default_org'
+
+				for (const tableName of allTablesNeedingTenantCode) {
+					try {
+						console.log(`  Updating ${tableName} with default values...`)
+
+						// Check if table exists and has tenant_code column
+						const [tableInfo] = await queryInterface.sequelize.query(`
+							SELECT 
+								EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = '${tableName}') as table_exists,
+								EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name = '${tableName}' AND column_name = 'tenant_code') as has_tenant_code,
+								EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name = '${tableName}' AND column_name = 'organization_code') as has_org_code,
+								EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name = '${tableName}' AND column_name = 'organization_id') as has_org_id,
+								EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name = '${tableName}' AND column_name = 'user_id') as has_user_id,
+								EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name = '${tableName}' AND column_name = 'created_by') as has_created_by
+						`)
+
+						if (!tableInfo[0].table_exists || !tableInfo[0].has_tenant_code) {
+							console.log(`    ⚠️  ${tableName} doesn't exist or missing tenant_code column, skipping`)
+							continue
+						}
+
+						// Skip if table has relationship columns (already processed)
+						if (tableInfo[0].has_org_id || tableInfo[0].has_user_id || tableInfo[0].has_created_by) {
+							console.log(`    ✅ ${tableName} has relationship columns, already processed`)
+							continue
+						}
+
+						// Get total row count for processing
+						const [rowCount] = await queryInterface.sequelize.query(`
+							SELECT COUNT(*) as total_rows FROM ${tableName}
+						`)
+
+						const totalRowsInTable = rowCount[0].total_rows
+						if (totalRowsInTable === 0) {
+							console.log(`    ✅ ${tableName} is empty, skipping`)
+							continue
+						}
+
+						let totalUpdated = 0
+						const maxRowsPerBatch = 1000
+						const startTime = Date.now()
+
+						// Batch update with row limits for large tables
+						let hasMoreRows = true
+						while (hasMoreRows) {
+							const [results, metadata] = await queryInterface.sequelize.query(`
+								UPDATE ${tableName} 
+								SET 
+									tenant_code = '${defaultTenantCode}',
+									${tableInfo[0].has_org_code ? `organization_code = '${defaultOrgCode}',` : ''}
+									updated_at = NOW()
+								WHERE id IN (
+									SELECT id FROM ${tableName}
+									LIMIT ${maxRowsPerBatch}
+								)
+							`)
+
+							const rowsUpdated = metadata.rowCount || 0
+							totalUpdated += rowsUpdated
+							hasMoreRows = rowsUpdated === maxRowsPerBatch
+
+							if (rowsUpdated === 0) hasMoreRows = false
+						}
+
+						const duration = ((Date.now() - startTime) / 1000).toFixed(2)
+						console.log(
+							`    ✅ ${tableName}: ${totalUpdated} rows updated with default values in ${duration}s`
+						)
+					} catch (error) {
+						console.log(`    ❌ Error updating ${tableName}: ${error.message}`)
+					}
+				}
 			} else {
-				console.log('⚠️  data_codes.csv not found, skipping data population')
+				console.log('❌ MIGRATION FAILED: data_codes.csv file not found!')
+				console.log(
+					'📝 Required: data_codes.csv file with organization_id, organization_code, tenant_code columns'
+				)
+				throw new Error('Migration requires data_codes.csv file with organization mappings')
 			}
 
 			console.log('\n✅ Phase 2 Complete: Data population finished')

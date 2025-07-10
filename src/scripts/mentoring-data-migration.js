@@ -5,9 +5,10 @@ const csv = require('csv-parser')
 require('dotenv').config({ path: '../.env' })
 
 /**
- * Citus-Compatible Data Migration Script for Mentoring Service
+ * Citus-Compatible Data Migration Script for Mentoring Service - REFRESHED VERSION
  * Handles partition value updates by temporarily undistributing tables
  * Updates tenant_code and organization_code based on user service data
+ * Always processes all data on every run (no idempotent behavior)
  */
 
 class MentoringDataMigrator {
@@ -114,12 +115,6 @@ class MentoringDataMigrator {
 				hasPartitionKey: true,
 			},
 			{
-				name: 'modules',
-				columns: { organization_id: 'organization_id' },
-				updateColumns: ['tenant_code', 'organization_code'],
-				hasPartitionKey: true,
-			},
-			{
 				name: 'report_role_mapping',
 				columns: { organization_id: 'organization_id' },
 				updateColumns: ['tenant_code', 'organization_code'],
@@ -181,7 +176,7 @@ class MentoringDataMigrator {
 			{
 				name: 'issues',
 				columns: { user_id: 'user_id' },
-				updateColumns: ['tenant_code'],
+				updateColumns: ['tenant_code', 'organization_code'],
 				hasPartitionKey: true,
 			},
 			{
@@ -214,6 +209,13 @@ class MentoringDataMigrator {
 				updateColumns: ['tenant_code'],
 				hasPartitionKey: true,
 				useSessionLookup: true,
+			},
+			{
+				name: 'modules',
+				columns: {},
+				updateColumns: ['tenant_code'],
+				hasPartitionKey: true,
+				useDefaultValues: true,
 			},
 		]
 	}
@@ -487,25 +489,8 @@ class MentoringDataMigrator {
 				{ transaction }
 			)
 
-			// Check if table is already migrated by looking for matching tenant_code/organization_code
-			const checkQuery = `
-				SELECT COUNT(*) as already_migrated
-				FROM ${tableName} t
-				JOIN temp_data_codes dc ON t.organization_id::text = dc.organization_id
-				WHERE t.tenant_code = dc.tenant_code 
-				${availableUpdateColumns.includes('organization_code') ? 'AND t.organization_code = dc.organization_code' : ''}
-			`
-
-			const [checkResult] = await this.sequelize.query(checkQuery, { transaction })
-			const alreadyMigrated = parseInt(checkResult[0].already_migrated)
-
-			if (alreadyMigrated > 0) {
-				console.log(
-					`✅ ${tableName} appears to be already migrated (${alreadyMigrated} records match), skipping updates`
-				)
-				await transaction.commit()
-				return
-			}
+			// Always process all data - no idempotent checks (as requested)
+			console.log(`🔄 Processing all records in ${tableName} (no skipping)`)
 
 			// Execute UPDATE - simple approach since table needs migration
 			const updateQuery = `
@@ -625,15 +610,75 @@ class MentoringDataMigrator {
 			// Get table configuration
 			const tableConfig = this.tablesWithUserId.find((t) => t.name === tableName)
 
-			// Standard user_id lookup using user_extensions
-			const userIdColumn = tableConfig.columns.user_id
-			const updateQuery = `
-				UPDATE ${tableName} 
-				SET tenant_code = ue.tenant_code, updated_at = NOW()
-				FROM user_extensions ue
-				WHERE ${tableName}.${userIdColumn} = ue.user_id
-				AND ue.tenant_code IS NOT NULL
-			`
+			let updateQuery
+
+			if (tableConfig.useSessionLookup) {
+				// Special case for post_session_details: get data from sessions table based on session_id
+				const sessionIdColumn = tableConfig.columns.session_id
+
+				// Build SET clause based on available update columns
+				const setClauses = []
+				if (tableConfig.updateColumns.includes('tenant_code')) {
+					setClauses.push('tenant_code = s.tenant_code')
+				}
+				if (tableConfig.updateColumns.includes('organization_code')) {
+					setClauses.push('organization_code = s.organization_code')
+				}
+				setClauses.push('updated_at = NOW()')
+
+				// Build WHERE conditions based on what columns sessions table actually has
+				const whereConditions = [`${tableName}.${sessionIdColumn} = s.id`, 's.tenant_code IS NOT NULL']
+
+				// Only add organization_code condition if we're actually using it
+				if (tableConfig.updateColumns.includes('organization_code')) {
+					whereConditions.push('s.organization_code IS NOT NULL')
+				}
+
+				updateQuery = `
+					UPDATE ${tableName} 
+					SET ${setClauses.join(', ')}
+					FROM sessions s
+					WHERE ${whereConditions.join(' AND ')}
+				`
+			} else if (tableConfig.useDefaultValues) {
+				// Special case for tables without user_id or organization_id: use default values
+				const setClauses = []
+				if (tableConfig.updateColumns.includes('tenant_code')) {
+					setClauses.push(`tenant_code = '${this.defaultTenantCode}'`)
+				}
+				if (tableConfig.updateColumns.includes('organization_code')) {
+					setClauses.push(`organization_code = '${this.defaultOrgCode}'`)
+				}
+				setClauses.push('updated_at = NOW()')
+
+				updateQuery = `
+					UPDATE ${tableName} 
+					SET ${setClauses.join(', ')}
+					WHERE tenant_code IS NULL OR tenant_code = ''
+				`
+			} else {
+				// Standard user_id lookup using user_extensions
+				const userIdColumn = tableConfig.columns.user_id
+
+				// Build SET clause based on available update columns
+				const setClauses = []
+				if (tableConfig.updateColumns.includes('tenant_code')) {
+					setClauses.push('tenant_code = ue.tenant_code')
+				}
+				if (tableConfig.updateColumns.includes('organization_code')) {
+					setClauses.push('organization_code = ue.organization_code')
+				}
+				setClauses.push('updated_at = NOW()')
+
+				updateQuery = `
+					UPDATE ${tableName} 
+					SET ${setClauses.join(', ')}
+					FROM user_extensions ue
+					WHERE ${tableName}.${userIdColumn} = ue.user_id
+					AND ue.tenant_code IS NOT NULL
+					AND ue.organization_code IS NOT NULL
+				`
+			}
 
 			const [result] = await this.sequelize.query(updateQuery, { transaction })
 			const updatedRows = result.rowCount || 0
@@ -805,7 +850,7 @@ class MentoringDataMigrator {
 					return { processed: 0, updates: 0 }
 				}
 
-				// Process updates - FORCE UPDATE ALL RECORDS regardless of existing values
+				// Process updates - ALWAYS UPDATE ALL RECORDS (refreshed version)
 				const updates = []
 				for (const record of records) {
 					const lookupData = this.getLookupData(record, tableConfig)
@@ -973,7 +1018,7 @@ class MentoringDataMigrator {
 	 */
 	async execute() {
 		try {
-			console.log('🚀 Starting Data Migration with data_codes.csv strategy...')
+			console.log('🚀 Starting Data Migration with data_codes.csv strategy (REFRESHED)...')
 			console.log('='.repeat(60))
 
 			await this.sequelize.authenticate()
@@ -1058,15 +1103,15 @@ class MentoringDataMigrator {
 			`)
 			const updatedRows = updatedResult[0].updated_count || 0
 
-			// Get failed row count (still default or null)
-			const [failedResult] = await this.sequelize.query(`
-				SELECT COUNT(*) as failed_count 
+			// Get remaining row count (still default or null)
+			const [remainingResult] = await this.sequelize.query(`
+				SELECT COUNT(*) as remaining_count 
 				FROM ${tableName} 
 				WHERE tenant_code = '${defaultTenantCode}' OR tenant_code IS NULL
 			`)
-			const failedRows = failedResult[0].failed_count || 0
+			const remainingRows = remainingResult[0].remaining_count || 0
 
-			console.log(`    📊 ${tableName}: ${totalRows} total, ${updatedRows} updated, ${failedRows} failed`)
+			console.log(`    📊 ${tableName}: ${totalRows} total, ${updatedRows} updated, ${remainingRows} remaining`)
 		} catch (error) {
 			console.log(`    ⚠️  Could not get detailed stats for ${tableName}: ${error.message}`)
 		}
