@@ -837,7 +837,7 @@ module.exports = {
 						const startTime = Date.now()
 
 						// Organization-based batch processing (GROUP BY organization_id approach)
-						const orgBatchSize = 100 // Process 100 organizations at a time
+						const orgBatchSize = 5000 // Process 5000 organizations at a time
 
 						for (let i = 0; i < distinctOrgs.length; i += orgBatchSize) {
 							const orgBatch = distinctOrgs.slice(i, i + orgBatchSize)
@@ -863,7 +863,7 @@ module.exports = {
 
 						console.log(
 							`    ✅ ${tableName}: ${totalUpdated}/${totalRows} updated in ${duration}s (${Math.ceil(
-								distinctOrgs.length / 100
+								distinctOrgs.length / 5000
 							)} org batches)`
 						)
 					} catch (error) {
@@ -927,7 +927,7 @@ module.exports = {
 						const startTime = Date.now()
 
 						// Organization-based batch processing for user tables (GROUP BY organization_id approach)
-						const orgBatchSize = 100 // Process 100 organizations at a time
+						const orgBatchSize = 5000 // Process 5000 organizations at a time
 
 						for (let i = 0; i < userExtByOrg.length; i += orgBatchSize) {
 							const orgBatch = userExtByOrg.slice(i, i + orgBatchSize)
@@ -957,7 +957,7 @@ module.exports = {
 							`    ✅ ${
 								tableConfig.name
 							}: ${totalUpdated}/${totalRows} updated in ${duration}s (${Math.ceil(
-								userExtByOrg.length / 100
+								userExtByOrg.length / 5000
 							)} org batches)`
 						)
 					} catch (error) {

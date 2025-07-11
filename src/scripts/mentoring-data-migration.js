@@ -492,19 +492,46 @@ class MentoringDataMigrator {
 			// Always process all data - no idempotent checks (as requested)
 			console.log(`🔄 Processing all records in ${tableName} (no skipping)`)
 
-			// Execute UPDATE - simple approach since table needs migration
-			const updateQuery = `
-				UPDATE ${tableName} 
-				SET ${setClauses.join(', ')}, updated_at = NOW()
-				FROM temp_data_codes dc
-				WHERE ${tableName}.organization_id::text = dc.organization_id
-			`
+			// Execute UPDATE using batch-wise organization processing (GROUP BY approach)
+			// Get distinct organizations from temp table for batch processing
+			const [orgList] = await this.sequelize.query(
+				`
+				SELECT DISTINCT organization_id FROM temp_data_codes ORDER BY organization_id
+			`,
+				{ transaction }
+			)
 
-			const [result] = await this.sequelize.query(updateQuery, { transaction })
-			const updatedRows = result.rowCount || 0
+			console.log(`🔄 Processing ${tableName} with ${orgList.length} organizations using batch approach`)
+			let totalUpdated = 0
 
-			console.log(`✅ Updated ${updatedRows} rows in ${tableName}`)
-			this.stats.successfulUpdates += updatedRows
+			// Process organizations in batches of 5000
+			const orgBatchSize = 5000
+			for (let i = 0; i < orgList.length; i += orgBatchSize) {
+				const orgBatch = orgList.slice(i, i + orgBatchSize)
+
+				// Process each organization individually for clean batch processing
+				for (const org of orgBatch) {
+					const [, metadata] = await this.sequelize.query(
+						`
+						UPDATE ${tableName} 
+						SET ${setClauses.join(', ')}, updated_at = NOW()
+						FROM temp_data_codes dc
+						WHERE ${tableName}.organization_id::text = dc.organization_id
+						AND ${tableName}.organization_id::text = '${org.organization_id.replace(/'/g, "''")}'
+					`,
+						{ transaction }
+					)
+
+					totalUpdated += metadata.rowCount || 0
+				}
+			}
+
+			console.log(
+				`✅ Updated ${totalUpdated} rows in ${tableName} using organization-based batching (${Math.ceil(
+					orgList.length / orgBatchSize
+				)} batches)`
+			)
+			this.stats.successfulUpdates += totalUpdated
 
 			// Clean up temp table
 			await this.sequelize.query(`DROP TABLE IF EXISTS temp_data_codes`, { transaction })
@@ -538,14 +565,82 @@ class MentoringDataMigrator {
 	}
 
 	/**
-	 * Process user_extensions table using organization_id lookup from user service
+	 * Process user_extensions table using GROUP BY organization_id approach
 	 */
 	async processUserExtensions(tableConfig) {
-		console.log(`\n🔄 Processing user_extensions with organization_id lookup...`)
+		console.log(`\n🔄 Processing user_extensions with GROUP BY organization_id approach...`)
 
-		// For user_extensions, we need to get organization_id from user service data
-		// This requires a different approach - we'll use the individual record processing
-		await this.processTable(tableConfig)
+		// Use organization-based batch processing for user_extensions
+		// Get distinct organizations from orgLookupCache (from CSV data)
+		const orgIds = Array.from(this.orgLookupCache.keys())
+		console.log(`🔄 Processing user_extensions with ${orgIds.length} organizations from CSV data`)
+
+		if (orgIds.length === 0) {
+			console.log(`⚠️  No organizations found in lookup cache, skipping user_extensions updates`)
+			return
+		}
+
+		const transaction = await this.sequelize.transaction()
+		let totalUpdated = 0
+
+		try {
+			// Create temp table with organization lookup data
+			await this.sequelize.query(
+				`
+					CREATE TEMP TABLE temp_user_org_lookup AS
+					SELECT DISTINCT 
+						organization_id::text,
+						organization_code,
+						tenant_code
+					FROM (VALUES ${Array.from(this.orgLookupCache.entries())
+						.map(([orgId, data]) => `('${orgId}', '${data.organization_code}', '${data.tenant_code}')`)
+						.join(', ')}) AS t(organization_id, organization_code, tenant_code)
+				`,
+				{ transaction }
+			)
+
+			// Process organizations in batches of 5000
+			const orgBatchSize = 5000
+			for (let i = 0; i < orgIds.length; i += orgBatchSize) {
+				const orgBatch = orgIds.slice(i, i + orgBatchSize)
+
+				// Process each organization individually for clean batch processing
+				for (const orgId of orgBatch) {
+					const orgData = this.orgLookupCache.get(orgId)
+					if (!orgData) continue
+
+					const [, metadata] = await this.sequelize.query(
+						`
+						UPDATE user_extensions 
+						SET 
+							tenant_code = '${orgData.tenant_code}',
+							organization_code = '${orgData.organization_code}',
+							updated_at = NOW()
+						WHERE organization_id::text = '${orgId.replace(/'/g, "''")}'
+						AND (tenant_code IS NULL OR tenant_code = '' OR organization_code IS NULL OR organization_code = '')
+					`,
+						{ transaction }
+					)
+
+					totalUpdated += metadata.rowCount || 0
+				}
+			}
+
+			// Clean up temp table
+			await this.sequelize.query(`DROP TABLE IF EXISTS temp_user_org_lookup`, { transaction })
+
+			console.log(
+				`✅ Updated ${totalUpdated} user_extensions records using GROUP BY organization_id approach (${Math.ceil(
+					orgIds.length / orgBatchSize
+				)} org batches)`
+			)
+			this.stats.successfulUpdates += totalUpdated
+
+			await transaction.commit()
+		} catch (error) {
+			await transaction.rollback()
+			throw error
+		}
 	}
 
 	/**
@@ -639,12 +734,52 @@ class MentoringDataMigrator {
 					whereConditions.push('s.organization_code IS NOT NULL')
 				}
 
-				updateQuery = `
-					UPDATE ${tableName} 
-					SET ${setClauses.join(', ')}
-					FROM sessions s
-					WHERE ${whereConditions.join(' AND ')}
-				`
+				// Use batch processing for session lookup - get distinct session organizations
+				const [sessionOrgs] = await this.sequelize.query(`
+				SELECT DISTINCT s.organization_id::text as org_id
+				FROM sessions s
+				INNER JOIN ${tableName} t ON t.${sessionIdColumn} = s.id
+				WHERE s.tenant_code IS NOT NULL 
+				AND s.tenant_code != '${defaultTenantCode}'
+				AND s.organization_id IS NOT NULL
+				ORDER BY org_id
+			`)
+
+				console.log(
+					`🔄 Processing ${tableName} with ${sessionOrgs.length} session organizations (batch approach)`
+				)
+				let totalUpdated = 0
+
+				// Process organizations in batches of 5000
+				const orgBatchSize = 5000
+				for (let i = 0; i < sessionOrgs.length; i += orgBatchSize) {
+					const orgBatch = sessionOrgs.slice(i, i + orgBatchSize)
+
+					// Process each organization individually
+					for (const org of orgBatch) {
+						const [, metadata] = await this.sequelize.query(
+							`
+						UPDATE ${tableName} 
+						SET ${setClauses.join(', ')}
+						FROM sessions s
+						WHERE ${whereConditions.join(' AND ')}
+						AND s.organization_id::text = '${org.org_id.replace(/'/g, "''")}'
+					`,
+							{ transaction }
+						)
+
+						totalUpdated += metadata.rowCount || 0
+					}
+				}
+
+				console.log(
+					`✅ Updated ${totalUpdated} rows in ${tableName} using session organization batching (${Math.ceil(
+						sessionOrgs.length / orgBatchSize
+					)} batches)`
+				)
+				this.stats.successfulUpdates += totalUpdated
+				await transaction.commit()
+				return
 			} else if (tableConfig.useDefaultValues) {
 				// REMOVED: Migration already sets default values, skipping this logic
 				console.log(`⚠️  Table ${tableName} uses default values - migration already handled this, skipping`)
@@ -677,7 +812,7 @@ class MentoringDataMigrator {
 				let totalUpdated = 0
 
 				// Process each organization in batches
-				const orgBatchSize = 100
+				const orgBatchSize = 5000
 				for (let i = 0; i < userExtByOrg.length; i += orgBatchSize) {
 					const orgBatch = userExtByOrg.slice(i, i + orgBatchSize)
 
@@ -716,12 +851,8 @@ class MentoringDataMigrator {
 				return
 			}
 
-			const [result] = await this.sequelize.query(updateQuery, { transaction })
-			const updatedRows = result.rowCount || 0
-
-			console.log(`✅ Updated ${updatedRows} rows in ${tableName}`)
-			this.stats.successfulUpdates += updatedRows
-
+			// All paths above handle their own transaction commits and returns
+			// This should not be reached
 			await transaction.commit()
 		} catch (error) {
 			await transaction.rollback()
@@ -866,7 +997,7 @@ class MentoringDataMigrator {
 	}
 
 	/**
-	 * Process a batch of records
+	 * Process records using organization-based batch approach (not row-level)
 	 */
 	async processBatch(tableConfig, offset, limit) {
 		const { name } = tableConfig
@@ -874,73 +1005,72 @@ class MentoringDataMigrator {
 
 		while (retryCount < this.maxRetries) {
 			try {
-				// Fetch batch - use correct primary key for each table
+				// Use organization-based batch processing instead of row-level
+				// Get distinct organizations from the table slice
 				const primaryKey = tableConfig.primaryKey || 'id'
 				const orderByClause = Array.isArray(primaryKey) ? primaryKey.join(', ') : primaryKey
-				const records = await this.sequelize.query(
-					`SELECT * FROM ${name} ORDER BY ${orderByClause} LIMIT ${limit} OFFSET ${offset}`,
-					{ type: Sequelize.QueryTypes.SELECT }
+
+				// First check if this slice has any records
+				const [recordCheck] = await this.sequelize.query(
+					`SELECT COUNT(*) as count FROM ${name} ORDER BY ${orderByClause} LIMIT ${limit} OFFSET ${offset}`,
+					{ type: this.sequelize.QueryTypes.SELECT }
 				)
 
-				if (records.length === 0) {
+				if (recordCheck.count === 0) {
 					return { processed: 0, updates: 0 }
 				}
 
-				// Process updates - ALWAYS UPDATE ALL RECORDS (refreshed version)
-				const updates = []
-				for (const record of records) {
-					const lookupData = this.getLookupData(record, tableConfig)
-
-					const updateFields = {}
-
-					// Always update tenant_code if column exists (table must be undistributed)
-					if (tableConfig.updateColumns.includes('tenant_code')) {
-						updateFields.tenant_code = lookupData.tenantCode
-					}
-
-					// Always update organization_code if column exists
-					if (tableConfig.updateColumns.includes('organization_code')) {
-						updateFields.organization_code = lookupData.organizationCode
-					}
-
-					// Always add to updates if any fields need updating
-					if (Object.keys(updateFields).length > 0) {
-						const primaryKey = tableConfig.primaryKey || 'id'
-
-						if (Array.isArray(primaryKey)) {
-							// Composite primary key
-							const primaryKeyValues = {}
-							const primaryKeyColumns = primaryKey
-							for (const col of primaryKeyColumns) {
-								primaryKeyValues[col] = record[col]
-							}
-							updates.push({
-								primaryKeyValues,
-								primaryKeyColumns,
-								isComposite: true,
-								...updateFields,
-							})
-						} else {
-							// Single primary key
-							updates.push({
-								primaryKeyValue: record[primaryKey],
-								primaryKeyColumn: primaryKey,
-								isComposite: false,
-								...updateFields,
-							})
-						}
-					}
+				// Get distinct organizations from this batch slice with organization lookup
+				let distinctOrgsQuery
+				if (tableConfig.columns.organization_id) {
+					// Table has organization_id - use direct lookup
+					distinctOrgsQuery = `
+						SELECT DISTINCT t.organization_id::text as org_id
+						FROM (
+							SELECT organization_id FROM ${name} 
+							ORDER BY ${orderByClause} 
+							LIMIT ${limit} OFFSET ${offset}
+						) t
+						WHERE t.organization_id IS NOT NULL
+						ORDER BY org_id
+					`
+				} else if (tableConfig.columns.user_id) {
+					// Table has user_id - lookup via user_extensions
+					const userIdColumn = tableConfig.columns.user_id
+					const defaultTenantCode = process.env.DEFAULT_ORGANISATION_CODE || 'default'
+					distinctOrgsQuery = `
+						SELECT DISTINCT ue.organization_id::text as org_id
+						FROM (
+							SELECT ${userIdColumn} FROM ${name} 
+							ORDER BY ${orderByClause} 
+							LIMIT ${limit} OFFSET ${offset}
+						) t
+						INNER JOIN user_extensions ue ON t.${userIdColumn} = ue.user_id
+						WHERE ue.organization_id IS NOT NULL
+						AND ue.tenant_code IS NOT NULL
+						AND ue.tenant_code != '${defaultTenantCode}'
+						ORDER BY org_id
+					`
+				} else {
+					// No organization context - skip batch processing
+					return { processed: limit, updates: 0 }
 				}
 
-				// Execute batch updates
-				if (updates.length > 0) {
-					await this.executeSimpleUpdates(name, updates, tableConfig)
+				const [orgBatch] = await this.sequelize.query(distinctOrgsQuery, {
+					type: this.sequelize.QueryTypes.SELECT,
+				})
+
+				if (orgBatch.length === 0) {
+					return { processed: limit, updates: 0 }
 				}
 
-				return { processed: records.length, updates: updates.length }
+				// Execute batch updates using organization-based approach
+				const totalUpdated = await this.executeBatchUpdates(name, orgBatch, tableConfig, offset, limit)
+
+				return { processed: limit, updates: totalUpdated }
 			} catch (error) {
 				retryCount++
-				console.error(`❌ Batch failed (attempt ${retryCount}/${this.maxRetries}):`, error.message)
+				console.error(`❌ Organization batch failed (attempt ${retryCount}/${this.maxRetries}):`, error.message)
 
 				if (retryCount >= this.maxRetries) {
 					this.stats.failedUpdates += limit
@@ -953,55 +1083,87 @@ class MentoringDataMigrator {
 	}
 
 	/**
-	 * Execute simple updates without CASE statements
+	 * Execute batch updates using organization-based GROUP BY approach
 	 */
-	async executeSimpleUpdates(tableName, updates, tableConfig) {
-		if (updates.length === 0) return
+	async executeBatchUpdates(tableName, orgBatch, tableConfig, offset, limit) {
+		if (orgBatch.length === 0) return 0
 
 		const transaction = await this.sequelize.transaction()
+		let totalUpdated = 0
 
 		try {
-			// Use individual UPDATE statements for simplicity
-			for (const update of updates) {
+			// Process each organization individually for atomic batch updates
+			for (const org of orgBatch) {
 				const setClauses = []
-				const replacements = {}
 
-				// Build SET clauses dynamically
-				if (update.tenant_code !== undefined) {
-					setClauses.push('tenant_code = :tenantCode')
-					replacements.tenantCode = update.tenant_code
-				}
-				if (update.organization_code !== undefined) {
-					setClauses.push('organization_code = :orgCode')
-					replacements.orgCode = update.organization_code
-				}
-
-				// Build WHERE clause based on primary key type
-				let whereClause
-				if (update.isComposite) {
-					// Composite primary key: WHERE col1 = :val1 AND col2 = :val2
-					const whereConditions = []
-					for (const col of update.primaryKeyColumns) {
-						whereConditions.push(`${col} = :${col}`)
-						replacements[col] = update.primaryKeyValues[col]
+				// Build SET clause based on available update columns
+				if (tableConfig.updateColumns.includes('tenant_code')) {
+					// Get tenant_code from lookup cache
+					const orgData = this.orgLookupCache.get(org.org_id)
+					if (orgData) {
+						setClauses.push(`tenant_code = '${orgData.tenant_code}'`)
 					}
-					whereClause = whereConditions.join(' AND ')
-				} else {
-					// Single primary key: WHERE col = :val
-					const primaryKeyColumn = update.primaryKeyColumn || 'id'
-					whereClause = `${primaryKeyColumn} = :primaryKeyValue`
-					replacements.primaryKeyValue = update.primaryKeyValue
 				}
 
-				const sql = `UPDATE ${tableName} SET ${setClauses.join(', ')}, updated_at = NOW() WHERE ${whereClause}`
+				if (tableConfig.updateColumns.includes('organization_code')) {
+					// Get organization_code from lookup cache
+					const orgData = this.orgLookupCache.get(org.org_id)
+					if (orgData) {
+						setClauses.push(`organization_code = '${orgData.organization_code}'`)
+					}
+				}
 
-				await this.sequelize.query(sql, {
-					replacements,
-					transaction,
-				})
+				if (setClauses.length === 0) continue
+
+				setClauses.push('updated_at = NOW()')
+
+				// Build UPDATE query based on table type
+				let updateQuery
+				const primaryKey = tableConfig.primaryKey || 'id'
+				const orderByClause = Array.isArray(primaryKey) ? primaryKey.join(', ') : primaryKey
+
+				if (tableConfig.columns.organization_id) {
+					// Direct organization_id lookup
+					updateQuery = `
+						UPDATE ${tableName} 
+						SET ${setClauses.join(', ')}
+						WHERE organization_id::text = '${org.org_id.replace(/'/g, "''")}'
+						AND ${tableName}.id IN (
+							SELECT id FROM ${tableName} 
+							WHERE organization_id::text = '${org.org_id.replace(/'/g, "''")}'\n							ORDER BY ${orderByClause} 
+							LIMIT ${limit} OFFSET ${offset}
+						)
+					`
+				} else if (tableConfig.columns.user_id) {
+					// user_id lookup via user_extensions
+					const userIdColumn = tableConfig.columns.user_id
+					const defaultTenantCode = process.env.DEFAULT_ORGANISATION_CODE || 'default'
+					updateQuery = `
+						UPDATE ${tableName} 
+						SET ${setClauses.join(', ')}
+						FROM user_extensions ue
+						WHERE ${tableName}.${userIdColumn} = ue.user_id
+						AND ue.organization_id::text = '${org.org_id.replace(/'/g, "''")}'
+						AND ue.tenant_code IS NOT NULL
+						AND ue.tenant_code != '${defaultTenantCode}'
+						AND ${tableName}.id IN (
+							SELECT t.id FROM ${tableName} t
+							INNER JOIN user_extensions ue2 ON t.${userIdColumn} = ue2.user_id
+							WHERE ue2.organization_id::text = '${org.org_id.replace(/'/g, "''")}'\n							ORDER BY t.${orderByClause} 
+							LIMIT ${limit} OFFSET ${offset}
+						)
+					`
+				} else {
+					// No organization context - skip
+					continue
+				}
+
+				const [, metadata] = await this.sequelize.query(updateQuery, { transaction })
+				totalUpdated += metadata.rowCount || 0
 			}
 
 			await transaction.commit()
+			return totalUpdated
 		} catch (error) {
 			await transaction.rollback()
 			throw error
