@@ -234,7 +234,5 @@
 	"SESSION_DELETED_DUE_TO_MENTOR_DELETION": "Session deleted due to mentor unavailability.",
 	"SESSION_REQUEST_REJECTED_DUE_TO_MENTOR_DELETION": "Session request rejected due to mentor unavailability.",
 	"SESSION_MANAGER_MENTOR_DELETION_NOTIFICATION": "Action Required - Mentor Deleted.",
-	"SELECT_AT_LEAST_ONE_MENTEE": "Select at least one mentee.",
-	"CONFIG_VALIDATION_ERROR": "Config Validation Error",
-	"INVALID_CONFIG": "Invalid config"
+	"SELECT_AT_LEAST_ONE_MENTEE": "Select at least one mentee."
 }

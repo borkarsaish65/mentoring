@@ -9,7 +9,6 @@
 const { healthCheckHandler } = require('elevate-services-health-check')
 const healthCheckConfig = require('./health.config')
 const { v1: uuidv1 } = require('uuid')
-const messages = require('../locales/en.json')
 
 let health_check = async function (req, res) {
 	try {
@@ -25,7 +24,7 @@ let health_check = async function (req, res) {
 				resmsgid: uuidv1(),
 				msgid: req.headers['msgid'] || req.headers.msgid || uuidv1(),
 				status: 'failed',
-				err: messages['CONFIG_VALIDATION_ERROR'],
+				err: 'CONFIG_VALIDATION_ERROR',
 				errMsg: err.message || 'Invalid config',
 			},
 			status: 400,
