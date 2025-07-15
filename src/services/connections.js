@@ -566,13 +566,13 @@ module.exports = class ConnectionHelper {
 					},
 				}
 
-				console.log('CONNECTION REJECTION EMAIL PAYLOAD: ', payload)
+				console.log('CONNECTION ACCEPT EMAIL PAYLOAD: ', payload)
 				await kafkaCommunication.pushEmailToKafka(payload)
 			} else {
 				console.log(`Email template not found for code: ${templateCode}`)
 			}
 		} catch (error) {
-			console.error('Error sending connection rejection notification:', error)
+			console.error('Error sending connection accept notification:', error)
 			// Don't throw error to avoid breaking the main rejection flow
 		}
 	}
