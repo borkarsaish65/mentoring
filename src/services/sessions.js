@@ -463,7 +463,7 @@ module.exports = class SessionsHelper {
 			}
 
 			let triggerSessionMeetinkAddEmail = false
-			if (!sessionDetail.meeting_info.platform && updatedSessionData.meeting_info.platform) {
+			if (sessionDetail.meeting_info.platform == 'OFF' && bodyData.meeting_info.platform) {
 				triggerSessionMeetinkAddEmail = true
 			}
 
