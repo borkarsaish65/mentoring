@@ -463,7 +463,11 @@ module.exports = class SessionsHelper {
 			}
 
 			let triggerSessionMeetinkAddEmail = false
-			if (sessionDetail.meeting_info.platform == 'OFF' && bodyData.meeting_info.platform) {
+			if (
+				sessionDetail.meeting_info.platform == 'OFF' &&
+				bodyData.meeting_info &&
+				bodyData.meeting_info.platform
+			) {
 				triggerSessionMeetinkAddEmail = true
 			}
 
@@ -991,17 +995,19 @@ module.exports = class SessionsHelper {
 							type: 'email',
 							email: {
 								to: attendee.attendeeEmail,
-								subject: utils.composeEmailBody(templateData.subject, sessionDetail.title),
+								subject: utils.composeEmailBody(templateData.subject, {
+									sessionTitle: sessionDetail.title,
+								}),
 								body: utils.composeEmailBody(templateData.body, {
 									mentorName: sessionDetail.mentor_name,
 									sessionTitle: sessionDetail.title,
 									sessionLink: process.env.PORTAL_BASE_URL + '/session-detail/' + sessionDetail.id,
-									startDate: utils.getTimeZone(
+									Date: utils.getTimeZone(
 										sessionDetail.start_date,
 										common.dateFormat,
 										sessionDetail.time_zone
 									),
-									startTime: utils.getTimeZone(
+									Time: utils.getTimeZone(
 										sessionDetail.start_date,
 										common.timeFormat,
 										sessionDetail.time_zone
