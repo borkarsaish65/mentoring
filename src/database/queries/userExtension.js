@@ -366,6 +366,10 @@ module.exports = class MenteeExtensionQueries {
 			if (mentee && mentee.email) {
 				mentee.email = await emailEncryption.decrypt(mentee.email.toLowerCase())
 			}
+			mentee.user_roles = [{ title: common.MENTEE_ROLE }]
+			if (mentee.is_mentor) {
+				mentee.user_roles.push({ title: common.MENTOR_ROLE })
+			}
 
 			return mentee
 		} catch (error) {

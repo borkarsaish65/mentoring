@@ -130,8 +130,6 @@ module.exports = class MenteesHelper {
 
 		const processDbResponse = utils.processDbResponse(menteeDetails, validationData)
 
-		// const totalSession = await sessionAttendeesQueries.countEnrolledSessions(id)
-
 		const menteePermissions = await permissions.getPermissions(roles)
 		if (!Array.isArray(menteeDetails.permissions)) {
 			menteeDetails.permissions = []
@@ -153,7 +151,7 @@ module.exports = class MenteesHelper {
 			message: 'PROFILE_FTECHED_SUCCESSFULLY',
 			result: {
 				sessions_attended: 0,
-				// sessions_attended: totalSession,
+				sessions_attended: menteeDetails.session_attendance_count,
 				...menteeDetails,
 				...processDbResponse,
 			},
