@@ -358,8 +358,6 @@ module.exports = class MenteeExtensionQueries {
 				type: QueryTypes.SELECT,
 			})
 
-			console.log('user', user)
-
 			const mentee = user.length > 0 ? user[0] : null
 
 			// Decrypt email if it's present in the result

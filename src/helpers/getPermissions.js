@@ -16,7 +16,6 @@ module.exports = class UserHelper {
 	 */
 	static async getPermissions(userRoles) {
 		try {
-			userRoles = [{ title: 'mentee' }]
 			const titles = userRoles.map((role) => role.title)
 			const filter = { role_title: titles }
 			const attributes = ['module', 'request_type']
@@ -28,7 +27,6 @@ module.exports = class UserHelper {
 
 			let rolePermission = await utils.internalGet(cacheKey)
 
-			console.log(userRoles, '------', cacheKey, '========================', rolePermission)
 			if (rolePermission) {
 				return rolePermission
 			} else {
