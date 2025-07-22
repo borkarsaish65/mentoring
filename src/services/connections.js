@@ -249,8 +249,12 @@ module.exports = class ConnectionHelper {
 
 				if (userDetailsMap.has(user_id)) {
 					const userDetail = userDetailsMap.get(user_id)
-					connectionsWithDetail.user_details.image = userDetail.image
-					return true
+					if (userDetail) {
+						connectionsWithDetail.user_details.image = userDetail.image
+						return true
+					} else {
+						return false
+					}
 				}
 				return false
 			})
