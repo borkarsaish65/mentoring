@@ -79,7 +79,7 @@ module.exports = class requestSessionsHelper {
 			// Based on session duration check recommended conditions
 			if (elapsedMinutes < 30) {
 				return responses.failureResponse({
-					message: 'BELOW_MINIMUM_SESSION_TIME',
+					message: 'MINIMUM_SESSION_DURATION',
 					statusCode: httpStatusCode.bad_request,
 					responseCode: 'CLIENT_ERROR',
 				})
