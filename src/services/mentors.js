@@ -730,6 +730,12 @@ module.exports = class MentorsHelper {
 				}
 				// No failure response; proceed with available data
 			}
+
+			mentorProfile.user_roles = [{ title: common.MENTEE_ROLE }]
+			if (mentorProfile.is_mentor) {
+				mentorProfile.user_roles.push({ title: common.MENTOR_ROLE })
+			}
+
 			return responses.successResponse({
 				statusCode: httpStatusCode.ok,
 				message: 'PROFILE_FETCHED_SUCCESSFULLY',
