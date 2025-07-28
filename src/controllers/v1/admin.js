@@ -30,7 +30,7 @@ module.exports = class admin {
 					responseCode: 'UNAUTHORIZED',
 				})
 			}
-			const userDelete = await adminService.userDelete(req.decodedToken, req.query.userId)
+			const userDelete = await adminService.userDelete(req.query.userId)
 			return userDelete
 		} catch (error) {
 			return error
