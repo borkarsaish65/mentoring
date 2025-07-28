@@ -27,8 +27,7 @@ exports.getEnrolledMentees = async (sessionId, queryParams, userID) => {
 				],
 			},
 		}
-		let [enrolledUsers, attendeesAccounts] = await Promise.all([
-			menteeExtensionQueries.getUsersByUserIds(menteeIds, options),
+		let [enrolledUsers] = await Promise.all([
 			userRequests.getUserDetailedList(menteeIds).then((result) => result.result),
 		])
 
@@ -68,18 +67,9 @@ exports.getEnrolledMentees = async (sessionId, queryParams, userID) => {
 			'organization_id'
 		)
 
-		// Merge arrays based on user_id and id
-		const mergedUserArray = await Promise.all(
-			enrolledUsers.map(async (user) => {
-				const matchingUserDetails = await attendeesAccounts.find((details) => details.user_id === user.user_id)
-				// Merge properties from user and matchingUserDetails
-				return matchingUserDetails ? { ...user, ...matchingUserDetails } : user
-			})
-		)
-
 		if (queryParams?.csv === 'true') {
 			const csv = parser.parse(
-				mergedUserArray.map((user, index) => ({
+				enrolledUsers.map((user, index) => ({
 					index_number: index + 1,
 					name: user.name,
 					designation: user.designation
