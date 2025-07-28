@@ -101,7 +101,7 @@ exports.getEnrolledMentees = async (sessionId, queryParams, userID) => {
 			'custom_entity_text',
 		]
 
-		const cleanedAttendeesAccounts = mergedUserArray.map((user, index) => {
+		const cleanedAttendeesAccounts = enrolledUsers.map((user, index) => {
 			user.id = user.user_id
 			propertiesToDelete.forEach((property) => {
 				delete user[property]
