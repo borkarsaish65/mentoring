@@ -429,7 +429,7 @@ module.exports = class MenteeExtensionQueries {
 				additionalFilter = `AND email IN ('${searchText.join("','")}')`
 			}
 
-			const filterClause = filter?.query.length > 0 ? `${filter.query}` : ''
+			let filterClause = filter?.query.length > 0 ? `${filter.query}` : ''
 			let saasFilterClause = saasFilter !== '' ? saasFilter : ''
 
 			if (excludeUserIds && filter.query.length === 0) {
