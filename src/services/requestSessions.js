@@ -519,7 +519,8 @@ module.exports = class requestSessionsHelper {
 				orgId.toString(),
 				rejectedData[0].dataValues.requestor_id,
 				userId,
-				bodyData.reason
+				bodyData.reason,
+				(rejectEmail = true)
 			)
 
 			return responses.successResponse({
@@ -712,7 +713,14 @@ function createMentorAvailabilityResponse(data) {
 	}
 }
 
-async function emailForAcceptAndReject(templateCode, orgId, requestor_id, mentorUserId, rejectReason = '') {
+async function emailForAcceptAndReject(
+	templateCode,
+	orgId,
+	requestor_id,
+	mentorUserId,
+	rejectReason = '',
+	rejectEmail = false
+) {
 	const menteeDetails = await userExtensionQueries.getUsersByUserIds(requestor_id, {
 		attributes: ['name', 'email'],
 	})
@@ -729,6 +737,15 @@ async function emailForAcceptAndReject(templateCode, orgId, requestor_id, mentor
 
 	// If template data is available. create mail data and push to kafka
 	if (templateData) {
+		let emailBody = templateData.body
+		if (rejectEmail) {
+			if (rejectReason) {
+				emailBody = utils.extractEmailTemplate(emailBody, ['default', 'reasonTemplate', 'gratitude'])
+			} else {
+				emailBody = utils.extractEmailTemplate(emailBody, ['default', 'gratitude'])
+			}
+		}
+
 		let name = menteeDetails[0].name
 		// Push successful enrollment to session in kafka
 		const payload = {
@@ -736,7 +753,7 @@ async function emailForAcceptAndReject(templateCode, orgId, requestor_id, mentor
 			email: {
 				to: menteeDetails[0].email,
 				subject: templateData.subject,
-				body: utils.composeEmailBody(templateData.body, {
+				body: utils.composeEmailBody(emailBody, {
 					name: name,
 					mentorName: mentorDetails.name,
 					reason: rejectReason,
