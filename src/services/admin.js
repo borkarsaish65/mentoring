@@ -36,15 +36,8 @@ class NotificationHelper {
 				console.log(`Template ${templateCode} not found`)
 				return true
 			}
-			console.log('templateData        =======', templateData)
-			console.log('templateData        =======', subjectData)
 
 			const emailPromises = recipients.map(async (recipient) => {
-				console.log(
-					templateData,
-					'------------ replace ',
-					await utils.composeEmailBody(template.body, { ...templateData, recipientName: recipient.name })
-				)
 				const payload = {
 					type: 'email',
 					email: {
@@ -109,8 +102,6 @@ class NotificationHelper {
 							body: utils.composeEmailBody(template.body, templateData),
 						},
 					}
-
-					console.log('====================', payload)
 					await kafkaCommunication.pushEmailToKafka(payload)
 				})
 
@@ -778,8 +769,8 @@ module.exports = class AdminService {
 			recipients: mentors,
 			templateCode: process.env.MENTEE_DELETION_NOTIFICATION_EMAIL_TEMPLATE,
 			orgId,
-			templateData: { menteeName: menteeName },
-			subjectData: { menteeName: menteeName },
+			templateData: { menteeName },
+			subjectData: { menteeName },
 		})
 	}
 
