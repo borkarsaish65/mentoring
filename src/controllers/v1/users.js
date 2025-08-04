@@ -125,4 +125,20 @@ module.exports = class Users {
 			return error
 		}
 	}
+
+	/**
+	 * RequestCounts a gives user chat request / session counts
+	 * @method
+	 * @name requestCounts
+	 * @param {Object} req - Request object.
+	 * @returns {JSON} - Deletion status and response.
+	 */
+	async requestCount(req) {
+		try {
+			return await userService.requestCount(req.decodedToken.id)
+		} catch (error) {
+			console.log(error)
+			return error
+		}
+	}
 }
