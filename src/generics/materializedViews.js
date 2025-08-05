@@ -491,9 +491,9 @@ const checkAndCreateMaterializedViews = async () => {
 			const mViewExits = result.some(
 				({ matviewname }) => matviewname === common.materializedViewsPrefix + model.tableName
 			)
-			// if (!mViewExits) {
-			return generateMaterializedView(modelEntityTypes)
-			// }
+			if (!mViewExits) {
+				return generateMaterializedView(modelEntityTypes)
+			}
 			return true
 		})
 	)
