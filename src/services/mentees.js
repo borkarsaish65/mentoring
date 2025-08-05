@@ -25,10 +25,11 @@ const permissions = require('@helpers/getPermissions')
 const { buildSearchFilter } = require('@helpers/search')
 const { defaultRulesFilter } = require('@helpers/defaultRules')
 
-const searchConfig = require('@configs/search.json')
+const defaultSearchConfig = require('@configs/search.json')
 const emailEncryption = require('@utils/emailEncryption')
 const menteeExtensionQueries = require('@database/queries/userExtension')
 const getOrgIdAndEntityTypes = require('@helpers/getOrgIdAndEntityTypewithEntitiesBasedOnPolicy')
+const searchConfig = require('@root/config.json')
 
 module.exports = class MenteesHelper {
 	/**
@@ -435,9 +436,13 @@ module.exports = class MenteesHelper {
 		// Create saas filter for view query
 		const saasFilter = await this.filterSessionsBasedOnSaasPolicy(userId, isAMentor)
 
+		let search_config = defaultSearchConfig
+		if (searchConfig.search) {
+			search_config = { search: searchConfig.search }
+		}
 		const searchFilter = await buildSearchFilter({
 			searchOn: searchOn ? searchOn.split(',') : false,
-			searchConfig: searchConfig.search.session,
+			searchConfig: search_config.search.session,
 			search,
 			modelName: sessionModelName,
 		})
