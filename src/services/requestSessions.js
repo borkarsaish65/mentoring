@@ -42,12 +42,6 @@ module.exports = class requestSessionsHelper {
 
 	static async create(bodyData, userId, orgId, skipValidation) {
 		try {
-			if (!process.env.ENABLE_REQUEST_SESSION) {
-				return responses.failureResponse({
-					statusCode: httpStatusCode.not_found,
-					message: 'REQUEST_SESSION_IS_DISBALED',
-				})
-			}
 			const mentorUserExists = await mentorQueries.getMentorExtension(bodyData.requestee_id)
 			if (!mentorUserExists) {
 				return responses.failureResponse({

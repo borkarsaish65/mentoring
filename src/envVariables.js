@@ -553,11 +553,6 @@ let enviromentVariables = {
 		optional: true,
 		default: 'session_meeting_link_added',
 	},
-	ENABLE_REQUEST_SESSION: {
-		message: 'Enable or Disable Request Session Capabilities',
-		optional: true,
-		default: false,
-	},
 }
 
 let success = true

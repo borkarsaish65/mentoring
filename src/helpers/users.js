@@ -19,12 +19,10 @@ module.exports = class UserServiceHelper {
 				const chatRequest = await connectionQueries.getRequestsCount(userId)
 				connectionRequestCount = chatRequest
 			}
-			if (process.env.ENABLE_REQUEST_SESSION) {
-				const sessionRequest = await sessionRequestQueries.getCount(userId, [
-					common.CONNECTIONS_STATUS.REQUESTED,
-				])
-				sessionRequestcount = sessionRequest
-			}
+
+			const sessionRequest = await sessionRequestQueries.getCount(userId, [common.CONNECTIONS_STATUS.REQUESTED])
+			sessionRequestcount = sessionRequest
+
 			return {
 				connectionRequestCount,
 				sessionRequestcount,
