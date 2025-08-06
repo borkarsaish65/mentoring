@@ -287,7 +287,7 @@ exports.getCount = async (userId, status) => {
 
 		return sessionRequest
 	} catch (error) {
-		console.error('Error in getAllRequests:', error)
+		console.error('Error in getCount:', error)
 		throw error
 	}
 }

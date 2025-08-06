@@ -127,11 +127,11 @@ module.exports = class Users {
 	}
 
 	/**
-	 * RequestCounts a gives user chat request / session counts
+	 * Get user's connection and session request counts
 	 * @method
-	 * @name requestCounts
+	 * @name requestCount
 	 * @param {Object} req - Request object.
-	 * @returns {JSON} - Deletion status and response.
+	 * @returns {JSON} - Request counts with success/failure response.
 	 */
 	async requestCount(req) {
 		try {
