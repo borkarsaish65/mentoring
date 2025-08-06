@@ -19,6 +19,7 @@ const moment = require('moment')
 const connectionQueries = require('@database/queries/connection')
 const userExtensionQueries = require('@database/queries/userExtension')
 const { getDefaultOrgId } = require('@helpers/getDefaultOrgId')
+const { Sequelize } = require('@database/models/index')
 
 const adminHelper = require('@helpers/admin')
 
@@ -912,7 +913,7 @@ module.exports = class AdminService {
 	static async deleteSessionsWithAssignedMentor(mentorUserId, orgId) {
 		// Notify attendees about session deletion
 
-		const sessionsToDelete = await Session.getSessionsAssignedToMentor(mentorUserId)
+		const sessionsToDelete = await sessionQueries.getSessionsAssignedToMentor(mentorUserId)
 
 		if (sessionsToDelete.length == 0) {
 			return true
