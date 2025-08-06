@@ -13,7 +13,10 @@ module.exports = class UserServiceHelper {
 	 */
 	static async findRequestCounts(userId) {
 		try {
-			let sessionRequestcount = 0,
+			if (!userId) {
+				throw new Error('User ID is required')
+			}
+			let sessionRequestCount = 0,
 				connectionRequestCount = 0
 			if (process.env.ENABLE_CHAT) {
 				const chatRequest = await connectionQueries.getRequestsCount(userId)
@@ -21,11 +24,11 @@ module.exports = class UserServiceHelper {
 			}
 
 			const sessionRequest = await sessionRequestQueries.getCount(userId, [common.CONNECTIONS_STATUS.REQUESTED])
-			sessionRequestcount = sessionRequest
+			sessionRequestCount = sessionRequest
 
 			return {
 				connectionRequestCount,
-				sessionRequestcount,
+				sessionRequestCount,
 			}
 		} catch (err) {
 			console.error('Error in findRequestCounts:', err)

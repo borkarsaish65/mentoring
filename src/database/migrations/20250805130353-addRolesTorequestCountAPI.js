@@ -11,8 +11,8 @@ const getPermissionId = async (module, request_type, api_path) => {
 			where: { module, request_type, api_path },
 		})
 
-		if (!permission) {
-			throw 'no permission found'
+		if (!permissionId) {
+			throw new Error('No permission found')
 		}
 		return permission.id
 	} catch (error) {
@@ -29,7 +29,7 @@ module.exports = {
 				permission_id: await getPermissionId('users', ['GET'], '/mentoring/v1/users/requestCount'),
 				module: 'users',
 				request_type: ['GET'],
-				api_path: 'mentoring/v1/users/requestCount',
+				api_path: '/mentoring/v1/users/requestCount',
 				created_at: new Date(),
 				updated_at: new Date(),
 				created_by: 0,
@@ -39,6 +39,14 @@ module.exports = {
 	},
 
 	down: async (queryInterface, Sequelize) => {
-		await queryInterface.bulkDelete('role_permission_mapping', null, {})
+		const permissionId = await getPermissionId('users', ['GET'], '/mentoring/v1/users/requestCount')
+		await queryInterface.bulkDelete(
+			'role_permission_mapping',
+			{
+				role_title: common.MENTOR_ROLE,
+				permission_id: permissionId,
+			},
+			{}
+		)
 	},
 }
