@@ -690,12 +690,12 @@ module.exports = class SessionsHelper {
 					await this.addResources(bodyData.resources, userId, sessionId)
 
 					bodyData.resources.forEach((element) => {
-						if ((element.type = common.SESSION_PRE_RESOURCE_TYPE)) {
+						if (element.type === common.SESSION_PRE_RESOURCE_TYPE) {
 							if (sessionDetail.status != common.COMPLETED_STATUS) {
 								preResourceSendEmail = true
 							}
 						}
-						if ((element.type = common.SESSION_POST_RESOURCE_TYPE)) {
+						if (element.type === common.SESSION_POST_RESOURCE_TYPE) {
 							if (sessionDetail.status == common.COMPLETED_STATUS) {
 								postResourceSendEmail = true
 							}
