@@ -1,6 +1,4 @@
 'use strict'
-
-const userRequests = require('@requests/user')
 require('dotenv').config()
 const common = require('@constants/common')
 const Permissions = require('@database/models/index').Permission
@@ -11,7 +9,7 @@ const getPermissionId = async (module, request_type, api_path) => {
 			where: { module, request_type, api_path },
 		})
 
-		if (!permissionId) {
+		if (!permission) {
 			throw new Error('No permission found')
 		}
 		return permission.id
