@@ -267,7 +267,7 @@ module.exports = class MenteeExtensionQueries {
 				? await MenteeExtension.unscoped().findAll(query)
 				: await MenteeExtension.findAll(query)
 
-			if (options & options.attributes && options.attributes.includes('email')) {
+			if (options && options.attributes && options.attributes.includes('email')) {
 				await Promise.all(
 					result.map(async (userInfo) => {
 						if (userInfo && userInfo.email) {

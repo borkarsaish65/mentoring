@@ -616,6 +616,40 @@ module.exports = class AdminService {
 		}
 	}
 
+	static async notifyAndCancelPrivateSessions(privateSessions, orgId) {
+		try {
+			let allNotificationsSent = true
+
+			for (const session of privateSessions) {
+				// Check if this is a one-on-one session (only one attendee)
+				const attendeeCount = await SessionAttendee.getCount({ session_id: session.id })
+
+				if (attendeeCount === 1) {
+					// This is a one-on-one private session, cancel it and notify mentor
+					const notificationSent = await this.notifyMentorAboutPrivateSessionCancellation(
+						session.mentor_id,
+						session,
+						orgId
+					)
+
+					if (!notificationSent) {
+						allNotificationsSent = false
+					}
+
+					// Mark session as cancelled/deleted
+					await sessionQueries.updateRecords({ deleted_at: new Date() }, { where: { id: session.id } })
+
+					console.log(`Cancelled private session ${session.id} due to mentee deletion`)
+				}
+			}
+
+			return allNotificationsSent
+		} catch (error) {
+			console.error('Error notifying and cancelling private sessions:', error)
+			return false
+		}
+	}
+
 	// Session Manager Deletion Flow Codes
 
 	// static async validateSessionReassignmentPolicies(oldSessionManagerId, newSessionManagerId, orgAdminUserId) {
@@ -863,7 +897,7 @@ module.exports = class AdminService {
 			}
 
 			// 4. Delete sessions where mentor was assigned (not created by mentor)
-			result.isAssignedSessionsDeleted = await adminHelper.deleteSessionsWithAssignedMentor(mentorUserId, orgId)
+			result.isAssignedSessionsDeleted = await this.deleteSessionsWithAssignedMentor(mentorUserId, orgId)
 		} catch (error) {
 			console.error('Error in handleMentorDeletion:', error)
 			result.isMenteeNotifiedAboutMentorDeletion = false
@@ -871,6 +905,21 @@ module.exports = class AdminService {
 			result.isSessionManagerNotified = false
 			result.isAssignedSessionsDeleted = false
 		}
+	}
+
+	static async deleteSessionsWithAssignedMentor(mentorUserId, orgId) {
+		// Notify attendees about session deletion
+
+		const sessionsToDelete = await adminHelper.getSesionsWithAssignedMentor(mentorUserId)
+
+		await this.notifyAttendeesAboutSessionDeletion(sessionsToDelete, orgId)
+
+		// Delete the sessions
+		const sessionIds = [...new Set(sessionsToDelete.map((s) => s.id))]
+		await sessionQueries.updateRecords({ deleted_at: new Date() }, { where: { id: sessionIds } })
+
+		console.log(`Deleted ${sessionIds.length} sessions with assigned mentor`)
+		return true
 	}
 
 	static async notifyMenteesAboutMentorDeletion(mentees, mentorName, orgId) {
@@ -974,7 +1023,7 @@ module.exports = class AdminService {
 		try {
 			const templateCode = process.env.SESSION_MANAGER_MENTEE_DELETION_EMAIL_TEMPLATE
 			if (!templateCode) {
-				console.log('No email template configured for session manager mentor deletion notification')
+				console.log('No email template configured for session manager mentee deletion notification')
 				return true
 			}
 
@@ -1007,8 +1056,8 @@ module.exports = class AdminService {
 						recipients: managerDetails,
 						templateCode,
 						orgId,
-						templateData: { name: menteeName, sessionsList: sessionList },
-						subjectData: { name: menteeName },
+						templateData: { menteeName: menteeName, sessionsList: sessionList },
+						subjectData: { menteeName: menteeName },
 					})
 				}
 			})
