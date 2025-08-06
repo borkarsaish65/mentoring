@@ -1,7 +1,6 @@
 const Session = require('@database/queries/sessions')
 const Connection = require('@database/queries/connection')
 const RequestSession = require('@database/queries/requestSessions')
-const mentorExtensionQueries = require('@database/queries/mentorExtension')
 const userExtensionQueries = require('@database/queries/userExtension')
 
 module.exports = class adminHelper {
@@ -25,13 +24,9 @@ module.exports = class adminHelper {
 			}
 
 			// Get mentor details for notification
-			const mentors = (await mentorExtensionQueries.getMentorsByUserIds)
-				? await mentorExtensionQueries.getMentorsByUserIds(mentorIds, {
-						attributes: ['user_id', 'name', 'email'],
-				  })
-				: await userExtensionQueries.getUsersByUserIds(mentorIds, {
-						attributes: ['user_id', 'name', 'email'],
-				  })
+			const mentors = await userExtensionQueries.getUsersByUserIds(mentorIds, {
+				attributes: ['user_id', 'name', 'email'],
+			})
 
 			return mentors || []
 		} catch (error) {
@@ -55,24 +50,8 @@ module.exports = class adminHelper {
 			const upcomingSessions = await Session.getPrivateUpComingSessionsOfmentee(menteeUserId)
 			return upcomingSessions
 		} catch (error) {
-			console.error('Error getting upcoming sessions for mentor:', error)
+			console.error('Error getting upcoming sessions for mentee:', error)
 			return []
-		}
-	}
-
-	static async deleteSessionsWithAssignedMentor(mentorUserId) {
-		try {
-			// Get sessions where this mentor was assigned (not created by mentor, but assigned as mentor)
-
-			const sessionsToDelete = await Session.getSessionsAssignedToMentor(mentorUserId)
-
-			if (sessionsToDelete.length === 0) {
-				return true
-			}
-			return sessionsToDelete
-		} catch (error) {
-			console.error('Error deleting sessions with assigned mentor:', error)
-			return false
 		}
 	}
 

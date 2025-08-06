@@ -90,7 +90,7 @@ exports.updateOne = async (filter, update, options = {}) => {
  */
 exports.updateRecords = async (data, where) => {
 	try {
-		const result = await sessionQueries.update(data, { where })
+		const result = await Session.update(data, { where })
 		return result[0] // Sequelize returns [number of affected rows]
 	} catch (error) {
 		throw error

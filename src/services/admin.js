@@ -310,7 +310,7 @@ module.exports = class AdminService {
 				const privateSessions = await adminHelper.getPrivateSessionsWithDeletedMentee(userId)
 
 				if (privateSessions.length > 0) {
-					result.isPrivateSessionsCancelled = await adminHelper.notifyAndCancelPrivateSessions(
+					result.isPrivateSessionsCancelled = await this.notifyAndCancelPrivateSessions(
 						privateSessions,
 						userInfo.organization_id || ''
 					)
@@ -617,12 +617,13 @@ module.exports = class AdminService {
 	}
 
 	static async notifyAndCancelPrivateSessions(privateSessions, orgId) {
+		const transaction = await Sequelize.transaction()
 		try {
 			let allNotificationsSent = true
 
 			for (const session of privateSessions) {
 				// Check if this is a one-on-one session (only one attendee)
-				const attendeeCount = await SessionAttendee.getCount({ session_id: session.id })
+				const attendeeCount = await sessionAttendeesQueries.getCount({ session_id: session.id })
 
 				if (attendeeCount === 1) {
 					// This is a one-on-one private session, cancel it and notify mentor
@@ -642,9 +643,10 @@ module.exports = class AdminService {
 					console.log(`Cancelled private session ${session.id} due to mentee deletion`)
 				}
 			}
-
+			await transaction.commit()
 			return allNotificationsSent
 		} catch (error) {
+			await transaction.rollback()
 			console.error('Error notifying and cancelling private sessions:', error)
 			return false
 		}
@@ -910,7 +912,11 @@ module.exports = class AdminService {
 	static async deleteSessionsWithAssignedMentor(mentorUserId, orgId) {
 		// Notify attendees about session deletion
 
-		const sessionsToDelete = await adminHelper.getSesionsWithAssignedMentor(mentorUserId)
+		const sessionsToDelete = await Session.getSessionsAssignedToMentor(mentorUserId)
+
+		if (sessionsToDelete.length == 0) {
+			return true
+		}
 
 		await this.notifyAttendeesAboutSessionDeletion(sessionsToDelete, orgId)
 
@@ -1056,7 +1062,7 @@ module.exports = class AdminService {
 						recipients: managerDetails,
 						templateCode,
 						orgId,
-						templateData: { menteeName: menteeName, sessionsList: sessionList },
+						templateData: { menteeName: menteeName, sessionList: sessionList },
 						subjectData: { menteeName: menteeName },
 					})
 				}
