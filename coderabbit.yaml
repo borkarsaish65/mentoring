@@ -28,6 +28,11 @@ reviews:
   auto_assign_reviewers: false
   poem: true
   labeling_instructions: []
+  base_branches: # allow auto-reviews on these target branches
+    - master
+    - develop
+    - staging
+    - feature/*
 
   #Exclude non-source code directories from reviews.
   path_filters:
