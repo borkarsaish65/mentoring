@@ -462,14 +462,14 @@ module.exports = class SessionsHelper {
 				})
 			}
 
-			let triggerSessionMeetinkAddEmail = false
-			if (
-				sessionDetail.meeting_info.platform == 'OFF' &&
-				bodyData.meeting_info &&
-				bodyData.meeting_info.platform
-			) {
-				triggerSessionMeetinkAddEmail = true
-			}
+			// let triggerSessionMeetinkAddEmail = false
+			// if (
+			// 	sessionDetail.meeting_info.platform == 'OFF' &&
+			// 	bodyData.meeting_info &&
+			// 	bodyData.meeting_info.platform
+			// ) {
+			// 	triggerSessionMeetinkAddEmail = true
+			// }
 
 			if (sessionDetail.status == common.COMPLETED_STATUS && bodyData?.resources) {
 				const completedDate = moment(sessionDetail.completed_at)
@@ -634,6 +634,7 @@ module.exports = class SessionsHelper {
 			}
 
 			let preResourceSendEmail = false
+			let postResourceSendEmail = false
 
 			let message
 			const sessionRelatedJobIds = common.notificationJobIdPrefixes.map((element) => element + sessionDetail.id)
@@ -689,8 +690,15 @@ module.exports = class SessionsHelper {
 					await this.addResources(bodyData.resources, userId, sessionId)
 
 					bodyData.resources.forEach((element) => {
-						if ((element.type = common.SESSION_PRE_RESOURCE_TYPE)) {
-							preResourceSendEmail = true
+						if (element.type === common.SESSION_PRE_RESOURCE_TYPE) {
+							if (sessionDetail.status != common.COMPLETED_STATUS) {
+								preResourceSendEmail = true
+							}
+						}
+						if (element.type === common.SESSION_POST_RESOURCE_TYPE) {
+							if (sessionDetail.status == common.COMPLETED_STATUS) {
+								postResourceSendEmail = true
+							}
 						}
 					})
 				}
@@ -763,7 +771,7 @@ module.exports = class SessionsHelper {
 				isSessionReschedule ||
 				isSessionDataChanged ||
 				preResourceSendEmail ||
-				triggerSessionMeetinkAddEmail
+				postResourceSendEmail
 			) {
 				const sessionAttendees = await sessionAttendeesQueries.findAll({
 					session_id: sessionId,
@@ -789,6 +797,7 @@ module.exports = class SessionsHelper {
 				/* Find email template according to request type */
 				let templateData
 				let mentorEmailTemplate
+				let preOrPostEmailTemplate
 				if (method == common.DELETE_METHOD) {
 					let sessionDeleteEmailTemplate = process.env.MENTOR_SESSION_DELETE_BY_MANAGER_EMAIL_TEMPLATE
 					// commenting this part for 2.6 release products confirmed to use the new delete email template for all.
@@ -815,15 +824,19 @@ module.exports = class SessionsHelper {
 
 				if (preResourceSendEmail) {
 					let preResourceTemplate = process.env.PRE_RESOURCE_EMAIL_TEMPLATE_CODE
-					templateData = await notificationQueries.findOneEmailTemplate(preResourceTemplate, orgId)
+					preOrPostEmailTemplate = await notificationQueries.findOneEmailTemplate(preResourceTemplate, orgId)
+				}
+				if (postResourceSendEmail) {
+					let postResourceTemplate = process.env.POST_RESOURCE_EMAIL_TEMPLATE_CODE
+					preOrPostEmailTemplate = await notificationQueries.findOneEmailTemplate(postResourceTemplate, orgId)
 				}
 
-				if (triggerSessionMeetinkAddEmail) {
-					templateData = await notificationQueries.findOneEmailTemplate(
-						process.env.SESSION_MEETLINK_ADDED_EMAIL_TEMPLATE,
-						orgId
-					)
-				}
+				// if (triggerSessionMeetinkAddEmail) {
+				// 	templateData = await notificationQueries.findOneEmailTemplate(
+				// 		process.env.SESSION_MEETLINK_ADDED_EMAIL_TEMPLATE,
+				// 		orgId
+				// 	)
+				// }
 
 				// send mail associated with action to session mentees
 				sessionAttendees.forEach(async (attendee) => {
@@ -962,13 +975,13 @@ module.exports = class SessionsHelper {
 							console.log('Session attendee mapped, isSessionReschedule true and kafka res: ', kafkaRes)
 						}
 					}
-					if (preResourceSendEmail) {
+					if (preResourceSendEmail || postResourceSendEmail) {
 						const payload = {
 							type: 'email',
 							email: {
 								to: attendee.attendeeEmail,
-								subject: templateData.subject,
-								body: utils.composeEmailBody(templateData.body, {
+								subject: preOrPostEmailTemplate.subject,
+								body: utils.composeEmailBody(preOrPostEmailTemplate.body, {
 									mentorName: sessionDetail.mentor_name,
 									sessionTitle: sessionDetail.title,
 									sessionLink: process.env.PORTAL_BASE_URL + '/session-detail/' + sessionDetail.id,
@@ -990,36 +1003,36 @@ module.exports = class SessionsHelper {
 						console.log('Kafka payload:', payload)
 						console.log('Session attendee mapped, preResourceSendEmail true and kafka res: ', kafkaRes)
 					}
-					if (triggerSessionMeetinkAddEmail) {
-						const payload = {
-							type: 'email',
-							email: {
-								to: attendee.attendeeEmail,
-								subject: utils.composeEmailBody(templateData.subject, {
-									sessionTitle: sessionDetail.title,
-								}),
-								body: utils.composeEmailBody(templateData.body, {
-									mentorName: sessionDetail.mentor_name,
-									sessionTitle: sessionDetail.title,
-									sessionLink: process.env.PORTAL_BASE_URL + '/session-detail/' + sessionDetail.id,
-									Date: utils.getTimeZone(
-										sessionDetail.start_date,
-										common.dateFormat,
-										sessionDetail.time_zone
-									),
-									Time: utils.getTimeZone(
-										sessionDetail.start_date,
-										common.timeFormat,
-										sessionDetail.time_zone
-									),
-								}),
-							},
-						}
+					// if (triggerSessionMeetinkAddEmail) {
+					// 	const payload = {
+					// 		type: 'email',
+					// 		email: {
+					// 			to: attendee.attendeeEmail,
+					// 			subject: utils.composeEmailBody(templateData.subject, {
+					// 				sessionTitle: sessionDetail.title,
+					// 			}),
+					// 			body: utils.composeEmailBody(templateData.body, {
+					// 				mentorName: sessionDetail.mentor_name,
+					// 				sessionTitle: sessionDetail.title,
+					// 				sessionLink: process.env.PORTAL_BASE_URL + '/session-detail/' + sessionDetail.id,
+					// 				Date: utils.getTimeZone(
+					// 					sessionDetail.start_date,
+					// 					common.dateFormat,
+					// 					sessionDetail.time_zone
+					// 				),
+					// 				Time: utils.getTimeZone(
+					// 					sessionDetail.start_date,
+					// 					common.timeFormat,
+					// 					sessionDetail.time_zone
+					// 				),
+					// 			}),
+					// 		},
+					// 	}
 
-						let kafkaRes = await kafkaCommunication.pushEmailToKafka(payload)
-						console.log('Kafka payload:', payload)
-						console.log('Session attendee mapped, preResourceSendEmail true and kafka res: ', kafkaRes)
-					}
+					// 	let kafkaRes = await kafkaCommunication.pushEmailToKafka(payload)
+					// 	console.log('Kafka payload:', payload)
+					// 	console.log('Session attendee mapped, preResourceSendEmail true and kafka res: ', kafkaRes)
+					// }
 				})
 				// send mail to mentor if session is created and handled by a manager and if there is any data change
 				// send notification only if front end request for user notification
