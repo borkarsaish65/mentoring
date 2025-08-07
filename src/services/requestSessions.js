@@ -520,7 +520,7 @@ module.exports = class requestSessionsHelper {
 				rejectedData[0].dataValues.requestor_id,
 				userId,
 				bodyData.reason,
-				(rejectEmail = true)
+				true
 			)
 
 			return responses.successResponse({
