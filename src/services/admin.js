@@ -227,6 +227,7 @@ module.exports = class AdminHelper {
 				// No connections exist, set chat flags to true since no action needed
 				result.isChatUserRemoved = true
 				result.isChatNameUpdated = true
+				result.isRemoveChatAvatar = true
 				result.isConnectionsAndRequestsRemoved = true
 				result.isMentorNotifiedAboutMenteeDeletion = true
 			}
