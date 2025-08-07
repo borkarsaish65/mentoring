@@ -471,3 +471,18 @@ exports.getConnectedUsers = async ({ userId, selectColumn = 'user_id', whereColu
 		throw error
 	}
 }
+
+exports.getRequestsCount = async (userId) => {
+	try {
+		// This will retrieve the request count
+		const result = await ConnectionRequest.count({
+			where: {
+				user_id: userId,
+				status: common.CONNECTIONS_STATUS.REQUESTED,
+			},
+		})
+		return result
+	} catch (error) {
+		throw error
+	}
+}

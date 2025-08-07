@@ -288,3 +288,32 @@ exports.getPendingSessionRequests = async (userId) => {
 		return []
 	}
 }
+
+exports.getCount = async (userId, status) => {
+	try {
+		// Prepare filter
+		const filter =
+			status.length != 0
+				? status
+				: {
+						[Op.in]: [
+							common.CONNECTIONS_STATUS.ACCEPTED,
+							common.CONNECTIONS_STATUS.REQUESTED,
+							common.CONNECTIONS_STATUS.REJECTED,
+							common.CONNECTIONS_STATUS.EXPIRED,
+						],
+				  }
+
+		const sessionRequest = await requestSession.count({
+			where: {
+				requestor_id: userId,
+				status: filter,
+			},
+		})
+
+		return sessionRequest
+	} catch (error) {
+		console.error('Error in getCount:', error)
+		throw error
+	}
+}
