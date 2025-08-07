@@ -629,7 +629,7 @@ module.exports = class MenteesHelper {
 			const mentorDetails = await menteeQueries.getUsersByUserIds(
 				mentorIds,
 				{
-					attributes: ['name', 'user_id', 'organization_id'],
+					attributes: ['user_id', 'organization_id'],
 				},
 				true
 			)
@@ -1544,7 +1544,7 @@ module.exports = class MenteesHelper {
 				if (!validateDefaultRules) {
 					return responses.failureResponse({
 						message: 'USER_NOT_FOUND',
-						statusCode: httpStatusCode.bad_request,
+						statusCode: httpStatusCode.not_found,
 						responseCode: 'CLIENT_ERROR',
 					})
 				}
