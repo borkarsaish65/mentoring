@@ -935,7 +935,7 @@ exports.deactivateAndReturnMentorSessions = async (userId) => {
 	}
 }
 
-exports.getPrivateUpComingSessionsOfmentee = async (menteeUserId) => {
+exports.getPrivateUpComingSessionsOfMentee = async (menteeUserId) => {
 	try {
 		// Get private sessions where the deleted mentee was enrolled and session is in future
 		const query = `

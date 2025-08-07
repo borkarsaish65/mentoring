@@ -6,7 +6,7 @@ const userExtensionQueries = require('@database/queries/userExtension')
 module.exports = class adminHelper {
 	static async getPrivateSessionsWithDeletedMentee(menteeUserId) {
 		try {
-			const privateSessions = await Session.getPrivateUpComingSessionsOfmentee(menteeUserId)
+			const privateSessions = await Session.getPrivateUpComingSessionsOfMentee(menteeUserId)
 			return privateSessions
 		} catch (error) {
 			console.error('Error getting private sessions with deleted mentee:', error)
@@ -47,7 +47,7 @@ module.exports = class adminHelper {
 	static async getUpcomingSessionsForMentee(menteeUserId) {
 		try {
 			// Get private sessions where the deleted mentee was enrolled and session is in future
-			const upcomingSessions = await Session.getPrivateUpComingSessionsOfmentee(menteeUserId)
+			const upcomingSessions = await Session.getPrivateUpComingSessionsOfMentee(menteeUserId)
 			return upcomingSessions
 		} catch (error) {
 			console.error('Error getting upcoming sessions for mentee:', error)

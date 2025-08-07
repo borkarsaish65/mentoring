@@ -1073,7 +1073,7 @@ module.exports = class AdminService {
 			console.log(`Notified session managers about mentor deletion for ${sessions.length} sessions`)
 			return true
 		} catch (error) {
-			console.error('Error notifying session managers about mentor deletion:', error)
+			console.error('Error notifying session managers about mentee deletion:', error)
 			return false
 		}
 	}
