@@ -199,11 +199,13 @@ module.exports = class AdminHelper {
 
 				// Soft delete in communication service
 				const removeChatUser = await communicationHelper.setActiveStatus(userId, false) // ( userId = "1", activeStatus = "true" or "false")
+				const removeChatAvatar = await communicationHelper.removeAvatar(userId)
 
 				// Update user name to 'User Not Found'
 				const updateChatUserName = await communicationHelper.updateUser(userId, common.USER_NOT_FOUND) // userId: "1", name: "User Name"
 
 				result.isChatUserRemoved = removeChatUser?.result?.success === true
+				result.isRemoveChatAvatar = removeChatAvatar?.result?.success === true
 				result.isChatNameUpdated = updateChatUserName?.result?.success === true
 
 				// Delete user connections and requests from DB
