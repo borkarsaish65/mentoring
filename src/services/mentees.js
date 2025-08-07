@@ -1544,7 +1544,7 @@ module.exports = class MenteesHelper {
 				if (!validateDefaultRules) {
 					return responses.failureResponse({
 						message: 'USER_NOT_FOUND',
-						statusCode: httpStatusCode.bad_request,
+						statusCode: httpStatusCode.not_found,
 						responseCode: 'CLIENT_ERROR',
 					})
 				}

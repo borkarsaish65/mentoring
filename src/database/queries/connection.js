@@ -58,6 +58,7 @@ exports.getPendingRequests = async (userId, page, pageSize) => {
 			raw: true,
 			limit: pageSize,
 			offset: (page - 1) * pageSize,
+			order: [['created_at', 'DESC']],
 		})
 		return result
 	} catch (error) {
