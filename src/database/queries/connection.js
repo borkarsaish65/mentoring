@@ -448,6 +448,7 @@ exports.getConnectionsCount = async (filter, userId, organizationIds = []) => {
 	}
 }
 
+
 exports.getConnectedUsers = async ({ userId, selectColumn = 'user_id', whereColumn = 'friend_id' }) => {
 	try {
 		const query = `
@@ -467,6 +468,18 @@ exports.getConnectedUsers = async ({ userId, selectColumn = 'user_id', whereColu
 
 		const userIds = connections.map((conn) => conn.user_id)
 		return userIds.length > 0 ? userIds : []
+
+exports.getRequestsCount = async (userId) => {
+	try {
+		// This will retrieve the request count
+		const result = await ConnectionRequest.count({
+			where: {
+				user_id: userId,
+				status: common.CONNECTIONS_STATUS.REQUESTED,
+			},
+		})
+		return result
+
 	} catch (error) {
 		throw error
 	}

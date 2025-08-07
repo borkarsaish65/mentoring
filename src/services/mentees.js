@@ -1140,9 +1140,9 @@ module.exports = class MenteesHelper {
 
 				if (connectionDetails?.data?.length > 0) {
 					connectedMenteeIds = connectionDetails.data.map((item) => item.user_id)
-					if (!connectedMenteeIds.includes(userId)) {
-						connectedMenteeIds.push(userId)
-					}
+					// if (!connectedMenteeIds.includes(userId)) {
+					// 	connectedMenteeIds.push(userId)
+					// }
 				}
 
 				// If there are no connected mentees, short-circuit and return empty
