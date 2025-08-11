@@ -454,7 +454,7 @@ exports.getRequestsCount = async (userId) => {
 		// This will retrieve the request count
 		const result = await ConnectionRequest.count({
 			where: {
-				user_id: userId,
+				friend_id: userId,
 				status: common.CONNECTIONS_STATUS.REQUESTED,
 			},
 		})
