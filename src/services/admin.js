@@ -21,8 +21,6 @@ const userExtensionQueries = require('@database/queries/userExtension')
 const { getDefaultOrgId } = require('@helpers/getDefaultOrgId')
 const { Sequelize } = require('@database/models/index')
 
-const adminHelper = require('@helpers/admin')
-
 // Generic notification helper class
 class NotificationHelper {
 	static async sendGenericNotification({ recipients, templateCode, orgId, templateData = {}, subjectData = {} }) {
@@ -198,7 +196,15 @@ module.exports = class AdminService {
 
 			if (connectionCount > 0) {
 				// Get connected mentors before deleting connections (for notifications)
-				const connectedMentors = await adminHelper.getConnectedMentors(userId)
+
+				let mentorIds = await connectionQueries.getConnectedUsers(userId, 'user_id', 'friend_id')
+				if (mentorIds.length === 0) {
+					return []
+				}
+				// Get mentor details for notification
+				const connectedMentors = await userExtensionQueries.getUsersByUserIds(mentorIds, {
+					attributes: ['user_id', 'name', 'email'],
+				})
 
 				// Soft delete in communication service
 				const removeChatUser = await communicationHelper.setActiveStatus(userId, false) // ( userId = "1", activeStatus = "true" or "false")
@@ -305,11 +311,33 @@ module.exports = class AdminService {
 			removedUserDetails = mentorDetailsRemoved + menteeDetailsRemoved
 			result.areUserDetailsCleared = removedUserDetails > 0
 
+			// Get private sessions where deleted mentee was the only attendee
+			const privateSessions = await sessionQueries.getUpComingSessionsOfMentee(
+				menteeUserId,
+				common.SESSION_TYPE.PRIVATE
+			)
+
+			// decrement seats_remaining
+			try {
+				const upcomingPublicSessions = await sessionQueries.getUpComingSessionsOfMentee(
+					menteeUserId,
+					common.SESSION_TYPE.PUBLIC
+				)
+				const allUpcomingSessions = [...privateSessions, ...upcomingPublicSessions]
+				for (const session of allUpcomingSessions) {
+					await sessionQueries.updateRecords(
+						{ seats_remaining: Sequelize.literal('seats_remaining - 1') },
+						{ id: session.id }
+					)
+				}
+				result.isSeatsUpdate = true
+			} catch (error) {
+				console.error('Error handling while session seats_remaining updating:', error)
+				result.isSeatsUpdate = false
+			}
+
 			// Step 7: Handle private session cancellations and notifications
 			try {
-				// Get private sessions where deleted mentee was the only attendee
-				const privateSessions = await adminHelper.getPrivateSessionsWithDeletedMentee(userId)
-
 				if (privateSessions.length > 0) {
 					result.isPrivateSessionsCancelled = await this.notifyAndCancelPrivateSessions(
 						privateSessions,
@@ -342,7 +370,7 @@ module.exports = class AdminService {
 				result.isMenteeNotifiedAboutMentorDeletion !== false &&
 				result.isSessionRequestsRejected !== false &&
 				result.isSessionManagerNotified !== false &&
-				result.isAssignedSessionsDeleted !== false
+				result.isAssignedSessionsUpdated !== false
 
 			if (allOperationsSuccessful) {
 				return responses.successResponse({
@@ -844,7 +872,11 @@ module.exports = class AdminService {
 			const orgId = userInfo.organization_id || ''
 
 			// 1. Notify session managers about sessions with deleted mentor
-			const upcomingSessions = await adminHelper.getUpcomingSessionsForMentee(userId)
+			const upcomingSessions = await sessionQueries.getUpComingSessionsOfMentee(
+				userId,
+				common.SESSION_TYPE.PRIVATE
+			)
+
 			if (upcomingSessions.length > 0) {
 				result.isSessionManagerNotified = await this.notifySessionManagersAboutMenteeDeletion(
 					upcomingSessions,
@@ -865,7 +897,11 @@ module.exports = class AdminService {
 			const orgId = mentorInfo.organization_id || ''
 
 			// 1. Notify connected mentees about mentor deletion
-			const connectedMentees = await adminHelper.getConnectedMentees(mentorUserId)
+			const menteeIds = await connectionQueries.getConnectedUsers(mentorUserId, 'friend_id', 'user_id')
+			const connectedMentees = await userExtensionQueries.getUsersByUserIds(menteeIds, {
+				attributes: ['user_id', 'name', 'email'],
+			})
+
 			if (connectedMentees.length > 0) {
 				result.isMenteeNotifiedAboutMentorDeletion = await this.notifyMenteesAboutMentorDeletion(
 					connectedMentees,
@@ -877,7 +913,8 @@ module.exports = class AdminService {
 			}
 
 			// 2. Handle session requests - auto-reject pending requests
-			const pendingSessionRequests = await adminHelper.getPendingSessionRequestsForMentor(mentorUserId)
+			const pendingSessionRequests = await requestSessionQueries.getPendingSessionRequests(mentorUserId)
+
 			if (pendingSessionRequests.length > 0) {
 				result.isSessionRequestsRejected = await this.rejectSessionRequestsDueToMentorDeletion(
 					pendingSessionRequests,
@@ -888,44 +925,49 @@ module.exports = class AdminService {
 			}
 
 			// 3. Notify session managers about sessions with deleted mentor
-			const upcomingSessions = await this.getUpcomingSessionsForMentor(mentorUserId)
+			const upcomingSessions = await sessionQueries.getUpcomingSessionsForMentor(mentorUserId)
+
 			if (upcomingSessions.length > 0) {
-				result.isSessionManagerNotified = await this.notifySessionManagersAboutMentorDeletion(
+				result.isSessionManagerNotifiedForMentorDelete = await this.notifySessionManagersAboutMentorDeletion(
 					upcomingSessions,
 					mentorInfo.name || 'Mentor',
 					orgId
 				)
+
+				// update upcoming sessions of mentor to set as deleted if he created only
+				const sessionIds = [...new Set(upcomingSessions.map((s) => s.id))]
+				await sessionQueries.updateRecords({ deleted_at: new Date() }, { where: { id: sessionIds } })
 			} else {
-				result.isSessionManagerNotified = true
+				result.isSessionManagerNotifiedForMentorDelete = true
 			}
 
 			// 4. Delete sessions where mentor was assigned (not created by mentor)
-			result.isAssignedSessionsDeleted = await this.deleteSessionsWithAssignedMentor(mentorUserId, orgId)
+			result.isAssignedSessionsUpdated = await this.updateSessionsWithAssignedMentor(mentorUserId, orgId)
 		} catch (error) {
 			console.error('Error in handleMentorDeletion:', error)
 			result.isMenteeNotifiedAboutMentorDeletion = false
 			result.isSessionRequestsRejected = false
-			result.isSessionManagerNotified = false
-			result.isAssignedSessionsDeleted = false
+			result.isSessionManagerNotifiedForMentorDelete = false
+			result.isAssignedSessionsUpdated = false
 		}
 	}
 
-	static async deleteSessionsWithAssignedMentor(mentorUserId, orgId) {
+	static async updateSessionsWithAssignedMentor(mentorUserId, orgId) {
 		// Notify attendees about session deletion
 
-		const sessionsToDelete = await sessionQueries.getSessionsAssignedToMentor(mentorUserId)
+		const sessionsToUpdate = await sessionQueries.getSessionsAssignedToMentor(mentorUserId)
 
-		if (sessionsToDelete.length == 0) {
+		if (sessionsToUpdate.length == 0) {
 			return true
 		}
 
-		await this.notifyAttendeesAboutSessionDeletion(sessionsToDelete, orgId)
+		await this.notifyAttendeesAboutMentorDeletion(sessionsToUpdate, orgId)
 
 		// Delete the sessions
-		const sessionIds = [...new Set(sessionsToDelete.map((s) => s.id))]
-		await sessionQueries.updateRecords({ deleted_at: new Date() }, { where: { id: sessionIds } })
+		const sessionIds = [...new Set(sessionsToUpdate.map((s) => s.id))]
+		await sessionQueries.updateRecords({ mentor_name: common.USER_NOT_FOUND }, { where: { id: sessionIds } })
 
-		console.log(`Deleted ${sessionIds.length} sessions with assigned mentor`)
+		console.log(`Update ${sessionIds.length} sessions with assigned mentor`)
 		return true
 	}
 
@@ -1078,7 +1120,7 @@ module.exports = class AdminService {
 		}
 	}
 
-	static async notifyAttendeesAboutSessionDeletion(sessions, orgId) {
+	static async notifyAttendeesAboutMentorDeletion(sessions, orgId) {
 		try {
 			const templateCode = process.env.SESSION_DELETED_MENTOR_DELETION_EMAIL_TEMPLATE
 			if (!templateCode) {
@@ -1117,6 +1159,7 @@ module.exports = class AdminService {
 
 			await Promise.all(notificationPromises)
 			console.log(`Notified attendees about session deletions due to mentor deletion`)
+			return true
 		} catch (error) {
 			console.error('Error notifying attendees about session deletion:', error)
 		}

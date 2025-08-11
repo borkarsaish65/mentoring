@@ -935,7 +935,7 @@ exports.deactivateAndReturnMentorSessions = async (userId) => {
 	}
 }
 
-exports.getPrivateUpComingSessionsOfMentee = async (menteeUserId) => {
+exports.getUpComingSessionsOfMentee = async (menteeUserId, sessionType) => {
 	try {
 		// Get private sessions where the deleted mentee was enrolled and session is in future
 		const query = `
@@ -943,7 +943,7 @@ exports.getPrivateUpComingSessionsOfMentee = async (menteeUserId) => {
 			FROM sessions s
 			INNER JOIN  session_attendees sa ON s.id = sa.session_id
 			WHERE sa.mentee_id = :menteeUserId
-			AND s.type = :privateType
+			AND s.type = :sessionType
 			AND s.start_date > :currentTime
 			AND s.deleted_at IS NULL
 		`
@@ -952,7 +952,7 @@ exports.getPrivateUpComingSessionsOfMentee = async (menteeUserId) => {
 			type: QueryTypes.SELECT,
 			replacements: {
 				menteeUserId,
-				privateType: common.SESSION_TYPE.PRIVATE,
+				sessionType,
 				currentTime: Math.floor(Date.now() / 1000),
 			},
 		})
