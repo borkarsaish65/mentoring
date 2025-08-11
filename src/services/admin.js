@@ -313,14 +313,14 @@ module.exports = class AdminService {
 			result.areUserDetailsCleared = removedUserDetails > 0
 
 			// Get private sessions where deleted mentee was the only attendee
-			const privateSessions = await sessionQueries.getUpComingSessionsOfMentee(
+			const privateSessions = await sessionQueries.getUpcomingSessionsOfMentee(
 				userId,
 				common.SESSION_TYPE.PRIVATE
 			)
 
 			// increment seats_remaining
 			try {
-				const upcomingPublicSessions = await sessionQueries.getUpComingSessionsOfMentee(
+				const upcomingPublicSessions = await sessionQueries.getUpcomingSessionsOfMentee(
 					userId,
 					common.SESSION_TYPE.PUBLIC
 				)
@@ -877,7 +877,7 @@ module.exports = class AdminService {
 			const orgId = userInfo.organization_id || ''
 
 			// 1. Notify session managers about sessions with deleted mentor
-			const upcomingSessions = await sessionQueries.getUpComingSessionsOfMentee(
+			const upcomingSessions = await sessionQueries.getUpcomingSessionsOfMentee(
 				userId,
 				common.SESSION_TYPE.PRIVATE
 			)
@@ -1167,6 +1167,7 @@ module.exports = class AdminService {
 			return true
 		} catch (error) {
 			console.error('Error notifying attendees about session deletion:', error)
+			return false
 		}
 	}
 }

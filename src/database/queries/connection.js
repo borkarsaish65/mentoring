@@ -8,6 +8,7 @@ const sequelize = require('@database/models/index').sequelize
 const common = require('@constants/common')
 const MenteeExtension = require('@database/models/index').UserExtension
 const { QueryTypes } = require('sequelize')
+const { fn, col } = require('sequelize')
 
 exports.addFriendRequest = async (userId, friendId, message) => {
 	try {
@@ -456,7 +457,7 @@ exports.getConnectedUsers = async (userId, selectColumn = 'user_id', whereColumn
 		}
 
 		const connections = await Connection.findAll({
-			attributes: [[Sequelize.fn('DISTINCT', Sequelize.col(selectColumn)), 'user_id']],
+			attributes: [[fn('DISTINCT', col(selectColumn)), 'user_id']],
 			where: {
 				[whereColumn]: userId,
 				status: common.CONNECTIONS_STATUS.ACCEPTED,

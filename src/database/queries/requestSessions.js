@@ -285,7 +285,7 @@ exports.getPendingSessionRequests = async (userId) => {
 		return pendingRequests || []
 	} catch (error) {
 		console.error('Error getting pending session requests :', error)
-		return []
+		throw error
 	}
 }
 
