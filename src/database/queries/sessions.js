@@ -965,22 +965,18 @@ exports.getUpComingSessionsOfMentee = async (menteeUserId, sessionType) => {
 
 exports.getUpcomingSessionsForMentor = async (mentorUserId) => {
 	try {
-		const query = `
-			SELECT s.*, s.created_by
-			FROM ${Session.tableName} s
-			WHERE s.mentor_id = :mentorUserId 
-			AND s.start_date > :currentTime
-			AND s.deleted_at IS NULL
-			AND s.created_by IS NOT NULL
-			AND s.created_by != :mentorUserId
-		`
+		const currentTime = Math.floor(Date.now() / 1000)
 
-		const upcomingSessions = await Sequelize.query(query, {
-			type: QueryTypes.SELECT,
-			replacements: {
-				mentorUserId,
-				currentTime: Math.floor(Date.now() / 1000),
+		const upcomingSessions = await Session.findAll({
+			where: {
+				mentor_id: mentorUserId,
+				start_date: { [Op.gt]: currentTime },
+				deleted_at: null,
+				created_by: {
+					[Op.and]: [{ [Op.ne]: null }, { [Op.ne]: mentorUserId }],
+				},
 			},
+			raw: true,
 		})
 
 		return upcomingSessions || []

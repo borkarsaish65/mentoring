@@ -448,29 +448,24 @@ exports.getConnectionsCount = async (filter, userId, organizationIds = []) => {
 	}
 }
 
-exports.getConnectedUsers = async ({ userId, selectColumn = 'user_id', whereColumn = 'friend_id' }) => {
+exports.getConnectedUsers = async (userId, selectColumn = 'user_id', whereColumn = 'friend_id') => {
 	try {
 		const allowed = new Set(['user_id', 'friend_id'])
 		if (!allowed.has(selectColumn) || !allowed.has(whereColumn)) {
 			throw new Error('Invalid column name')
 		}
 
-		const query = `
-			SELECT DISTINCT ${selectColumn} AS user_id
-			FROM ${Connection.tableName}
-			WHERE ${whereColumn} = :userId
-			AND status = :acceptedStatus
-		`
-
-		const connections = await sequelize.query(query, {
-			type: QueryTypes.SELECT,
-			replacements: {
-				userId,
-				acceptedStatus: common.CONNECTIONS_STATUS.ACCEPTED,
+		const connections = await Connection.findAll({
+			attributes: [[Sequelize.fn('DISTINCT', Sequelize.col(selectColumn)), 'user_id']],
+			where: {
+				[whereColumn]: userId,
+				status: common.CONNECTIONS_STATUS.ACCEPTED,
 			},
+			raw: true,
 		})
 
 		const userIds = connections.map((conn) => conn.user_id)
+
 		return userIds.length > 0 ? userIds : []
 	} catch (error) {
 		throw error
