@@ -450,6 +450,11 @@ exports.getConnectionsCount = async (filter, userId, organizationIds = []) => {
 
 exports.getConnectedUsers = async ({ userId, selectColumn = 'user_id', whereColumn = 'friend_id' }) => {
 	try {
+		const allowed = new Set(['user_id', 'friend_id'])
+		if (!allowed.has(selectColumn) || !allowed.has(whereColumn)) {
+			throw new Error('Invalid column name')
+		}
+
 		const query = `
 			SELECT DISTINCT ${selectColumn} AS user_id
 			FROM ${Connection.tableName}

@@ -313,21 +313,21 @@ module.exports = class AdminService {
 
 			// Get private sessions where deleted mentee was the only attendee
 			const privateSessions = await sessionQueries.getUpComingSessionsOfMentee(
-				menteeUserId,
+				userId,
 				common.SESSION_TYPE.PRIVATE
 			)
 
 			// decrement seats_remaining
 			try {
 				const upcomingPublicSessions = await sessionQueries.getUpComingSessionsOfMentee(
-					menteeUserId,
+					userId,
 					common.SESSION_TYPE.PUBLIC
 				)
 				const allUpcomingSessions = [...privateSessions, ...upcomingPublicSessions]
 				for (const session of allUpcomingSessions) {
 					await sessionQueries.updateRecords(
 						{ seats_remaining: Sequelize.literal('seats_remaining - 1') },
-						{ id: session.id }
+						{ where: { id: session.id } }
 					)
 				}
 				result.isSeatsUpdate = true
@@ -667,7 +667,11 @@ module.exports = class AdminService {
 					}
 
 					// Mark session as cancelled/deleted
-					await sessionQueries.updateRecords({ deleted_at: new Date() }, { where: { id: session.id } })
+					await sessionQueries.updateRecords(
+						{ deleted_at: new Date() },
+						{ where: { id: session.id } },
+						transaction
+					)
 
 					console.log(`Cancelled private session ${session.id} due to mentee deletion`)
 				}

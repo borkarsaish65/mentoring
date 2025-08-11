@@ -254,12 +254,13 @@ exports.findPendingFeedbackSessions = async (menteeId, completedSessionIds) => {
 	}
 }
 
-exports.getCount = async (filter) => {
+exports.getCount = async (filter = {}, options = {}) => {
 	try {
 		return await SessionAttendee.count({
 			where: filter,
+			...options,
 		})
 	} catch (error) {
-		return error
+		throw error
 	}
 }
