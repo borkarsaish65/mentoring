@@ -88,10 +88,13 @@ exports.updateOne = async (filter, update, options = {}) => {
  * @param {Object} where - WHERE condition (e.g., { id: sessionIds })
  * @returns {Promise<number>} Number of affected rows
  */
-exports.updateRecords = async (data, where) => {
+exports.updateRecords = async (data, options = {}) => {
 	try {
-		const result = await Session.update(data, { where })
-		return result[0] // Sequelize returns [number of affected rows]
+		if (!options.where || Object.keys(options.where).length === 0) {
+			throw new Error('updateRecords: "where" condition is required')
+		}
+		const result = await Session.update(data, options)
+		return Array.isArray(result) ? result[0] : result // Sequelize returns [number of affected rows]
 	} catch (error) {
 		throw error
 	}

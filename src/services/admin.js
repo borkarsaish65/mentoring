@@ -19,7 +19,8 @@ const moment = require('moment')
 const connectionQueries = require('@database/queries/connection')
 const userExtensionQueries = require('@database/queries/userExtension')
 const { getDefaultOrgId } = require('@helpers/getDefaultOrgId')
-const { Sequelize } = require('@database/models/index')
+const { sequelize } = require('@database/models/index')
+const { literal } = require('sequelize')
 
 // Generic notification helper class
 class NotificationHelper {
@@ -317,7 +318,7 @@ module.exports = class AdminService {
 				common.SESSION_TYPE.PRIVATE
 			)
 
-			// decrement seats_remaining
+			// increment seats_remaining
 			try {
 				const upcomingPublicSessions = await sessionQueries.getUpComingSessionsOfMentee(
 					userId,
@@ -326,7 +327,7 @@ module.exports = class AdminService {
 				const allUpcomingSessions = [...privateSessions, ...upcomingPublicSessions]
 				for (const session of allUpcomingSessions) {
 					await sessionQueries.updateRecords(
-						{ seats_remaining: Sequelize.literal('seats_remaining - 1') },
+						{ seats_remaining: literal('seats_remaining + 1') },
 						{ where: { id: session.id } }
 					)
 				}
@@ -646,7 +647,7 @@ module.exports = class AdminService {
 	}
 
 	static async notifyAndCancelPrivateSessions(privateSessions, orgId) {
-		const transaction = await Sequelize.transaction()
+		const transaction = await sequelize.transaction()
 		try {
 			let allNotificationsSent = true
 
