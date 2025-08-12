@@ -268,7 +268,7 @@ exports.getPendingSessionRequests = async (userId) => {
 		const query = `
 			SELECT rs.*, rm.requestee_id
 			FROM session_request rs
-			INNER JOIN request_session_mapping rm ON rs.id = rm.request_session_id
+			INNER JOIN session_request_mapping rm ON rs.id = rm.request_session_id
 			WHERE rm.requestee_id = :userId 
 			AND rs.status = :requestedStatus
 			AND rs.deleted_at IS NULL
