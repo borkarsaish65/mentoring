@@ -734,7 +734,7 @@ const getDownloadableUrl = function (path) {
  *   .catch(error => console.error(error));
  */
 
-const getUserDetailedList = function (userIds, deletedUsers = false) {
+const getUserDetailedList = function (userIds, deletedUsers = false, unscopped = false) {
 	return new Promise(async (resolve, reject) => {
 		try {
 			// Fetch user details
@@ -748,7 +748,7 @@ const getUserDetailedList = function (userIds, deletedUsers = false) {
 			if (deletedUsers) {
 				options = { paranoid: false }
 			}
-			const userDetails = await menteeQueries.getUsersByUserIds(userIds, options)
+			const userDetails = await menteeQueries.getUsersByUserIds(userIds, options, unscopped)
 
 			// Extract unique organization IDs and create a mapping for organization details
 			const organizationIds = new Set()
