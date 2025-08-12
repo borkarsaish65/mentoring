@@ -20,14 +20,7 @@ module.exports = {
 			{
 				code: 'session_manager_private_session_deletion_email',
 				subject: 'Action Required - Mentee Deleted',
-				body: `
-				  <p>Hi,</p>
-				  <p><strong>{menteeName}</strong> is no longer a part of the organisation, and following are their upcoming sessions :</p>
-				  <div style="margin: 15px 0;">
-				  	{sessionList}
-			 	  </div>
-				  <p>You can add new mentees to the session if required.</p>
-				`,
+				body: `<p>Hi,</p><p><strong>{menteeName}</strong> is no longer a part of the organisation, and following are their upcoming sessions :</p><div style="margin: 15px 0;">{sessionList}</div><p>You can add new mentees to the session if required.</p>`,
 			},
 		]
 
