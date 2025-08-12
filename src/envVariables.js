@@ -553,6 +553,11 @@ let enviromentVariables = {
 		optional: true,
 		default: 'session_meeting_link_added',
 	},
+	SESSION_MENTOR_CHANGED_EMAIL_TEMPLATE: {
+		message: 'Required email template name for when mentor has updated',
+		optional: true,
+		default: 'mentor_has_changed',
+	},
 }
 
 let success = true

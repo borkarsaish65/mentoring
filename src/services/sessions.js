@@ -534,6 +534,9 @@ module.exports = class SessionsHelper {
 				// If session is created by manager update userId with mentor_id
 				userId = sessionDetail.mentor_id
 			}
+			if (bodyData.mentor_id) {
+				userId = bodyData.mentor_id
+			}
 
 			let mentorExtension = await mentorExtensionQueries.getMentorExtension(userId)
 			if (!mentorExtension) {
@@ -635,6 +638,7 @@ module.exports = class SessionsHelper {
 
 			let preResourceSendEmail = false
 			let postResourceSendEmail = false
+			let mentorUpdated = false
 
 			let message
 			const sessionRelatedJobIds = common.notificationJobIdPrefixes.map((element) => element + sessionDetail.id)
@@ -703,6 +707,10 @@ module.exports = class SessionsHelper {
 					})
 				}
 
+				if (bodyData.mentor_id != sessionDetail.mentor_id) {
+					mentorUpdated = true
+				}
+
 				const { rowsAffected, updatedRows } = await sessionQueries.updateOne({ id: sessionId }, bodyData, {
 					returning: true,
 				})
@@ -721,6 +729,7 @@ module.exports = class SessionsHelper {
 					// Confirm if session is edited or not.
 					const updatedSessionDetails = updatedDiff(sessionDetail, updatedSessionData)
 					delete updatedSessionDetails.updated_at
+					delete updatedSessionDetails.mentor_id
 					const keys = Object.keys(updatedSessionDetails)
 					if (keys.length > 0) {
 						isSessionDataChanged = true
@@ -771,7 +780,8 @@ module.exports = class SessionsHelper {
 				isSessionReschedule ||
 				isSessionDataChanged ||
 				preResourceSendEmail ||
-				postResourceSendEmail
+				postResourceSendEmail ||
+				mentorUpdated
 			) {
 				const sessionAttendees = await sessionAttendeesQueries.findAll({
 					session_id: sessionId,
@@ -798,6 +808,7 @@ module.exports = class SessionsHelper {
 				let templateData
 				let mentorEmailTemplate
 				let preOrPostEmailTemplate
+				let mentorChangedTemplate
 				if (method == common.DELETE_METHOD) {
 					let sessionDeleteEmailTemplate = process.env.MENTOR_SESSION_DELETE_BY_MANAGER_EMAIL_TEMPLATE
 					// commenting this part for 2.6 release products confirmed to use the new delete email template for all.
@@ -829,6 +840,14 @@ module.exports = class SessionsHelper {
 				if (postResourceSendEmail) {
 					let postResourceTemplate = process.env.POST_RESOURCE_EMAIL_TEMPLATE_CODE
 					preOrPostEmailTemplate = await notificationQueries.findOneEmailTemplate(postResourceTemplate, orgId)
+				}
+
+				if (mentorUpdated) {
+					let mentorChangedTemplateName = process.env.SESSION_MENTOR_CHANGED_EMAIL_TEMPLATE
+					mentorChangedTemplate = await notificationQueries.findOneEmailTemplate(
+						mentorChangedTemplateName,
+						orgId
+					)
 				}
 
 				// if (triggerSessionMeetinkAddEmail) {
@@ -1003,6 +1022,34 @@ module.exports = class SessionsHelper {
 						console.log('Kafka payload:', payload)
 						console.log('Session attendee mapped, preResourceSendEmail true and kafka res: ', kafkaRes)
 					}
+					if (mentorUpdated) {
+						const payload = {
+							type: 'email',
+							email: {
+								to: attendee.attendeeEmail,
+								subject: mentorChangedTemplate.subject,
+								body: utils.composeEmailBody(mentorChangedTemplate.body, {
+									newMentorName: sessionDetail.mentor_name,
+									sessionTitle: sessionDetail.title,
+									startDate: utils.getTimeZone(
+										sessionDetail.start_date,
+										common.dateFormat,
+										sessionDetail.time_zone
+									),
+									startTime: utils.getTimeZone(
+										sessionDetail.start_date,
+										common.timeFormat,
+										sessionDetail.time_zone
+									),
+									menteeName: attendee.attendeeName,
+								}),
+							},
+						}
+
+						let kafkaRes = await kafkaCommunication.pushEmailToKafka(payload)
+						console.log('Kafka payload:', payload)
+						console.log('Session attendee emails, mentorUpdated true and kafka res: ', kafkaRes)
+					}
 					// if (triggerSessionMeetinkAddEmail) {
 					// 	const payload = {
 					// 		type: 'email',
@@ -1079,7 +1126,6 @@ module.exports = class SessionsHelper {
 			} else {
 				filter.share_link = id
 			}
-
 			const sessionDetails = await sessionQueries.findOne(filter, {
 				attributes: {
 					exclude: ['share_link', 'mentee_password', 'mentor_password'],
@@ -1184,15 +1230,27 @@ module.exports = class SessionsHelper {
 				sessionDetails.image = await Promise.all(sessionDetails.image)
 			}
 
-			if (isInvited || sessionDetails.is_assigned) {
+			let sessionAccessorDetails
+			if (isInvited || sessionDetails.is_assigned || !mentorExtension) {
 				const managerDetails = await menteeExtensionQueries.getMenteeExtension(sessionDetails.created_by, [
+					'user_id',
 					'name',
+					'designation',
+					'organization_id',
+					'custom_entity_text',
+					'external_session_visibility',
+					'organization_id',
 				])
 				sessionDetails.manager_name = managerDetails.name
+				sessionAccessorDetails = managerDetails
 			}
 
+			if (mentorExtension) {
+				sessionAccessorDetails = mentorExtension
+			}
+			// sessionAccessorDetails
 			const orgDetails = await organisationExtensionQueries.findOne(
-				{ organization_id: mentorExtension.organization_id },
+				{ organization_id: sessionAccessorDetails.organization_id },
 				{ attributes: ['name'] }
 			)
 
@@ -1200,7 +1258,7 @@ module.exports = class SessionsHelper {
 				sessionDetails.organization = orgDetails.name
 			}
 
-			sessionDetails.mentor_name = mentorExtension.name
+			sessionDetails.mentor_name = mentorExtension ? mentorExtension.name : common.USER_NOT_FOUND
 			sessionDetails.mentor_designation = []
 
 			const defaultOrgId = await getDefaultOrgId()
@@ -1214,9 +1272,11 @@ module.exports = class SessionsHelper {
 			// Prepare unique orgIds
 			const orgIds = [
 				...new Set(
-					[mentorExtension?.organization_id, sessionDetails.mentor_organization_id, defaultOrgId].filter(
-						Boolean
-					)
+					[
+						sessionAccessorDetails.organization_id,
+						sessionDetails.mentor_organization_id,
+						defaultOrgId,
+					].filter(Boolean)
 				),
 			]
 
