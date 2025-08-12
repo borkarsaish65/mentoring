@@ -701,12 +701,14 @@ function createMentorAvailabilityResponse(data) {
 		availability[dateKey].push(timeSlot)
 	})
 
-	const resultData = Object.keys(availability).map((date) => {
-		return {
-			date: date,
-			bookedSlots: availability[date],
-		}
-	})
+	const resultData = Object.keys(availability)
+		.map((date) => {
+			return {
+				date: date,
+				bookedSlots: availability[date],
+			}
+		})
+		.sort((a, b) => new Date(a.date) - new Date(b.date))
 
 	return {
 		result: resultData,
