@@ -150,7 +150,7 @@ module.exports = class AdminService {
 			}
 
 			const userInfo = getUserDetails[0]
-			const isMentor = userInfo.isMentor === true
+			const isMentor = userInfo.is_mentor === true
 
 			// Step 2: Check if user is a session manager
 			const getUserDetailById = await userRequests.fetchUserDetails({ userId }) // userId = "1"
