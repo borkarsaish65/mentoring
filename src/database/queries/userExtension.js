@@ -263,9 +263,17 @@ module.exports = class MenteeExtensionQueries {
 				raw: true,
 			}
 
-			const result = unscoped
+			let result = unscoped
 				? await MenteeExtension.unscoped().findAll(query)
 				: await MenteeExtension.findAll(query)
+
+			await Promise.all(
+				result.map(async (userInfo) => {
+					if (userInfo && userInfo.email) {
+						userInfo.email = await emailEncryption.decrypt(userInfo.email.toLowerCase())
+					}
+				})
+			)
 
 			return result
 		} catch (error) {
