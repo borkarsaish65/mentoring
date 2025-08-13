@@ -91,6 +91,7 @@ class NotificationHelper {
 						sessionDate: session.start_date ? moment.unix(session.start_date).format('DD-MM-YYYY') : '',
 						sessionTime: session.start_date ? moment.unix(session.start_date).format('hh:mm A') : '',
 						recipientName: recipient.name,
+						attendeeName: recipient.name,
 						...addionalData,
 					}
 
@@ -894,6 +895,7 @@ module.exports = class AdminService {
 			} else {
 				result.isSessionManagerNotified = true
 			}
+			return result
 		} catch (error) {
 			console.error('Error in notifySessionManagerIfMenteeDeleted:', error)
 			result.isSessionManagerNotified = false
