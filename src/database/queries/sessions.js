@@ -942,7 +942,7 @@ exports.getUpcomingSessionsOfMentee = async (menteeUserId, sessionType) => {
 	try {
 		// Get private sessions where the deleted mentee was enrolled and session is in future
 		const query = `
-			SELECT DISTINCT s.id, s.title, s.mentor_id, s.start_date, s.end_date, s.type
+			SELECT s.id, s.title, s.mentor_id, s.start_date, s.end_date, s.type, s.created_by
 			FROM sessions s
 			INNER JOIN  session_attendees sa ON s.id = sa.session_id
 			WHERE sa.mentee_id = :menteeUserId
