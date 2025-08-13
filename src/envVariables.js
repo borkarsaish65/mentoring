@@ -491,7 +491,7 @@ let enviromentVariables = {
 	MENTOR_SESSION_DELETION_EMAIL_CODE: {
 		message: 'Required mentor session deletion email template code',
 		optional: true,
-		default: 'mentor_deleted_session_deletion_email',
+		default: 'session_deleted_mentor_deletion_email',
 	},
 	MENTOR_SESSION_REQUEST_DELETION_EMAIL_CODE: {
 		message: 'Required mentor session request deletion template code',

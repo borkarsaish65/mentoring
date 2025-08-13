@@ -174,8 +174,6 @@ exports.createChatRoom = async (recipientUserId, initiatorUserId, initialMessage
 		// Loop through users to ensure they have a `communications_user_id`
 		for (const user of userDetails) {
 			if (!user.meta || !user.meta.communications_user_id) {
-				// Decrypt email and create user in communication service if `communications_user_id` is missing
-				user.email = await emailEncryption.decrypt(user.email)
 				let userImage
 				if (user?.image) {
 					userImage = (await userRequests.getDownloadableUrl(user.image))?.result
