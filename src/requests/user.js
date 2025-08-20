@@ -779,7 +779,10 @@ const getUserDetailedList = function (userIds, deletedUsers = false, unscopped =
 			await Promise.all(
 				userDetails.map(async function (user) {
 					if (user.email) {
-						user.email = await emailEncryption.decrypt(user.email)
+						let decryptedEmail = await emailEncryption.decryptAndValidate(user.email)
+						if (decryptedEmail) {
+							user.email = decryptedEmail
+						}
 					}
 
 					if (user.image) {
