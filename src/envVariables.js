@@ -560,7 +560,7 @@ let enviromentVariables = {
 	},
 	KAFKA_HEALTH_CHECK_TOPIC: {
 		message: 'Required KAFKA_HEALTH_CHECK_TOPIC',
-		optional: false,
+		optional: true,
 		default: 'mentoring-health-check-topic-check',
 	},
 }
