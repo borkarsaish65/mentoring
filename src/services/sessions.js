@@ -302,7 +302,7 @@ module.exports = class SessionsHelper {
 						sessionAttendeesIds.push(attendee.mentee_id)
 					})
 
-					const attendeesAccounts = await userRequests.getUserDetailedList(sessionAttendeesIds)
+					const attendeesAccounts = await userRequests.getUserDetailedList(sessionAttendeesIds, false, true)
 
 					sessionAttendees.map((attendee) => {
 						for (let index = 0; index < attendeesAccounts.result.length; index++) {
@@ -2814,7 +2814,7 @@ module.exports = class SessionsHelper {
 			}
 
 			// Get mentee name and email from user service
-			const menteeAccounts = await userRequests.getUserDetailedList(menteeIds)
+			const menteeAccounts = await userRequests.getUserDetailedList(menteeIds, false, true)
 
 			if (!menteeAccounts.result || !menteeAccounts.result.length > 0) {
 				return responses.failureResponse({
