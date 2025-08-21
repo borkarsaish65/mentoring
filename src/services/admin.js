@@ -21,6 +21,7 @@ const userExtensionQueries = require('@database/queries/userExtension')
 const { getDefaultOrgId } = require('@helpers/getDefaultOrgId')
 const { sequelize } = require('@database/models/index')
 const { literal } = require('sequelize')
+const sessionOwnerships = require('@database/models/sessionOwnerships')
 
 // Generic notification helper class
 class NotificationHelper {
@@ -204,9 +205,13 @@ module.exports = class AdminService {
 					return []
 				}
 				// Get mentor details for notification
-				const connectedMentors = await userExtensionQueries.getUsersByUserIds(mentorIds, {
-					attributes: ['user_id', 'name', 'email'],
-				})
+				const connectedMentors = await userExtensionQueries.getUsersByUserIds(
+					mentorIds,
+					{
+						attributes: ['user_id', 'name', 'email'],
+					},
+					true
+				)
 
 				// Soft delete in communication service
 				const removeChatUser = await communicationHelper.setActiveStatus(userId, false) // ( userId = "1", activeStatus = "true" or "false")
@@ -243,9 +248,6 @@ module.exports = class AdminService {
 				result.isMentorNotifiedAboutMenteeDeletion = true
 			}
 
-			// Step 5: Session Request Deletion & Notifications
-			const requestSessions = await this.findAllRequestSessions(userId) // userId = "1"
-
 			const defaultOrgId = await getDefaultOrgId()
 			if (!defaultOrgId)
 				return responses.failureResponse({
@@ -253,6 +255,30 @@ module.exports = class AdminService {
 					statusCode: httpStatusCode.bad_request,
 					responseCode: 'CLIENT_ERROR',
 				})
+
+			// Step 6: Remove user and sessions
+			let removedUserDetails = 0
+
+			let mentorDetailsRemoved = 0
+			let menteeDetailsRemoved = 0
+
+			if (isMentor) {
+				// Handle mentor-specific deletion tasks
+				await this.handleMentorDeletion(userId, userInfo, result)
+
+				// Remove mentor from DB
+				mentorDetailsRemoved = await mentorQueries.removeMentorDetails(userId) // userId = "1"
+
+				// Unenroll and notify attendees of sessions created by mentor
+				const removedSessionsDetail = await sessionQueries.removeAndReturnMentorSessions(userId) // userId = "1"
+				result.isAttendeesNotified = await this.unenrollAndNotifySessionAttendees(
+					removedSessionsDetail,
+					userInfo.organization_id || ''
+				) //removedSessionsDetail , orgId : "1")
+			}
+
+			// Step 5: Session Request Deletion & Notifications
+			const requestSessions = await this.findAllRequestSessions(userId) // userId = "1"
 
 			if (requestSessions.allSessionRequestIds.length > 0) {
 				const { allSessionRequestIds = [], requestedSessions = [], receivedSessions = [] } = requestSessions
@@ -279,27 +305,6 @@ module.exports = class AdminService {
 						defaultOrgId
 					) // (sessionsDetails, received = true or false, sent = true or false , orgId = "1")
 				}
-			}
-
-			// Step 6: Remove user and sessions
-			let removedUserDetails = 0
-
-			let mentorDetailsRemoved = 0
-			let menteeDetailsRemoved = 0
-
-			if (isMentor) {
-				// Handle mentor-specific deletion tasks
-				await this.handleMentorDeletion(userId, userInfo, result)
-
-				// Remove mentor from DB
-				mentorDetailsRemoved = await mentorQueries.removeMentorDetails(userId) // userId = "1"
-
-				// Unenroll and notify attendees of sessions created by mentor
-				const removedSessionsDetail = await sessionQueries.removeAndReturnMentorSessions(userId) // userId = "1"
-				result.isAttendeesNotified = await this.unenrollAndNotifySessionAttendees(
-					removedSessionsDetail,
-					userInfo.organization_id || ''
-				) //removedSessionsDetail , orgId : "1")
 			}
 
 			// send email to SM when mentee is deleted from the private sessions if it is upcoming
@@ -659,7 +664,7 @@ module.exports = class AdminService {
 				// Check if this is a one-on-one session (only one attendee)
 				const attendeeCount = await sessionAttendeesQueries.getCount({ session_id: session.id })
 
-				if (attendeeCount === 1) {
+				if (attendeeCount === 1 && session.mentor_id == session.created_by) {
 					// This is a one-on-one private session, cancel it and notify mentor
 					const notificationSent = await this.notifyMentorAboutPrivateSessionCancellation(
 						session.mentor_id,
@@ -675,6 +680,11 @@ module.exports = class AdminService {
 					await sessionQueries.updateRecords(
 						{ deleted_at: new Date() },
 						{ where: { id: session.id } },
+						transaction
+					)
+					await sessionOwnerships.updateRecords(
+						{ deleted_at: new Date() },
+						{ where: { id: session.id, user_id: session.mentor_id } },
 						transaction
 					)
 
@@ -908,9 +918,13 @@ module.exports = class AdminService {
 
 			// 1. Notify connected mentees about mentor deletion
 			const menteeIds = await connectionQueries.getConnectedUsers(mentorUserId, 'friend_id', 'user_id')
-			const connectedMentees = await userExtensionQueries.getUsersByUserIds(menteeIds, {
-				attributes: ['user_id', 'name', 'email'],
-			})
+			const connectedMentees = await userExtensionQueries.getUsersByUserIds(
+				menteeIds,
+				{
+					attributes: ['user_id', 'name', 'email'],
+				},
+				true
+			)
 
 			if (connectedMentees.length > 0) {
 				result.isMenteeNotifiedAboutMentorDeletion = await this.notifyMenteesAboutMentorDeletion(
@@ -946,7 +960,10 @@ module.exports = class AdminService {
 
 				// update upcoming sessions of mentor to set as deleted if he created only
 				const sessionIds = [...new Set(upcomingSessions.map((s) => s.id))]
-				await sessionQueries.updateRecords({ deleted_at: new Date() }, { where: { id: sessionIds } })
+				await sessionQueries.updateRecords(
+					{ deleted_at: new Date() },
+					{ where: { id: sessionIds, created_by: mentorUserId } }
+				)
 			} else {
 				result.isSessionManagerNotifiedForMentorDelete = true
 			}
@@ -1002,9 +1019,13 @@ module.exports = class AdminService {
 				)
 
 				// Get mentee details for notification
-				const menteeDetails = await userExtensionQueries.getUsersByUserIds([request.requestor_id], {
-					attributes: ['name', 'email'],
-				})
+				const menteeDetails = await userExtensionQueries.getUsersByUserIds(
+					[request.requestor_id],
+					{
+						attributes: ['name', 'email'],
+					},
+					true
+				)
 
 				if (menteeDetails.length > 0) {
 					// Send notification to requestor (mentee)
@@ -1047,9 +1068,13 @@ module.exports = class AdminService {
 				const managerSessions = sessionsByManager[managerId]
 
 				// Get session manager details
-				const managerDetails = await userExtensionQueries.getUsersByUserIds([managerId], {
-					attributes: ['name', 'email'],
-				})
+				const managerDetails = await userExtensionQueries.getUsersByUserIds(
+					[managerId],
+					{
+						attributes: ['name', 'email'],
+					},
+					true
+				)
 
 				if (managerDetails.length > 0) {
 					const sessionList = managerSessions
@@ -1099,9 +1124,13 @@ module.exports = class AdminService {
 				const managerSessions = sessionsByManager[managerId]
 
 				// Get session manager details
-				const managerDetails = await userExtensionQueries.getUsersByUserIds([managerId], {
-					attributes: ['name', 'email'],
-				})
+				const managerDetails = await userExtensionQueries.getUsersByUserIds(
+					[managerId],
+					{
+						attributes: ['name', 'email'],
+					},
+					true
+				)
 
 				if (managerDetails.length > 0) {
 					const sessionList = managerSessions
@@ -1150,9 +1179,13 @@ module.exports = class AdminService {
 			const notificationPromises = Object.keys(sessionsByAttendee).map(async (attendeeId) => {
 				const attendeeSessions = sessionsByAttendee[attendeeId]
 
-				const attendeeDetails = await userExtensionQueries.getUsersByUserIds([attendeeId], {
-					attributes: ['name', 'email'],
-				})
+				const attendeeDetails = await userExtensionQueries.getUsersByUserIds(
+					[attendeeId],
+					{
+						attributes: ['name', 'email'],
+					},
+					true
+				)
 
 				if (attendeeDetails.length > 0) {
 					for (const session of attendeeSessions) {
