@@ -1144,7 +1144,7 @@ module.exports = class MenteesHelper {
 					// 	connectedMenteeIds.push(userId)
 					// }
 				}
-				if (connectionDetails?.count) {
+				if (typeof connectionDetails?.count === 'number') {
 					connectedMenteesCount = connectionDetails.count
 				}
 

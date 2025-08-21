@@ -708,7 +708,17 @@ module.exports = class SessionsHelper {
 				}
 
 				if (bodyData.mentor_id && bodyData.mentor_id != sessionDetail.mentor_id) {
-					mentorUpdated = await sessionQueries.addOwnership(sessionId, bodyData.mentor_id)
+					await sessionQueries.addOwnership(sessionId, bodyData.mentor_id)
+					mentorUpdated = true
+					const newMentor = await mentorExtensionQueries.getMentorExtension(
+						bodyData.mentor_id,
+						['name'],
+						true
+					)
+					if (newMentor?.name) {
+						bodyData.mentor_name = newMentor.name
+					}
+					this.setMentorPassword(sessionId, bodyData.mentor_id)
 				}
 
 				const { rowsAffected, updatedRows } = await sessionQueries.updateOne({ id: sessionId }, bodyData, {

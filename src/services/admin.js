@@ -21,7 +21,7 @@ const userExtensionQueries = require('@database/queries/userExtension')
 const { getDefaultOrgId } = require('@helpers/getDefaultOrgId')
 const { sequelize } = require('@database/models/index')
 const { literal } = require('sequelize')
-const sessionOwnerships = require('@database/models/sessionOwnerships')
+const sessionOwnerships = require('@database/queries/sessionOwnership')
 
 // Generic notification helper class
 class NotificationHelper {
