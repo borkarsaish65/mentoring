@@ -707,8 +707,18 @@ module.exports = class SessionsHelper {
 					})
 				}
 
-				if (bodyData.mentor_id != sessionDetail.mentor_id) {
+				if (bodyData.mentor_id && bodyData.mentor_id != sessionDetail.mentor_id) {
+					await sessionQueries.addOwnership(sessionId, bodyData.mentor_id)
 					mentorUpdated = true
+					const newMentor = await mentorExtensionQueries.getMentorExtension(
+						bodyData.mentor_id,
+						['name'],
+						true
+					)
+					if (newMentor?.name) {
+						bodyData.mentor_name = newMentor.name
+					}
+					this.setMentorPassword(sessionId, bodyData.mentor_id)
 				}
 
 				const { rowsAffected, updatedRows } = await sessionQueries.updateOne({ id: sessionId }, bodyData, {
@@ -729,7 +739,9 @@ module.exports = class SessionsHelper {
 					// Confirm if session is edited or not.
 					const updatedSessionDetails = updatedDiff(sessionDetail, updatedSessionData)
 					delete updatedSessionDetails.updated_at
-					delete updatedSessionDetails.mentor_id
+					if (updatedSessionDetails.mentor_id) {
+						delete updatedSessionDetails.mentor_id
+					}
 					const keys = Object.keys(updatedSessionDetails)
 					if (keys.length > 0) {
 						isSessionDataChanged = true

@@ -1122,7 +1122,7 @@ module.exports = class MenteesHelper {
 			const userExtensionModelName = await menteeQueries.getModelName()
 
 			let connectedMenteeIds = []
-
+			let connectedMenteesCount
 			if (queryParams.connected_mentees === 'true') {
 				const connectedQueryParams = { ...queryParams }
 				delete connectedQueryParams.connected_mentees
@@ -1143,6 +1143,9 @@ module.exports = class MenteesHelper {
 					// if (!connectedMenteeIds.includes(userId)) {
 					// 	connectedMenteeIds.push(userId)
 					// }
+				}
+				if (typeof connectionDetails?.count === 'number') {
+					connectedMenteesCount = connectionDetails.count
 				}
 
 				// If there are no connected mentees, short-circuit and return empty
@@ -1271,7 +1274,7 @@ module.exports = class MenteesHelper {
 				message: 'MENTEE_LIST',
 				result: {
 					data: extensionDetails.data,
-					count: extensionDetails.count,
+					count: queryParams.connected_mentees === 'true' ? connectedMenteesCount : extensionDetails.count,
 				},
 			})
 		} catch (error) {
