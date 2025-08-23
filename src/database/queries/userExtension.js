@@ -475,9 +475,11 @@ module.exports = class MenteeExtensionQueries {
 					${saasFilterClause}
 					${additionalFilter}
 					${defaultFilter}
-				OFFSET :offset
-				LIMIT :limit
-			`
+				`
+
+			if (limit != null && page != null) {
+				query = query + `OFFSET :offset LIMIT :limit`
+			}
 
 			const replacements = {
 				...filter.replacements, // Add filter parameters to replacements
