@@ -57,7 +57,7 @@ module.exports = {
 	},
 
 	down: async (queryInterface, Sequelize) => {
-		const templateCodes = ['mentor_has_changed']
+		const templateCodes = ['session_creator_delete_the_session', 'mentee_private_session_enrollment_by_manager']
 
 		await queryInterface.bulkDelete(
 			'notification_templates',
