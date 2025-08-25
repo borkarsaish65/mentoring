@@ -183,12 +183,10 @@ module.exports = class MenteeExtensionQueries {
 
 	static async deleteMenteeExtension(userId, force = false) {
 		try {
-			const options = { where: { user_id: userId } }
-
-			if (force) {
-				options.force = true
-			}
-			return await MenteeExtension.destroy(options)
+			return await MenteeExtension.destroy({
+				where: { user_id: userId },
+				...(force ? { force: true } : {}),
+			})
 		} catch (error) {
 			throw error
 		}
@@ -234,21 +232,6 @@ module.exports = class MenteeExtensionQueries {
 		} catch (error) {
 			console.error('An error occurred:', error)
 			throw error
-		}
-	}
-
-	static async deleteMenteeExtension(userId) {
-		try {
-			// Completely delete the mentee extension record
-			const result = await MenteeExtension.destroy({
-				where: {
-					user_id: userId,
-				},
-			})
-
-			return result
-		} catch (error) {
-			return error
 		}
 	}
 
@@ -305,7 +288,7 @@ module.exports = class MenteeExtensionQueries {
 			const excludeUserIds = ids.length === 0
 			const userFilterClause = excludeUserIds ? '' : `user_id IN (${ids.join(',')})`
 
-			const filterClause = filter?.query.length > 0 ? `${filter.query}` : ''
+			let filterClause = filter?.query.length > 0 ? `${filter.query}` : ''
 
 			let saasFilterClause = saasFilter !== '' ? saasFilter : ''
 			if (excludeUserIds && filter.query.length === 0) {
@@ -466,7 +449,7 @@ module.exports = class MenteeExtensionQueries {
 				filterClause = filterClause.startsWith('AND') ? filterClause : 'AND ' + filterClause
 			}
 
-			const query = `
+			let query = `
 				SELECT ${projectionClause}
 				FROM ${common.materializedViewsPrefix + MenteeExtension.tableName}
 				WHERE
@@ -478,7 +461,10 @@ module.exports = class MenteeExtensionQueries {
 				`
 
 			if (limit != null && page != null) {
-				query = query + `OFFSET :offset LIMIT :limit`
+				query += `
+			     OFFSET :offset
+			     LIMIT :limit
+			   `
 			}
 
 			const replacements = {
