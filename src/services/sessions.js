@@ -1590,10 +1590,10 @@ module.exports = class SessionsHelper {
 			let creatorName
 			if (
 				enrollmentType === common.INVITED &&
-				session.type == common.SESSION_TYPE.PRIVATE &&
+				session.type == common.SESSION_TYPE.PUBLIC &&
 				session.created_by != session.mentor_id
 			) {
-				emailTemplateCode = process.env.MENTEE_PRIVATE_SESSION_ENROLLMENT_BY_MANAGER_EMAIL_TEMPLATE
+				emailTemplateCode = process.env.MENTEE_PUBLIC_SESSION_ENROLLMENT_BY_MANAGER_EMAIL_TEMPLATE
 				const sessionCreatorName = await menteeExtensionQueries.getMenteeExtension(
 					session.created_by,
 					['name'],

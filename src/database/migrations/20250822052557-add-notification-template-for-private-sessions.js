@@ -10,7 +10,7 @@ module.exports = {
 		const emailTemplates = [
 			{
 				body: '<div><p> Hi {name},</p><p> You`ve been enrolled in a Public Mentoring Session assigned by {managerName} and conducted by your mentor {mentorName}.</p><p><ul><li><strong>Session Name:</strong> {sessionTitle}</li><li><strong>Date:</strong> {startDate}</li><li><strong>Time:</strong> {startTime}</li><li><strong>Duration:</strong> {sessionDuration} {unitOfTime}</li></ul></p></div>',
-				code: 'mentee_private_session_enrollment_by_manager',
+				code: 'mentee_public_session_enrollment_by_manager',
 				subject: 'You’ve been enrolled in a Public Mentoring Session',
 			},
 			{
@@ -57,7 +57,7 @@ module.exports = {
 	},
 
 	down: async (queryInterface, Sequelize) => {
-		const templateCodes = ['session_creator_delete_the_session', 'mentee_private_session_enrollment_by_manager']
+		const templateCodes = ['session_creator_delete_the_session', 'mentee_public_session_enrollment_by_manager']
 
 		await queryInterface.bulkDelete(
 			'notification_templates',

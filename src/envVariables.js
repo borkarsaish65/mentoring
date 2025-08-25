@@ -224,10 +224,10 @@ let enviromentVariables = {
 		optional: true,
 		default: 'mentee_session_enrollment_by_manager',
 	},
-	MENTEE_PRIVATE_SESSION_ENROLLMENT_BY_MANAGER_EMAIL_TEMPLATE: {
+	MENTEE_PUBLIC_SESSION_ENROLLMENT_BY_MANAGER_EMAIL_TEMPLATE: {
 		message: 'Required email template name for mentee session enrollment by manager',
 		optional: true,
-		default: 'mentee_private_session_enrollment_by_manager',
+		default: 'mentee_public_session_enrollment_by_manager',
 	},
 	MENTOR_PRIVATE_SESSION_INVITE_BY_MANAGER_EMAIL_TEMPLATE: {
 		message: 'Required email template name for mentor private session invite by manager',
