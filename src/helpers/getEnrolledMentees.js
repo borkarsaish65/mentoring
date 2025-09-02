@@ -6,7 +6,7 @@ const { Parser } = require('@json2csv/plainjs')
 
 exports.getEnrolledMentees = async (sessionId, queryParams, userID) => {
 	try {
-		const mentees = await sessionAttendeesQueries.findAll({ session_id: sessionId })
+		const mentees = await sessionAttendeesQueries.findAll({ session_id: sessionId }, { paranoid: false })
 		const menteeIds = mentees.map((mentee) => mentee.mentee_id)
 		let menteeTypeMap = {}
 		mentees.forEach((mentee) => {
