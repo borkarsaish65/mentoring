@@ -87,7 +87,7 @@ exports.getEnrolledMentees = async (sessionId, queryParams, userID) => {
 						: '',
 					email: user.email,
 					type: user.type,
-					organization: user.organization.name,
+					organization: user.organization?.name || '',
 				}))
 			)
 
