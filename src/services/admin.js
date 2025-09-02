@@ -312,7 +312,7 @@ module.exports = class AdminService {
 
 			// Always check and remove mentee extension (user can be both mentor and mentee)
 			try {
-				menteeDetailsRemoved = await menteeQueries.deleteMenteeExtension(userId) // userId = "1"
+				menteeDetailsRemoved = await menteeQueries.removeMenteeDetails(userId) // userId = "1"
 			} catch (error) {
 				console.log('No mentee extension found or already removed:', error.message)
 			}
