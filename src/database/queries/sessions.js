@@ -1002,7 +1002,7 @@ exports.getSessionsAssignedToMentor = async (mentorUserId) => {
 				WHERE s.mentor_id = :mentorUserId 
 				AND s.start_date > :currentTime
 				AND s.deleted_at IS NULL
-				AND s.created_by != :mentorUserId
+				AND s.created_by = :mentorUserId
 			`
 
 		const sessionsToDelete = await Sequelize.query(query, {
