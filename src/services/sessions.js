@@ -49,7 +49,6 @@ const adminService = require('@services/admin')
 const mentorQueries = require('@database/queries/mentorExtension')
 const emailEncryption = require('@utils/emailEncryption')
 const resourceQueries = require('@database/queries/resources')
-const userExtension = require('@database/models/userExtension')
 
 module.exports = class SessionsHelper {
 	/**
