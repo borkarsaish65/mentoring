@@ -177,7 +177,8 @@ module.exports = {
                         end_date,
                         type,
                         categories,
-                        recommended_for
+                        recommended_for,
+                        deleted_at
                     FROM
                         public.sessions
                 ),
@@ -685,7 +686,7 @@ module.exports = {
                     OR :session_type = 'Public'
                     OR :session_type = 'Private'
                 )
-                AND deleted_at IS NULL
+                AND session.deleted_at IS NULL
                 DYNAMIC_AND_CLAUSE;`,
 				organization_id: defaultOrgId,
 				status: 'ACTIVE',
