@@ -116,6 +116,10 @@ module.exports = class UserHelper {
 		const isNewUser = await this.#checkUserExistence(bodyData.id)
 		if (isNewUser) {
 			result = await this.#createUserWithBody(bodyData)
+		} else {
+			bodyData.new_roles = bodyData.newValues.organizations[0].roles
+			bodyData.current_roles = bodyData.oldValues.organizations[0].roles
+			result = await this.#createOrUpdateUserAndOrg(bodyData.id, isNewUser)
 		}
 		return result
 	}
@@ -172,7 +176,6 @@ module.exports = class UserHelper {
 			})
 		}
 		const userExtensionData = this.#getExtensionData(userDetails.data.result, orgExtension)
-
 		const createOrUpdateResult = isNewUser
 			? await this.#createUser(userExtensionData)
 			: await this.#updateUser(userExtensionData)
@@ -262,6 +265,10 @@ module.exports = class UserHelper {
 			roleChangePayload.new_roles = [common.MENTEE_ROLE]
 			isRoleChanged = true
 		} else if (!isAMentee && !menteeExtension.is_mentor) {
+			roleChangePayload.current_roles = [common.MENTEE_ROLE]
+			roleChangePayload.new_roles = [common.MENTOR_ROLE]
+			isRoleChanged = true
+		} else if (isAMentee) {
 			roleChangePayload.current_roles = [common.MENTEE_ROLE]
 			roleChangePayload.new_roles = [common.MENTOR_ROLE]
 			isRoleChanged = true

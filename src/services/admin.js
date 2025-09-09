@@ -983,12 +983,9 @@ module.exports = class AdminService {
 		// Notify attendees about session deletion
 
 		const sessionsToUpdate = await sessionQueries.getSessionsAssignedToMentor(mentorUserId)
-
 		if (sessionsToUpdate.length == 0) {
 			return true
 		}
-
-		await this.notifyAttendeesAboutMentorDeletion(sessionsToUpdate, orgId)
 
 		// Delete the sessions
 		const sessionIds = [...new Set(sessionsToUpdate.map((s) => s.id))]
@@ -997,7 +994,18 @@ module.exports = class AdminService {
 			{ where: { id: sessionIds } }
 		)
 
-		console.log(`Update ${sessionIds.length} sessions with assigned mentor`)
+		console.log(`Update ${sessionIds.length} sessions with mentor name`)
+
+		// if the sessions created and managed by mentor
+		const sessionsAssigned = await sessionQueries.getSessionsCreatedByMentor(mentorUserId)
+		if (sessionsAssigned.length == 0) {
+			return true
+		}
+
+		// if the sessions created and managed by mentor
+		await this.notifyAttendeesAboutMentorDeletion(sessionsAssigned, orgId)
+
+		console.log(`Total sessions : ${sessionsAssigned.length} which assigned to mentor`)
 		return true
 	}
 
