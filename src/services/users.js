@@ -117,8 +117,8 @@ module.exports = class UserHelper {
 		if (isNewUser) {
 			result = await this.#createUserWithBody(bodyData)
 		} else {
-			bodyData.new_roles = bodyData.newValues.organizations[0].roles
-			bodyData.current_roles = bodyData.oldValues.organizations[0].roles
+			bodyData.new_roles = bodyData.newValues?.organizations?.[0]?.roles ?? []
+			bodyData.current_roles = bodyData.oldValues?.organizations?.[0]?.roles ?? []
 			result = await this.#createOrUpdateUserAndOrg(bodyData.id, isNewUser)
 		}
 		return result

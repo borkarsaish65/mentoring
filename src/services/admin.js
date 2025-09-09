@@ -996,16 +996,16 @@ module.exports = class AdminService {
 
 		console.log(`Update ${sessionIds.length} sessions with mentor name`)
 
-		// if the sessions created and managed by mentor
-		const sessionsAssigned = await sessionQueries.getSessionsCreatedByMentor(mentorUserId)
-		if (sessionsAssigned.length == 0) {
+		// if the sessions created or managed by mentor
+		const sessionsCreated = await sessionQueries.getSessionsCreatedByMentor(mentorUserId)
+		if (sessionsCreated.length == 0) {
 			return true
 		}
 
 		// if the sessions created and managed by mentor
-		await this.notifyAttendeesAboutMentorDeletion(sessionsAssigned, orgId)
+		await this.notifyAttendeesAboutMentorDeletion(sessionsCreated, orgId)
 
-		console.log(`Total sessions : ${sessionsAssigned.length} which assigned to mentor`)
+		console.log(`Total sessions : ${sessionsCreated.length} which assigned to mentor`)
 		return true
 	}
 
