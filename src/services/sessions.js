@@ -535,8 +535,8 @@ module.exports = class SessionsHelper {
 				userId = bodyData.mentor_id
 			}
 
-			let mentorExtension = await mentorExtensionQueries.getMentorExtension(userId)
-			if (!mentorExtension) {
+			let userExtension = await menteeExtensionQueries.getMenteeExtension(userId)
+			if (!userExtension) {
 				return responses.failureResponse({
 					message: 'INVALID_PERMISSION',
 					statusCode: httpStatusCode.bad_request,
@@ -1044,7 +1044,7 @@ module.exports = class SessionsHelper {
 								to: attendee.attendeeEmail,
 								subject: mentorChangedTemplate.subject,
 								body: utils.composeEmailBody(mentorChangedTemplate.body, {
-									newMentorName: sessionDetail.mentor_name,
+									newMentorName: bodyData.mentor_name,
 									sessionTitle: sessionDetail.title,
 									startDate: utils.getTimeZone(
 										sessionDetail.start_date,
