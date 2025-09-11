@@ -321,7 +321,12 @@ const generateMaterializedView = async (modelEntityTypes) => {
 		if (randomViewName) await deleteMaterializedView(randomViewName)
 		await createIndexesOnAllowFilteringFields(model, modelEntityTypes, allFields)
 		await createViewUniqueIndexOnPK(model)
-		await createViewGINIndexOnSearch(model, searchConfig, allFields)
+
+		let search_config = defaultSearchConfig
+		if (searchConfig.search) {
+			search_config = { search: searchConfig.search }
+		}
+		await createViewGINIndexOnSearch(model, search_config, allFields)
 		await executeIndexQueries(model.name)
 	} catch (err) {
 		console.log(err)
