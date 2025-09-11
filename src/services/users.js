@@ -116,6 +116,10 @@ module.exports = class UserHelper {
 		const isNewUser = await this.#checkUserExistence(bodyData.id)
 		if (isNewUser) {
 			result = await this.#createUserWithBody(bodyData)
+		} else {
+			bodyData.new_roles = bodyData.newValues?.organizations?.[0]?.roles ?? []
+			const targetHasMentorRole = bodyData.new_roles.some((role) => role.title === common.MENTOR_ROLE)
+			result = await this.#createOrUpdateUserAndOrg(bodyData.id, isNewUser, targetHasMentorRole)
 		}
 		return result
 	}
@@ -142,7 +146,7 @@ module.exports = class UserHelper {
 				result: createResult.result,
 			})
 	}
-	static async #createOrUpdateUserAndOrg(userId, isNewUser) {
+	static async #createOrUpdateUserAndOrg(userId, isNewUser, targetHasMentorRole = undefined) {
 		const userDetails = await userRequests.fetchUserDetails({ userId })
 		if (!userDetails?.data?.result) {
 			return responses.failureResponse({
@@ -172,10 +176,9 @@ module.exports = class UserHelper {
 			})
 		}
 		const userExtensionData = this.#getExtensionData(userDetails.data.result, orgExtension)
-
 		const createOrUpdateResult = isNewUser
 			? await this.#createUser(userExtensionData)
-			: await this.#updateUser(userExtensionData)
+			: await this.#updateUser(userExtensionData, targetHasMentorRole)
 		if (createOrUpdateResult.statusCode != httpStatusCode.ok) return createOrUpdateResult
 		else
 			return responses.successResponse({
@@ -241,7 +244,7 @@ module.exports = class UserHelper {
 
 	static #checkOrgChange = (existingOrgId, newOrgId) => existingOrgId !== newOrgId
 
-	static async #updateUser(userExtensionData) {
+	static async #updateUser(userExtensionData, targetHasMentorRole) {
 		const isAMentee = userExtensionData.roles.some((role) => role.title === common.MENTEE_ROLE)
 		const roleChangePayload = {
 			user_id: userExtensionData.id,
@@ -262,6 +265,10 @@ module.exports = class UserHelper {
 			roleChangePayload.new_roles = [common.MENTEE_ROLE]
 			isRoleChanged = true
 		} else if (!isAMentee && !menteeExtension.is_mentor) {
+			roleChangePayload.current_roles = [common.MENTEE_ROLE]
+			roleChangePayload.new_roles = [common.MENTOR_ROLE]
+			isRoleChanged = true
+		} else if (targetHasMentorRole) {
 			roleChangePayload.current_roles = [common.MENTEE_ROLE]
 			roleChangePayload.new_roles = [common.MENTOR_ROLE]
 			isRoleChanged = true

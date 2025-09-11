@@ -291,7 +291,7 @@ module.exports = class SessionsHelper {
 				await this.addMentees(data.id, menteeIdsToEnroll, bodyData.time_zone)
 			}
 
-			if (bodyData?.resources) {
+			if (bodyData?.resources && bodyData.resources.length > 0) {
 				await this.addResources(bodyData.resources, loggedInUserId, data.id)
 				if (notifyUser) {
 					const sessionAttendees = await sessionAttendeesQueries.findAll({
