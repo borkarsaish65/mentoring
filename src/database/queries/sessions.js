@@ -993,7 +993,7 @@ exports.getUpcomingSessionsForMentor = async (mentorUserId) => {
 	}
 }
 
-exports.getSessionsAssignedToMentor = async (mentorUserId) => {
+exports.getSessionsCreatedByMentor = async (mentorUserId) => {
 	try {
 		const query = `
 				SELECT s.*, sa.mentee_id
@@ -1003,6 +1003,31 @@ exports.getSessionsAssignedToMentor = async (mentorUserId) => {
 				AND s.start_date > :currentTime
 				AND s.deleted_at IS NULL
 				AND s.created_by = :mentorUserId
+			`
+
+		const sessionsToDelete = await Sequelize.query(query, {
+			type: QueryTypes.SELECT,
+			replacements: {
+				mentorUserId,
+				currentTime: Math.floor(Date.now() / 1000),
+			},
+		})
+
+		return sessionsToDelete
+	} catch (error) {
+		throw error
+	}
+}
+
+exports.getSessionsAssignedToMentor = async (mentorUserId) => {
+	try {
+		const query = `
+				SELECT s.*, sa.mentee_id
+				FROM ${Session.tableName} s
+				INNER JOIN session_attendees sa ON s.id = sa.session_id
+				WHERE s.mentor_id = :mentorUserId 
+				AND s.start_date > :currentTime
+				AND s.deleted_at IS NULL
 			`
 
 		const sessionsToDelete = await Sequelize.query(query, {
