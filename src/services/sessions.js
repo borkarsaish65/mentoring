@@ -1970,13 +1970,14 @@ module.exports = class SessionsHelper {
 				let sessionDuration = moment(formattedEndDate).diff(formattedStartDate, 'minutes')
 
 				const tenantInfo = await userRequests.getTenantDetails(tenantCode)
+
 				const meetingDetails = await bigBlueButtonRequests.createMeeting(
 					session.id,
 					session.title,
 					session.mentee_password,
 					session.mentor_password,
 					sessionDuration,
-					tenantInfo.url
+					tenantInfo.data.result.domains[0].domain
 				)
 				if (!meetingDetails.success) {
 					return responses.failureResponse({

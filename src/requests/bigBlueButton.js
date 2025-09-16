@@ -22,14 +22,12 @@ const utils = require('@generics/utils')
  * @returns {String} - Meeting success message.
  */
 
-const createMeeting = function (meetingId, meetingName, attendeePW, moderatorPW, sessionDuration) {
+const createMeeting = function (meetingId, meetingName, attendeePW, moderatorPW, sessionDuration, tenantUrl) {
 	return new Promise(async (resolve, reject) => {
 		try {
 			let endMeetingCallBackUrl = process.env.MEETING_END_CALLBACK_EVENTS + '%2F' + meetingId + '%3Fsource%3DBBB'
-			let sessionEndUrl = process.env.BIG_BLUE_BUTTON_SESSION_END_URL
 			let sessionEndUrl = 'https%3A%2F%2F' + tenantUrl + '%2F'
 			let lastUserTimeout = process.env.BIG_BLUE_BUTTON_LAST_USER_TIMEOUT_MINUTES || 15
-
 			meetingName = encodeURIComponent(meetingName)
 			let query =
 				'name=' +
