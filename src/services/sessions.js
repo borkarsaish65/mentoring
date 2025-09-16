@@ -291,7 +291,7 @@ module.exports = class SessionsHelper {
 				await this.addMentees(data.id, menteeIdsToEnroll, bodyData.time_zone)
 			}
 
-			if (bodyData?.resources && bodyData.resources.length > 0) {
+			if (Array.isArray(bodyData?.resources) && bodyData.resources.length > 0) {
 				await this.addResources(bodyData.resources, loggedInUserId, data.id)
 				if (notifyUser) {
 					const sessionAttendees = await sessionAttendeesQueries.findAll({
@@ -1898,7 +1898,7 @@ module.exports = class SessionsHelper {
 	 * @returns {JSON} - start session link
 	 */
 
-	static async start(sessionId, userTokenData) {
+	static async start(sessionId, userTokenData, tenantCode) {
 		const loggedInUserId = userTokenData.id
 		const mentorName = userTokenData.name
 		try {
@@ -1969,12 +1969,14 @@ module.exports = class SessionsHelper {
 				}
 				let sessionDuration = moment(formattedEndDate).diff(formattedStartDate, 'minutes')
 
+				const tenantInfo = await userRequests.getTenantDetails(tenantCode)
 				const meetingDetails = await bigBlueButtonRequests.createMeeting(
 					session.id,
 					session.title,
 					session.mentee_password,
 					session.mentor_password,
-					sessionDuration
+					sessionDuration,
+					tenantInfo.url
 				)
 				if (!meetingDetails.success) {
 					return responses.failureResponse({
