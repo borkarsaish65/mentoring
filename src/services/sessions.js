@@ -2697,7 +2697,7 @@ module.exports = class SessionsHelper {
 			const mentees = await menteeExtensionQueries.getUsersByUserIds(menteeIds, {
 				attributes: ['user_id', 'email', 'name', 'is_mentor'],
 			})
-			if (!mentees) {
+			if (!mentees && mentees.length > 0) {
 				return responses.failureResponse({
 					message: 'USER_NOT_FOUND',
 					statusCode: httpStatusCode.bad_request,
@@ -2707,6 +2707,7 @@ module.exports = class SessionsHelper {
 			// Enroll mentees
 			const successIds = []
 			const failedIds = []
+			const effectiveMentorId = mentorId ?? sessionDetails.mentor_id
 			const enrollPromises = mentees.map((menteeData) =>
 				this.enroll(
 					sessionId,
@@ -2715,7 +2716,7 @@ module.exports = class SessionsHelper {
 					menteeData.is_mentor,
 					false,
 					sessionDetails,
-					mentorId ? mentorId : sessionDetails.mentor_id
+					effectiveMentorId
 				)
 					.then((response) => ({
 						id: menteeData.user_id,
