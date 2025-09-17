@@ -38,7 +38,6 @@ exports.getEnrolledMentees = async (sessionId, queryParams, userID) => {
 			includeEmptyRows: true,
 			defaultValue: null,
 		})
-		console.log(' ++++++++++++++++++++++ queryParams', queryParams)
 		//Return an empty CSV/response if list is empty
 		if (enrolledUsers.length === 0) {
 			return queryParams?.csv === 'true'
