@@ -10,11 +10,8 @@ exports.getEnrolledMentees = async (sessionId, queryParams, userID) => {
 		const menteeIds = mentees.map((mentee) => mentee.mentee_id)
 		let menteeTypeMap = {}
 		mentees.forEach((mentee) => {
-			if (!mentee.deleated_at) {
-				menteeTypeMap[mentee.mentee_id] = mentee.type
-			} else {
-				menteeTypeMap[mentee.mentee_id] = ''
-			}
+			const isDeleted = Boolean(mentee.deleted_at ?? mentee.deletedAt)
+			menteeTypeMap[mentee.mentee_id] = isDeleted ? '' : mentee.type
 		})
 
 		let [enrolledUsers] = await Promise.all([
