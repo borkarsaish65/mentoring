@@ -17,16 +17,6 @@ module.exports = {
 	},
 
 	down: async (queryInterface, Sequelize) => {
-		const templateCodes = ['bulk_upload_session']
-
-		await queryInterface.bulkDelete(
-			'notification_templates',
-			{
-				code: {
-					[Sequelize.Op.in]: templateCodes,
-				},
-			},
-			{}
-		)
+		return
 	},
 }
