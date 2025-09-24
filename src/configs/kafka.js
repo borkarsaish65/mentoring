@@ -41,7 +41,7 @@ module.exports = async () => {
 		await consumer.subscribe({ topics: [process.env.CLEAR_INTERNAL_CACHE] })
 		await eventConsumer.subscribe({ topics: [process.env.EVENTS_TOPIC] })
 
-		await consumer.run({
+		const cache = consumer.run({
 			eachMessage: async ({ topic, partition, message }) => {
 				try {
 					let streamingData = JSON.parse(message.value)
@@ -53,37 +53,69 @@ module.exports = async () => {
 				}
 			},
 		})
-		await eventConsumer.run({
+		const events = eventConsumer.run({
 			eachMessage: async ({ topic, partition, message }) => {
 				try {
-					const rawValue = message.value.toString()
+					const rawValue = message.value?.toString()
 					if (!rawValue || rawValue.trim() === '') {
-						console.warn(`Empty Kafka message skipped on topic ${topic}`)
+						logger.warn(`Empty Kafka message skipped on topic ${topic}`)
 						return
 					}
 
-					let streamingData = JSON.parse(rawValue)
+					let streamingData
+					try {
+						streamingData = JSON.parse(rawValue)
+					} catch (e) {
+						logger.error('Invalid JSON in Kafka message', {
+							topic,
+							partition,
+							offset: message?.offset,
+							err: e?.message,
+						})
+						return
+					}
 
 					if (streamingData.eventType) {
 						if (streamingData.eventType == 'create' || streamingData.eventType == 'bulk-create') {
-							streamingData.organization_id = streamingData.organizations[0].id
-							streamingData.user_roles = streamingData.organizations[0].roles.map((role) => {
-								return {
-									title: role.title,
-								}
-							})
+							const org = streamingData.organizations?.[0]
+							if (!org) {
+								logger.warn(`Create event missing organizations[0]; skipping`, {
+									topic,
+									partition,
+									offset: message?.offset,
+								})
+								return
+							}
+							streamingData.organization_id = org.id
+							streamingData.user_roles = (org.roles || []).map((role) => ({ title: role.title }))
 							await userRequest.add(streamingData)
 						} else if (streamingData.eventType == 'delete') {
-							await adminService.userDelete(streamingData.id)
+							const deleteId = streamingData.entityId || streamingData.id
+							if (!deleteId) {
+								logger.warn(`Delete event missing id/entityId; skipping`, {
+									topic,
+									partition,
+									offset: message?.offset,
+								})
+								return
+							}
+							await adminService.userDelete(deleteId.toString())
 						} else if (streamingData.eventType == 'update' || streamingData.eventType == 'bulk-update') {
 							const { oldValues, newValues, entityId } = streamingData
 							streamingData.userId = entityId.toString()
 
-							// Check if roles exist and have changed
-							const oldRoles = oldValues?.organizations[0]?.roles || []
-							const newRoles = newValues?.organizations[0]?.roles || []
+							// Trigger on any role difference (add/remove/change)
+							const oldRoles = oldValues?.organizations?.[0]?.roles || []
+							const newRoles = newValues?.organizations?.[0]?.roles || []
+							const toTitles = (roles) => (roles || []).map((r) => r?.title).filter(Boolean)
+							const oldSet = new Set(toTitles(oldRoles))
+							const newSet = new Set(toTitles(newRoles))
+							const rolesDiffer =
+								oldSet.size !== newSet.size ||
+								[...oldSet].some((t) => !newSet.has(t)) ||
+								[...newSet].some((t) => !oldSet.has(t))
 
-							if (oldRoles.length > 0 && newRoles.length > 0) {
+							if (rolesDiffer) {
 								const bodyData = {
 									user_id: entityId.toString(),
 									current_roles: oldRoles,
@@ -98,10 +130,17 @@ module.exports = async () => {
 						}
 					}
 				} catch (error) {
-					throw error
+					console.log('----------', error)
+					logger.error('Error in eventConsumer.eachMessage', {
+						topic,
+						partition,
+						offset: message?.offset,
+						err: error?.stack || error?.message || String(error),
+					})
 				}
 			},
 		})
+		await Promise.allSettled([cache, events])
 	}
 	subscribeToConsumer()
 
