@@ -89,7 +89,7 @@ module.exports = class SessionsHelper {
 			bodyData.updated_by = loggedInUserId
 			let menteeIdsToEnroll = bodyData.mentees ? bodyData.mentees : []
 			const mentorIdToCheck = bodyData.mentor_id || loggedInUserId
-			let isSessionCreatedByManager = !!bodyData.mentor_id
+			const isSessionCreatedByManager = !!bodyData.mentor_id
 
 			if (bodyData.type == common.SESSION_TYPE.PRIVATE && menteeIdsToEnroll.length === 0) {
 				return responses.failureResponse({
