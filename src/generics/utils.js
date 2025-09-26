@@ -714,6 +714,13 @@ function convertEntitiesForFilter(entityTypes) {
 			result[key] = []
 		}
 
+		if (entityType.entities.length > 0) {
+			entityType.entities.push({
+				value: 'other',
+				label: 'Other',
+			})
+		}
+
 		const newObj = {
 			id: entityType.id,
 			label: entityType.label,
