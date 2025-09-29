@@ -5,7 +5,9 @@
  * Description : Contains connections of all configs
  */
 
-require('./globals')()
+const path = require('path')
+
+global.PROJECT_ROOT_DIRECTORY = path.join(__dirname, '..')
 
 require('./kafka')()
 

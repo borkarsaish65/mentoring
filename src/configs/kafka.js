@@ -9,6 +9,10 @@ const utils = require('@generics/utils')
 const { elevateLog } = require('elevate-logger')
 const logger = elevateLog.init()
 const { Kafka } = require('kafkajs')
+const deleteuserConsumer = require('@generics/kafka/consumers/deleteuser')
+const rolechangeConsumer = require('@generics/kafka/consumers/rolechange')
+const createuserConsumer = require('@generics/kafka/consumers/createuser')
+const updateuserConsumer = require('@generics/kafka/consumers/updateuser')
 
 module.exports = async () => {
 	const kafkaIps = process.env.KAFKA_URL.split(',')
