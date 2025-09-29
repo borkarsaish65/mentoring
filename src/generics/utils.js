@@ -714,7 +714,7 @@ function convertEntitiesForFilter(entityTypes) {
 			result[key] = []
 		}
 
-		if (entityType.entities.length > 0 && entityType.data_type === 'ARRAY[STRING]') {
+		if (entityType.allow_custom_entities) {
 			entityType.entities.push({
 				value: 'other',
 				label: 'other',
