@@ -29,10 +29,12 @@ module.exports = async () => {
 		})
 	})
 
-	await startConsumer(KafkaClient)
-
 	global.kafkaProducer = producer
 	global.kafkaClient = KafkaClient
+
+	startConsumer(KafkaClient).catch((err) =>
+		logger.error('Kafka consumer failed to start', { err: err?.stack || err?.message })
+	)
 }
 
 async function startConsumer(kafkaClient) {
@@ -45,30 +47,43 @@ async function startConsumer(kafkaClient) {
 		eachMessage: async ({ topic, partition, message }) => {
 			try {
 				const rawValue = message.value?.toString()
+				const offset = message.offset
 				if (!rawValue) {
 					logger.warn(`Empty Kafka message skipped on topic ${topic}`)
 					return
 				}
-				message = JSON.parse(rawValue)
+
+				let payload
+				try {
+					payload = JSON.parse(rawValue)
+				} catch (e) {
+					logger.warn('Invalid JSON in Kafka message; skipping', {
+						topic,
+						partition,
+						offset,
+						err: e?.message,
+					})
+					return
+				}
 
 				let response
-				if (message && topic === process.env.EVENTS_TOPIC) {
-					if (message.eventType === 'roleChange') {
-						response = await rolechangeConsumer.messageReceived(message)
+				if (payload && topic === process.env.EVENTS_TOPIC) {
+					if (payload.eventType === 'roleChange') {
+						response = await rolechangeConsumer.messageReceived(payload)
 					}
-					if (message.eventType === 'create' || message.eventType === 'bulk-create') {
-						response = await createuserConsumer.messageReceived(message)
+					if (payload.eventType === 'create' || payload.eventType === 'bulk-create') {
+						response = await createuserConsumer.messageReceived(payload)
 					}
-					if (message.eventType === 'delete') {
-						response = await deleteuserConsumer.messageReceived(message)
+					if (payload.eventType === 'delete') {
+						response = await deleteuserConsumer.messageReceived(payload)
 					}
-					if (message.eventType === 'update' || message.eventType === 'bulk-update') {
-						response = await updateuserConsumer.messageReceived(message)
+					if (payload.eventType === 'update' || payload.eventType === 'bulk-update') {
+						response = await updateuserConsumer.messageReceived(payload)
 					}
 				}
-				if (message && topic === process.env.CLEAR_INTERNAL_CACHE) {
-					if (message.type === 'CLEAR_INTERNAL_CACHE') {
-						response = await utils.internalDel(streamingData.value)
+				if (payload && topic === process.env.CLEAR_INTERNAL_CACHE) {
+					if (payload.type === 'CLEAR_INTERNAL_CACHE') {
+						response = await utils.internalDel(payload.value)
 					}
 				}
 				logger.info(`Kafk event handling response : ${response}`)
@@ -76,7 +91,7 @@ async function startConsumer(kafkaClient) {
 				logger.error(`Error in Kafka message handler for topic ${topic}`, {
 					topic,
 					partition,
-					offset: message.offset,
+					offset,
 					err: err?.stack || err?.message || String(err),
 				})
 			}
