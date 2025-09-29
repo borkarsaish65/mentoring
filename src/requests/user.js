@@ -127,12 +127,15 @@ const validRoles = new Set([
 
 const fetchUserDetails = async ({ token, userId, tenantCode }) => {
 	try {
-		let profileUrl = `${userBaseUrl}${endpoints.USER_PROFILE_DETAILS}`
-
-		if (tenantCode) profileUrl = `${userBaseUrl}${endpoints.USER_PROFILE_DETAILS_INTERNAL}`
-
+		const isTenantScoped = Boolean(tenantCode)
+		if (isTenantScoped && !userId) {
+			throw new Error('fetchUserDetails: tenantCode requires userId')
+		}
+		let profileUrl = `${userBaseUrl}${
+			isTenantScoped ? endpoints.USER_PROFILE_DETAILS_INTERNAL : endpoints.USER_PROFILE_DETAILS
+		}`
 		if (userId) profileUrl += `/${userId}`
-		if (tenantCode) profileUrl += `?tenant_code=${tenantCode}`
+		if (isTenantScoped) profileUrl += `?tenant_code=${encodeURIComponent(tenantCode)}`
 
 		const isInternalTokenRequired = true
 		const userDetails = await requests.get(profileUrl, token, isInternalTokenRequired)
