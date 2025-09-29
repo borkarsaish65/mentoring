@@ -39,7 +39,7 @@ module.exports = async () => {
 }
 
 async function startConsumer(kafkaClient) {
-	const consumer = kafkaClient.consumer({ groupId: process.env.KAFKA_INTERNAL_CACHE_GROUP_ID })
+	const consumer = kafkaClient.consumer({ groupId: process.env.KAFKA_GROUP_ID })
 
 	await consumer.connect()
 	await consumer.subscribe({ topics: [process.env.EVENTS_TOPIC, process.env.CLEAR_INTERNAL_CACHE] })

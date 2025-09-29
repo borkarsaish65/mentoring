@@ -429,11 +429,6 @@ let enviromentVariables = {
 		optional: true,
 		default: 'internalmentoring',
 	},
-	KAFKA_INTERNAL_CACHE_GROUP_ID: {
-		message: 'Required Default Internal Cache',
-		optional: true,
-		default: 'mentoring.cache',
-	},
 	MENTOR_ACCEPT_SESSION_REQUEST_EMAIL_TEMPLATE: {
 		message: 'Required email template name for request session accepted',
 		optional: true,
@@ -577,11 +572,6 @@ let enviromentVariables = {
 		message: 'Required event topic for handling events',
 		optional: true,
 		default: 'mentoring.events',
-	},
-	EVENTS_GROUP_ID: {
-		message: 'Required event group id',
-		optional: true,
-		default: 'mentoring.event',
 	},
 }
 
