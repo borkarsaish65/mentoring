@@ -714,10 +714,10 @@ function convertEntitiesForFilter(entityTypes) {
 			result[key] = []
 		}
 
-		if (entityType.entities.length > 0) {
+		if (entityType.entities.length > 0 && entityType.data_type === 'ARRAY[STRING]') {
 			entityType.entities.push({
 				value: 'other',
-				label: 'Other',
+				label: 'other',
 			})
 		}
 
