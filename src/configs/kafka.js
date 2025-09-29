@@ -9,9 +9,6 @@ const utils = require('@generics/utils')
 const { elevateLog } = require('elevate-logger')
 const logger = elevateLog.init()
 const { Kafka } = require('kafkajs')
-const userRequest = require('@services/users')
-const adminService = require('@services/admin')
-const orgService = require('@services/org-admin')
 
 module.exports = async () => {
 	const kafkaIps = process.env.KAFKA_URL.split(',')
@@ -70,23 +67,12 @@ async function startConsumer(kafkaClient) {
 					}
 				}
 				if (message && topic === process.env.CLEAR_INTERNAL_CACHE) {
-					if (message.type == 'CLEAR_INTERNAL_CACHE') {
+					if (message.type === 'CLEAR_INTERNAL_CACHE') {
 						response = await utils.internalDel(streamingData.value)
 					}
 				}
 				logger.info(`Kafk event handling response : ${response}`)
 			} catch (err) {
-				logger.error(`Error in Kafka message handler for topic ${topic}`, {
-					topic,
-					partition,
-					offset: message.offset,
-					err: err?.stack || err?.message || String(err),
-				})
-
-				if (err.topics && err.topics[0] === process.env.EVENTS_TOPIC) {
-					rolechnageConsumer.errorTriggered(error)
-				}
-
 				logger.error(`Error in Kafka message handler for topic ${topic}`, {
 					topic,
 					partition,

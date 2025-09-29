@@ -159,9 +159,11 @@ const fetchUserDetails = async ({ token, userId, tenantCode }) => {
 		if (!isMentor && !isMenteeRolePresent) roles.push({ title: common.MENTEE_ROLE })
 		userDetails.data.result.user_roles = roles
 
-		userDetails.data.result.organization_id =
-			userDetails?.data?.result?.organization_id || userDetails?.data?.result?.organizations?.[0]?.id.toString()
-		userDetails.data.result.organization_id = userDetails.data.result.organization_id.toString()
+		const orgId = userDetails?.data?.result?.organization_id ?? userDetails?.data?.result?.organizations?.[0]?.id
+
+		if (orgId !== undefined && orgId !== null) {
+			userDetails.data.result.organization_id = orgId.toString()
+		}
 
 		return userDetails
 	} catch (error) {
