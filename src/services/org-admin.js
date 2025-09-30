@@ -242,7 +242,12 @@ module.exports = class OrgAdminService {
 						organizationId: decodedToken.organization_id,
 					})
 					policyData.visible_to_organizations = organizationDetails.data.result.related_orgs
+
+					if (!policyData.visible_to_organizations.includes(decodedToken.organization_id)) {
+						policyData.visible_to_organizations.push(decodedToken.organization_id)
+					}
 				}
+
 				//Update all users belonging to the org with new policies
 				await menteeQueries.updateMenteeExtension(
 					'', //userId not required
@@ -411,6 +416,10 @@ module.exports = class OrgAdminService {
 				external_mentee_visibility: orgPolicies.external_mentee_visibility_policy,
 				visible_to_organizations: organizationDetails.data.result.related_orgs,
 			}
+			if (!updateData.visible_to_organizations.includes(orgId)) {
+				updateData.visible_to_organizations.push(orgId)
+			}
+
 			if (utils.validateRoleAccess(bodyData.roles, common.MENTOR_ROLE))
 				await mentorQueries.updateMentorExtension(bodyData.user_id, updateData)
 			else await menteeQueries.updateMenteeExtension(bodyData.user_id, updateData)
