@@ -3199,7 +3199,7 @@ module.exports = class SessionsHelper {
 
 	static async validateMentorExtensions(userIds) {
 		try {
-			const filteredUserIds = userIds.filter((id) => typeof id === 'number')
+			const filteredUserIds = userIds.filter((id) => typeof id === 'number' || typeof id === 'string')
 			const mentors = await mentorExtensionQueries.getMentorExtensions(filteredUserIds)
 			const mentorMap = new Map(mentors.map((mentor) => [mentor.user_id, mentor]))
 			const validMentors = []
@@ -3220,7 +3220,7 @@ module.exports = class SessionsHelper {
 
 	static async validateMenteeExtensions(userIds) {
 		try {
-			const filteredUserIds = userIds.filter((id) => typeof id === 'number')
+			const filteredUserIds = userIds.filter((id) => typeof id === 'number' || typeof id === 'string')
 			const mentees = await menteeExtensionQueries.getMenteeExtensions(filteredUserIds)
 			const menteeMap = new Map(mentees.map((mentee) => [mentee.user_id, mentee]))
 			const validMentees = []
