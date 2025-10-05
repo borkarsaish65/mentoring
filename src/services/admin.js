@@ -959,11 +959,11 @@ module.exports = class AdminService {
 				)
 
 				// update upcoming sessions of mentor to set as deleted if he created only
-				const sessionIds = [...new Set(upcomingSessions.map((s) => s.id))]
-				await sessionQueries.updateRecords(
-					{ deleted_at: new Date() },
-					{ where: { id: sessionIds, created_by: mentorUserId } }
-				)
+				// const sessionIds = [...new Set(upcomingSessions.map((s) => s.id))]
+				// await sessionQueries.updateRecords(
+				// 	{ deleted_at: new Date() },
+				// 	{ where: { id: sessionIds, created_by: mentorUserId } }
+				// )
 			} else {
 				result.isSessionManagerNotifiedForMentorDelete = true
 			}
