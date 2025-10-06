@@ -265,6 +265,7 @@ module.exports = class AdminService {
 			if (isMentor) {
 				// Handle mentor-specific deletion tasks
 				await this.handleMentorDeletion(userId, userInfo, result)
+				mentorDetailsRemoved = result.mentorDetailsRemoved
 			}
 
 			// Step 5: Session Request Deletion & Notifications
@@ -954,11 +955,8 @@ module.exports = class AdminService {
 			// 4. update sessions where mentor was assigned (not created by mentor)
 			const assignedSessionIds = await this.updateSessionsWithAssignedMentor(mentorUserId, orgId)
 
-			// Remove mentor from DB
-			result.mentorDetailsRemoved = await mentorQueries.removeMentorDetails(userId) // userId = "1"
-
 			// Unenroll and notify attendees of sessions created by mentor
-			result.isAttendeesNotified = await this.removeAndUnenrollAttendess(userId)
+			result.isAttendeesNotified = await this.removeAndUnenrollAttendees(mentorUserId, orgId)
 
 			// set the sessions mentor name and mentor_id as null
 			await sessionQueries.updateRecords(
@@ -966,7 +964,10 @@ module.exports = class AdminService {
 				{ where: { id: assignedSessionIds } }
 			)
 
-			console.log(`Update ${sessionIds.length} sessions with mentor name`)
+			console.log(`Update ${assignedSessionIds.length} sessions with mentor name`)
+
+			// Remove mentor from DB
+			result.mentorDetailsRemoved = await mentorQueries.removeMentorDetails(mentorUserId) // userId = "1"
 
 			if (upcomingSessions.length > 0) {
 				const sessionIds = [...new Set(upcomingSessions.map((s) => s.id))]
@@ -984,12 +985,9 @@ module.exports = class AdminService {
 		}
 	}
 
-	static async removeAndUnenrollAttendess(mentorUserId) {
+	static async removeAndUnenrollAttendees(mentorUserId, orgId) {
 		const removedSessionsDetail = await sessionQueries.removeAndReturnMentorSessions(mentorUserId) // userId = "1"
-		const isAttendeesNotified = await this.unenrollAndNotifySessionAttendees(
-			removedSessionsDetail,
-			userInfo.organization_id || ''
-		) //removedSessionsDetail , orgId : "1")
+		const isAttendeesNotified = await this.unenrollAndNotifySessionAttendees(removedSessionsDetail, orgId) //removedSessionsDetail , orgId : "1")
 
 		return isAttendeesNotified
 	}
@@ -999,7 +997,7 @@ module.exports = class AdminService {
 
 		const sessionsToUpdate = await sessionQueries.getSessionsAssignedToMentor(mentorUserId)
 		if (sessionsToUpdate.length == 0) {
-			return true
+			return []
 		}
 		const sessionIds = [...new Set(sessionsToUpdate.map((s) => s.id))]
 

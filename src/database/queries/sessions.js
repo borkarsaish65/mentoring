@@ -254,6 +254,8 @@ exports.removeAndReturnMentorSessions = async (userId) => {
 		const updatedSessions = await Session.update(
 			{
 				deleted_at: currentDateTime,
+				mentor_name: common.USER_NOT_FOUND,
+				mentor_id: null,
 			},
 			{
 				where: {
