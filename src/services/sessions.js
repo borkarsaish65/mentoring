@@ -736,17 +736,18 @@ module.exports = class SessionsHelper {
 					this.setMentorPassword(sessionId, bodyData.mentor_id)
 				}
 
-				if (sessionDetail.status == common.LIVE_STATUS && bodyData?.meeting_info) {
-					// Validate meeting_info structure before using it
-					if (!bodyData.meeting_info.platform || !bodyData.meeting_info.value) {
+				if (sessionDetail.status === common.LIVE_STATUS) {
+					const meetingInfo = bodyData?.meeting_info
+					if (!meetingInfo || !meetingInfo.platform || !meetingInfo.value) {
 						return responses.failureResponse({
 							message: 'INVALID_MEETING_INFO',
 							statusCode: httpStatusCode.bad_request,
 							responseCode: 'CLIENT_ERROR',
 						})
 					}
-					bodyData = { meeting_info: bodyData.meeting_info }
+					bodyData = { meeting_info: meetingInfo }
 				}
+
 				const { rowsAffected, updatedRows } = await sessionQueries.updateOne({ id: sessionId }, bodyData, {
 					returning: true,
 				})
