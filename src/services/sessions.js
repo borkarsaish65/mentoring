@@ -737,15 +737,32 @@ module.exports = class SessionsHelper {
 				}
 
 				if (sessionDetail.status === common.LIVE_STATUS) {
-					const meetingInfo = bodyData?.meeting_info
-					if (!meetingInfo || !meetingInfo.platform || !meetingInfo.value) {
+					const hasOtherUpdates = Object.keys(bodyData).some(
+						(key) => !['meeting_info', 'status', 'updated_at'].includes(key)
+					)
+					if (hasOtherUpdates && !bodyData.meeting_info) {
 						return responses.failureResponse({
-							message: 'INVALID_MEETING_INFO',
+							message: 'LIVE_SESSION_ONLY_ALLOWS_MEETING_INFO_UPDATES',
 							statusCode: httpStatusCode.bad_request,
 							responseCode: 'CLIENT_ERROR',
 						})
 					}
-					bodyData = { meeting_info: meetingInfo }
+
+					if (bodyData.meeting_info) {
+						if (!bodyData.meeting_info.platform || !bodyData.meeting_info.value) {
+							return responses.failureResponse({
+								message: 'INVALID_MEETING_INFO',
+								statusCode: httpStatusCode.bad_request,
+								responseCode: 'CLIENT_ERROR',
+							})
+						}
+						bodyData = { meeting_info: bodyData.meeting_info }
+					} else {
+						return responses.successResponse({
+							statusCode: httpStatusCode.ok,
+							message: 'NO_UPDATES_ALLOWED_ON_LIVE_SESSION',
+						})
+					}
 				}
 
 				const { rowsAffected, updatedRows } = await sessionQueries.updateOne({ id: sessionId }, bodyData, {
