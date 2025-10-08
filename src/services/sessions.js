@@ -123,9 +123,7 @@ module.exports = class SessionsHelper {
 				})
 			}
 
-			const validMenteeIds = menteeIdsToEnroll.filter((id) => typeof id === 'number' || typeof id === 'string')
-
-			if (menteeIdsToEnroll.length != 0 && validMenteeIds.length != 0) {
+			if (menteeIdsToEnroll.length != 0) {
 				const menteesDetailsInMentor = await this.validateMentorExtensions(menteeIdsToEnroll)
 				const invalidMentorId =
 					menteesDetailsInMentor.invalidMentors.length === 0 ? [] : menteesDetailsInMentor.invalidMentors
@@ -3232,8 +3230,7 @@ module.exports = class SessionsHelper {
 
 	static async validateMentorExtensions(userIds) {
 		try {
-			const filteredUserIds = userIds.filter((id) => typeof id === 'number')
-			const mentors = await mentorExtensionQueries.getMentorExtensions(filteredUserIds)
+			const mentors = await mentorExtensionQueries.getMentorExtensions(userIds)
 			const mentorMap = new Map(mentors.map((mentor) => [mentor.user_id, mentor]))
 			const validMentors = []
 			const invalidMentors = []
@@ -3253,8 +3250,7 @@ module.exports = class SessionsHelper {
 
 	static async validateMenteeExtensions(userIds) {
 		try {
-			const filteredUserIds = userIds.filter((id) => typeof id === 'number')
-			const mentees = await menteeExtensionQueries.getMenteeExtensions(filteredUserIds)
+			const mentees = await menteeExtensionQueries.getMenteeExtensions(userIds)
 			const menteeMap = new Map(mentees.map((mentee) => [mentee.user_id, mentee]))
 			const validMentees = []
 			const invalidMentees = []
