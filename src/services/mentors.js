@@ -103,6 +103,10 @@ module.exports = class MentorsHelper {
 				})
 			}
 
+			if (menteeUserId && id != menteeUserId) {
+				upcomingSessions.data = await this.menteeSessionDetails(upcomingSessions.data, menteeUserId)
+			}
+
 			// Process entity types to add value labels.
 			const uniqueOrgIds = [...new Set(upcomingSessions.data.map((obj) => obj.mentor_organization_id))]
 			upcomingSessions.data = await entityTypeService.processEntityTypesToAddValueLabels(
@@ -113,9 +117,6 @@ module.exports = class MentorsHelper {
 			)
 
 			upcomingSessions.data = await this.sessionMentorDetails(upcomingSessions.data)
-			if (menteeUserId && id != menteeUserId) {
-				upcomingSessions.data = await this.menteeSessionDetails(upcomingSessions.data, menteeUserId)
-			}
 
 			return responses.successResponse({
 				statusCode: httpStatusCode.ok,
@@ -310,10 +311,18 @@ module.exports = class MentorsHelper {
 					sessions.map(async (session) => {
 						const attendee = attendees.find((attendee) => attendee.session_id === session.id)
 						session.is_enrolled = !!attendee
+						session.enrolment_type = attendee.type
 					})
 				)
 
-				return sessions
+				const filteredSessions = sessions.filter((session) => {
+					return (
+						session.type === common.SESSION_TYPE.PUBLIC ||
+						(session.type === common.SESSION_TYPE.PRIVATE && session.is_enrolled)
+					)
+				})
+
+				return filteredSessions
 			} else {
 				return sessions
 			}
