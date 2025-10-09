@@ -1032,13 +1032,14 @@ module.exports = class MenteesHelper {
 				organization_ids = [...organizations.result]
 
 				if (organization_ids.length > 0) {
-					//get organization list
-					const organizationList = await userRequests.organizationList(organization_ids)
+					const defaultOrgId = await getDefaultOrgId()
+
+					const orgIdsWithoutDefaultOrg = organization_ids.filter((orgId) => orgId != defaultOrgId)
+
+					const organizationList = await userRequests.organizationList(orgIdsWithoutDefaultOrg)
 					if (organizationList.success && organizationList.data?.result?.length > 0) {
 						result.organizations = organizationList.data.result
 					}
-
-					const defaultOrgId = await getDefaultOrgId()
 
 					const modelName = []
 
