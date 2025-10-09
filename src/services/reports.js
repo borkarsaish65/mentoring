@@ -364,11 +364,17 @@ module.exports = class ReportsHelper {
 						: query.replace('DYNAMIC_AND_CLAUSE', filterCompleteQuery)
 					// Add sorting
 					if (sortColumn && columnMappings[sortColumn]) {
-						query += ` ORDER BY 
-						CASE 
-						  WHEN :sort_column = '${sortColumn}' THEN ${columnMappings[sortColumn]}
-						  ELSE NULL
-						END ${sortType} NULLS LAST`
+						const orderByClause = `ORDER BY 
+							CASE 
+							WHEN :sort_column = '${sortColumn}' THEN ${columnMappings[sortColumn]}
+							ELSE NULL
+							END ${sortType} NULLS LAST`
+
+						// Remove any existing ORDER BY clause (case-insensitive)
+						query = query.replace(/order\s+by[\s\S]*?(?=(limit|offset|fetch|\)|$))/i, '')
+
+						// Append the new ORDER BY clause
+						query += ` ${orderByClause}`
 					}
 
 					// Add pagination
