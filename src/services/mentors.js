@@ -680,9 +680,8 @@ module.exports = class MentorsHelper {
 					message: 'MENTORS_NOT_FOUND',
 				})
 			}
-			if (!orgId) {
-				orgId = mentorProfile.data.result.organization_id
-			}
+			const mentorOrgId = mentorProfile.data.result.organization_id
+
 			let mentorExtension
 			if (requestedMentorExtension) mentorExtension = requestedMentorExtension
 			else mentorExtension = await mentorQueries.getMentorExtension(id)
@@ -709,7 +708,7 @@ module.exports = class MentorsHelper {
 			let entityTypes = await entityTypeQueries.findUserEntityTypesAndEntities({
 				status: 'ACTIVE',
 				organization_id: {
-					[Op.in]: [orgId, defaultOrgId],
+					[Op.in]: [mentorOrgId, defaultOrgId],
 				},
 				model_names: { [Op.contains]: [mentorExtensionsModelName] },
 			})
@@ -719,7 +718,7 @@ module.exports = class MentorsHelper {
 			}
 
 			// validationData = utils.removeParentEntityTypes(JSON.parse(JSON.stringify(validationData)))
-			const validationData = removeDefaultOrgEntityTypes(entityTypes, orgId)
+			const validationData = removeDefaultOrgEntityTypes(entityTypes, mentorOrgId)
 			const processDbResponse = utils.processDbResponse(mentorExtension, validationData)
 			const totalSessionHosted = await sessionQueries.countHostedSessions(id)
 
@@ -751,11 +750,11 @@ module.exports = class MentorsHelper {
 
 			if (!mentorProfile.organization) {
 				const orgDetails = await organisationExtensionQueries.findOne(
-					{ organization_id: orgId },
+					{ organization_id: mentorOrgId },
 					{ attributes: ['name'] }
 				)
 				mentorProfile['organization'] = {
-					id: orgId,
+					id: mentorOrgId,
 					name: orgDetails.name,
 				}
 			}
