@@ -311,7 +311,7 @@ module.exports = class MentorsHelper {
 					sessions.map(async (session) => {
 						const attendee = attendees.find((attendee) => attendee.session_id === session.id)
 						session.is_enrolled = !!attendee
-						session.enrolment_type = attendee.type
+						session.enrolment_type = attendee?.type
 					})
 				)
 
