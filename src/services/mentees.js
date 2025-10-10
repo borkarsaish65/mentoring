@@ -1597,13 +1597,13 @@ module.exports = class MenteesHelper {
 			let entityTypes = await entityTypeQueries.findUserEntityTypesAndEntities({
 				status: 'ACTIVE',
 				organization_id: {
-					[Op.in]: [orgId, defaultOrgId],
+					[Op.in]: [requestedUserExtension.organization_id, defaultOrgId],
 				},
 				model_names: { [Op.contains]: [menteeExtensionsModelName] },
 			})
 
 			// validationData = utils.removeParentEntityTypes(JSON.parse(JSON.stringify(validationData)))
-			const validationData = removeDefaultOrgEntityTypes(entityTypes, orgId)
+			const validationData = removeDefaultOrgEntityTypes(entityTypes, requestedUserExtension.organization_id)
 			const processDbResponse = utils.processDbResponse(mentorExtension, validationData)
 
 			const profileMandatoryFields = await utils.validateProfileData(processDbResponse, validationData)
@@ -1613,11 +1613,11 @@ module.exports = class MenteesHelper {
 			const connection = await connectionQueries.getConnection(userId, id)
 
 			const orgDetails = await organisationExtensionQueries.findOne(
-				{ organization_id: orgId },
+				{ organization_id: requestedUserExtension.organization_id },
 				{ attributes: ['name'] }
 			)
 			processDbResponse['organization'] = {
-				id: orgId,
+				id: requestedUserExtension.organization_id,
 				name: orgDetails.name,
 			}
 
