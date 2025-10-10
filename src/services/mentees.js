@@ -1041,7 +1041,7 @@ module.exports = class MenteesHelper {
 						})
 					}
 
-					orgIdsWithoutDefaultOrg = organization_ids
+					let orgIdsWithoutDefaultOrg = organization_ids
 					if (organization_ids.length > 1) {
 						orgIdsWithoutDefaultOrg = organization_ids.filter((orgId) => orgId != defaultOrgId)
 					}
