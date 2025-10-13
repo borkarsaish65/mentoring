@@ -1033,8 +1033,18 @@ module.exports = class MenteesHelper {
 
 				if (organization_ids.length > 0) {
 					const defaultOrgId = await getDefaultOrgId()
+					if (!defaultOrgId) {
+						return responses.failureResponse({
+							message: 'DEFAULT_ORG_ID_NOT_SET',
+							statusCode: httpStatusCode.bad_request,
+							responseCode: 'CLIENT_ERROR',
+						})
+					}
 
-					const orgIdsWithoutDefaultOrg = organization_ids.filter((orgId) => orgId != defaultOrgId)
+					let orgIdsWithoutDefaultOrg = organization_ids
+					if (organization_ids.length > 1) {
+						orgIdsWithoutDefaultOrg = organization_ids.filter((orgId) => orgId != defaultOrgId)
+					}
 
 					const organizationList = await userRequests.organizationList(orgIdsWithoutDefaultOrg)
 					if (organizationList.success && organizationList.data?.result?.length > 0) {
