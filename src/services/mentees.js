@@ -1252,6 +1252,7 @@ module.exports = class MenteesHelper {
 					id: user.user_id, // Add 'id' key, to be removed later
 					email: user.email ? await emailEncryption.decrypt(user.email) : null, // Decrypt email
 					organization: orgMap[user.organization_id] || null,
+					image: user.image ? (await utils.getDownloadableUrl(user.image)) ?? null : null,
 				}))
 			)
 
