@@ -873,7 +873,7 @@ const generateDateRanges = (startEpoch, endEpoch, interval) => {
 				})
 
 				break
-			case 'month':
+			case 'month': {
 				let rangeStart
 				if (dateRanges.length === 0) {
 					// use startDate as currentDate
@@ -895,6 +895,7 @@ const generateDateRanges = (startEpoch, endEpoch, interval) => {
 
 				currentDate = nextDate // set to 1st of next month
 				break
+			}
 			default:
 				throw new Error('Invalid interval. Valid options: "day", "week", "month"')
 		}
