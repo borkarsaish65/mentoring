@@ -223,16 +223,6 @@ module.exports = class MenteesHelper {
 			let scope = ['all', 'my']
 			if (queryParams.sessionScope) {
 				scope = queryParams.sessionScope.split(',').map((s) => s.trim().toLowerCase())
-				// Validate scope values
-				const validScopes = ['all', 'my']
-				const invalidScopes = scope.filter((s) => !validScopes.includes(s))
-				if (invalidScopes.length > 0) {
-					return responses.failureResponse({
-						message: `INVALID_SESSION_SCOPE: ${invalidScopes.join(', ')}`,
-						statusCode: httpStatusCode.bad_request,
-						responseCode: 'CLIENT_ERROR',
-					})
-				}
 				delete queryParams.sessionScope
 			}
 			let errors = []
