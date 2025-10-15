@@ -1252,6 +1252,16 @@ module.exports = class MenteesHelper {
 					id: user.user_id, // Add 'id' key, to be removed later
 					email: user.email ? await emailEncryption.decrypt(user.email) : null, // Decrypt email
 					organization: orgMap[user.organization_id] || null,
+					image: user.image
+						? await (async () => {
+								try {
+									return (await utils.getDownloadableUrl(user.image)) ?? null
+								} catch (error) {
+									console.error(`Failed to get downloadable URL for user ${user.user_id}:`, error)
+									return null
+								}
+						  })()
+						: null,
 				}))
 			)
 
