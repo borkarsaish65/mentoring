@@ -50,7 +50,7 @@ module.exports = class MenteeExtensionQueries {
 						'jsonb_set',
 						metaExpr,
 						Sequelize.literal(`'{${key}}'`),
-						Sequelize.literal(`'${JSON.stringify(value)}'::jsonb`),
+						Sequelize.literal(`${Sequelize.escape(JSON.stringify(value))}::jsonb`),
 						true
 					)
 				}
