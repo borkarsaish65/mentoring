@@ -223,8 +223,19 @@ module.exports = class MenteesHelper {
 			let scope = ['all', 'my']
 			if (queryParams.sessionScope) {
 				scope = queryParams.sessionScope.split(',').map((s) => s.trim().toLowerCase())
+				// Validate scope values
+				const validScopes = ['all', 'my']
+				const invalidScopes = scope.filter((s) => !validScopes.includes(s))
+				if (invalidScopes.length > 0) {
+					return responses.failureResponse({
+						message: `INVALID_SESSION_SCOPE: ${invalidScopes.join(', ')}`,
+						statusCode: httpStatusCode.bad_request,
+						responseCode: 'CLIENT_ERROR',
+					})
+				}
 				delete queryParams.sessionScope
 			}
+			let errors = []
 			if (scope.includes('all')) {
 				let allSessions = await this.getAllSessions(
 					page,
@@ -239,18 +250,22 @@ module.exports = class MenteesHelper {
 				)
 
 				if (allSessions.error && allSessions.error.missingField) {
-					return responses.failureResponse({
-						message: 'PROFILE_NOT_UPDATED',
-						statusCode: httpStatusCode.bad_request,
-						responseCode: 'CLIENT_ERROR',
-					})
+					errors.push({ scope: 'all', message: 'PROFILE_NOT_UPDATED' })
+				} else {
+					result.all_sessions = allSessions.rows
+					result.allSessions_count = allSessions.count
 				}
-				result.all_sessions = allSessions.rows
 			}
 
 			if (scope.includes('my')) {
-				let mySessions = await this.getMySessions(page, limit, search, userId, start_date, end_date)
-				result.my_sessions = mySessions.rows
+				try {
+					let mySessions = await this.getMySessions(page, limit, search, userId, start_date, end_date)
+					result.my_sessions = mySessions.rows
+					result.my_sessions_count = mySessions.count
+				} catch (error) {
+					// Handle error similarly to getAllSessions or add to errors array
+					console.error('Error fetching my sessions:', error)
+				}
 			}
 
 			/* My Sessions */
@@ -261,6 +276,7 @@ module.exports = class MenteesHelper {
 				statusCode: httpStatusCode.ok,
 				message: 'SESSION_FETCHED_SUCCESSFULLY',
 				result: result,
+				error: errors,
 				meta: {
 					type: 'feedback',
 					data: feedbackData.result,
