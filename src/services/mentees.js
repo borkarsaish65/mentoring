@@ -218,33 +218,43 @@ module.exports = class MenteesHelper {
 		try {
 			/* All Sessions */
 
-			let allSessions = await this.getAllSessions(
-				page,
-				limit,
-				search,
-				userId,
-				queryParams,
-				isAMentor,
-				'',
-				roles,
-				orgId
-			)
+			let result = {}
 
-			if (allSessions.error && allSessions.error.missingField) {
-				return responses.failureResponse({
-					message: 'PROFILE_NOT_UPDATED',
-					statusCode: httpStatusCode.bad_request,
-					responseCode: 'CLIENT_ERROR',
-				})
+			let scope = ['all', 'my']
+			if (queryParams.sessionScope) {
+				scope = queryParams.sessionScope.split(',').map((s) => s.trim().toLowerCase())
+				delete queryParams.sessionScope
+			}
+			if (scope.includes('all')) {
+				let allSessions = await this.getAllSessions(
+					page,
+					limit,
+					search,
+					userId,
+					queryParams,
+					isAMentor,
+					'',
+					roles,
+					orgId
+				)
+
+				if (allSessions.error && allSessions.error.missingField) {
+					return responses.failureResponse({
+						message: 'PROFILE_NOT_UPDATED',
+						statusCode: httpStatusCode.bad_request,
+						responseCode: 'CLIENT_ERROR',
+					})
+				}
+				result.all_sessions = allSessions.rows
+			}
+
+			if (scope.includes('my')) {
+				let mySessions = await this.getMySessions(page, limit, search, userId, start_date, end_date)
+				result.my_sessions = mySessions.rows
 			}
 
 			/* My Sessions */
-			let mySessions = await this.getMySessions(page, limit, search, userId, start_date, end_date)
 
-			const result = {
-				all_sessions: allSessions.rows,
-				my_sessions: mySessions.rows,
-			}
 			const feedbackData = await feedbackHelper.pending(userId, isAMentor)
 
 			return responses.successResponse({
