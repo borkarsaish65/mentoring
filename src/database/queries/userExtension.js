@@ -40,15 +40,19 @@ module.exports = class MenteeExtensionQueries {
 
 			// If `meta` is included in `data`, use `jsonb_set` to merge changes safely
 			if (data.meta) {
+				let metaExpr = Sequelize.fn('COALESCE', Sequelize.col('meta'), Sequelize.literal(`'{}'::jsonb`))
+
 				for (const [key, value] of Object.entries(data.meta)) {
-					data.meta = Sequelize.fn(
+					metaExpr = Sequelize.fn(
 						'jsonb_set',
-						Sequelize.fn('COALESCE', Sequelize.col('meta'), '{}'), // Initializes `meta` if null
-						`{${key}}`,
-						JSON.stringify(value),
+						metaExpr,
+						Sequelize.literal(`'{${key}}'`),
+						Sequelize.literal(`'${JSON.stringify(value)}'::jsonb`),
 						true
 					)
 				}
+
+				data.meta = metaExpr
 			} else {
 				delete data.meta
 			}
