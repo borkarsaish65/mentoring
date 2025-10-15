@@ -43,6 +43,9 @@ module.exports = class MenteeExtensionQueries {
 				let metaExpr = Sequelize.fn('COALESCE', Sequelize.col('meta'), Sequelize.literal(`'{}'::jsonb`))
 
 				for (const [key, value] of Object.entries(data.meta)) {
+					if (!/^[A-Za-z0-9_-]+$/.test(key)) {
+						throw new Error(`Invalid meta key: ${key}`)
+					}
 					metaExpr = Sequelize.fn(
 						'jsonb_set',
 						metaExpr,
