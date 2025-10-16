@@ -577,7 +577,7 @@ module.exports = class MenteeExtensionQueries {
 				return []
 			}
 			const query = `
-			SELECT *
+			SELECT user_id
 			FROM ${common.materializedViewsPrefix + MenteeExtension.tableName}
 			WHERE organization_id IN (:orgIds)
 		`
