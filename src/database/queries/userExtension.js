@@ -570,4 +570,24 @@ module.exports = class MenteeExtensionQueries {
 			throw error
 		}
 	}
+
+	static async getAllUsersByOrgId(orgIds) {
+		try {
+			const userFilterClause = `organization_id IN (${orgIds.map((id) => `'${id}'`).join(',')})`
+
+			const query = `
+				SELECT *
+				FROM ${common.materializedViewsPrefix + MenteeExtension.tableName}
+				WHERE
+					${userFilterClause}
+				`
+
+			const results = await Sequelize.query(query, {
+				type: QueryTypes.SELECT,
+			})
+			return results
+		} catch (error) {
+			throw error
+		}
+	}
 }
