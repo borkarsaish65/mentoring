@@ -573,17 +573,17 @@ module.exports = class MenteeExtensionQueries {
 
 	static async getAllUsersByOrgId(orgIds) {
 		try {
-			const userFilterClause = `organization_id IN (${orgIds.map((id) => `'${id}'`).join(',')})`
-
+			if (!Array.isArray(orgIds) || orgIds.length === 0) {
+				return []
+			}
 			const query = `
-				SELECT *
-				FROM ${common.materializedViewsPrefix + MenteeExtension.tableName}
-				WHERE
-					${userFilterClause}
-				`
-
+			SELECT *
+			FROM ${common.materializedViewsPrefix + MenteeExtension.tableName}
+			WHERE organization_id IN (:orgIds)
+		`
 			const results = await Sequelize.query(query, {
 				type: QueryTypes.SELECT,
+				replacements: { orgIds },
 			})
 			return results
 		} catch (error) {

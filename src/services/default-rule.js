@@ -159,6 +159,7 @@ module.exports = class DefaultRuleHelper {
 
 						if (!validateDefaultRules) {
 							await connections.deleteConnections(userId, friendId)
+							await connections.deleteConnections(friendId, userId)
 						}
 					}
 
