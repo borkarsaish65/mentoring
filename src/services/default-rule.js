@@ -140,31 +140,31 @@ module.exports = class DefaultRuleHelper {
 				let userAccounts = await menteeExtensionQueries.getAllUsersByOrgId([orgId])
 
 				for (const element of userAccounts) {
-					let userId = element.user_id
+					let currentUserId = element.user_id
 					let roles = [{ title: common.MENTEE_ROLE }]
 					if (element.is_mentor) roles.push({ title: common.MENTOR_ROLE })
 
 					// Check connections
-					const connectionsData = await connections.getConnectedUsers(userId, 'friend_id', 'user_id')
+					const connectionsData = await connections.getConnectedUsers(currentUserId, 'friend_id', 'user_id')
 					for (const friendId of connectionsData) {
 						const requestedUserExtension = await menteeExtensionQueries.getMenteeExtension(friendId)
 
 						const validateDefaultRules = await validateDefaultRulesFilter({
 							ruleType: common.DEFAULT_RULES.MENTOR_TYPE,
-							requesterId: userId,
+							requesterId: currentUserId,
 							roles: roles,
 							requesterOrganizationId: orgId,
 							data: requestedUserExtension,
 						})
 
 						if (!validateDefaultRules) {
-							await connections.deleteConnections(userId, friendId)
-							await connections.deleteConnections(friendId, userId)
+							await connections.deleteConnections(currentUserId, friendId)
+							await connections.deleteConnections(friendId, currentUserId)
 						}
 					}
 
 					// Check connection requests
-					const connectionsRequests = await connections.getConnectionRequestsForUser(userId)
+					const connectionsRequests = await connections.getConnectionRequestsForUser(currentUserId)
 					if (connectionsRequests.count > 0) {
 						for (const request of connectionsRequests.rows) {
 							const friendId = request.friend_id
@@ -172,14 +172,14 @@ module.exports = class DefaultRuleHelper {
 
 							const validateDefaultRules = await validateDefaultRulesFilter({
 								ruleType: common.DEFAULT_RULES.MENTOR_TYPE,
-								requesterId: userId,
+								requesterId: currentUserId,
 								roles: roles,
 								requesterOrganizationId: orgId,
 								data: requestedUserExtension,
 							})
 
 							if (!validateDefaultRules) {
-								await connections.deleteConnectionsRequests(userId, friendId)
+								await connections.deleteConnectionsRequests(currentUserId, friendId)
 							}
 						}
 					}
