@@ -155,7 +155,8 @@ module.exports = class ReportsHelper {
 		downloadCsv,
 		groupBy,
 		filterColumns,
-		filterValues
+		filterValues,
+		timeZone
 	) {
 		try {
 			// Validate report permissions
