@@ -70,7 +70,13 @@ module.exports = class MenteesHelper {
 		const validationData = removeDefaultOrgEntityTypes(entityTypes, orgId)
 		//validationData = utils.removeParentEntityTypes(JSON.parse(JSON.stringify(validationData)))
 
-		const processDbResponse = utils.processDbResponse(mentee, validationData)
+		let processDbResponse = utils.processDbResponse(mentee, validationData)
+
+		const sortedEntityType = await utils.sortData(validationData, 'meta.sequence')
+		let displayProperties = []
+		for (const entityType of sortedEntityType) {
+			displayProperties.push({ key: entityType.value, ...entityType.meta })
+		}
 
 		const totalSession = await sessionAttendeesQueries.countEnrolledSessions(id)
 
@@ -116,6 +122,7 @@ module.exports = class MenteesHelper {
 				sessions_attended: totalSession,
 				...menteeDetails.data.result,
 				...processDbResponse,
+				displayProperties,
 			},
 		})
 	}
@@ -1668,11 +1675,18 @@ module.exports = class MenteesHelper {
 				processDbResponse.connection_details = connection.meta
 			}
 
+			const sortedEntityType = await utils.sortData(validationData, 'meta.sequence')
+			let displayProperties = []
+			for (const entityType of sortedEntityType) {
+				displayProperties.push({ key: entityType.value, ...entityType.meta })
+			}
+
 			return responses.successResponse({
 				statusCode: httpStatusCode.ok,
 				message: 'PROFILE_FTECHED_SUCCESSFULLY',
 				result: {
 					...processDbResponse,
+					displayProperties,
 				},
 			})
 		} catch (error) {
