@@ -634,6 +634,71 @@ exports.getUpcomingSessions = async (page, limit, search, userId, startDate, end
 	}
 }
 
+exports.getEnrolledSessions = async (page, limit, search, userId, startDate, endDate) => {
+	try {
+		const query = `
+		SELECT 
+			s.*,
+			sa.type as enrolled_type,
+			sa.is_feedback_skipped,
+			sa.meeting_info
+		FROM sessions s
+		INNER JOIN session_attendees sa ON sa.session_id = s.id
+		WHERE 
+			sa.mentee_id = :userId
+			AND s.status IN (:statusList)
+			AND s.end_date > :currentEpoch
+			${search ? 'AND s.title ILIKE :search' : ''}
+			${startDate && endDate ? 'AND s.start_date BETWEEN :startEpoch AND :endEpoch' : ''}
+		ORDER BY s.start_date ASC
+		OFFSET :offset
+		LIMIT :limit
+		`
+
+		const replacements = {
+			userId,
+			statusList: [common.PUBLISHED_STATUS, common.LIVE_STATUS],
+			currentEpoch: moment().unix(),
+			search: `%${search}%`,
+			startEpoch: startDate,
+			endEpoch: endDate,
+			offset: limit * (page - 1),
+			limit,
+		}
+
+		const sessionDetails = await Sequelize.query(query, {
+			replacements,
+			type: QueryTypes.SELECT,
+		})
+
+		const countQuery = `
+		SELECT COUNT(DISTINCT s.id) AS "count"
+		FROM sessions s
+		INNER JOIN session_attendees sa ON sa.session_id = s.id
+		WHERE 
+			sa.mentee_id = :userId
+			AND s.status IN (:statusList)
+			AND s.end_date > :currentEpoch
+			${search ? 'AND s.title ILIKE :search' : ''}
+			${startDate && endDate ? 'AND s.start_date BETWEEN :startEpoch AND :endEpoch' : ''}
+		`
+		const count = await Sequelize.query(countQuery, {
+			type: QueryTypes.SELECT,
+			replacements: replacements,
+		})
+
+		let rows = []
+		if (sessionDetails.length > 0) {
+			rows = sessionDetails.map(({ mentee_password, mentor_password, ...rest }) => rest)
+		}
+
+		return { rows, count: Number(count[0].count) }
+	} catch (error) {
+		console.error(error)
+		return error
+	}
+}
+
 exports.findAndCountAll = async (filter, options = {}, attributes = {}) => {
 	try {
 		const { rows, count } = await Session.findAndCountAll({
