@@ -639,15 +639,16 @@ exports.getEnrolledSessions = async (page, limit, search, userId, startDate, end
 		const query = `
 		SELECT 
 			s.*,
-			sa.type as enrolled_type,
+			sa.type AS enrolled_type,
 			sa.is_feedback_skipped,
-			sa.meeting_info
 		FROM sessions s
 		INNER JOIN session_attendees sa ON sa.session_id = s.id
 		WHERE 
 			sa.mentee_id = :userId
 			AND s.status IN (:statusList)
 			AND s.end_date > :currentEpoch
+			AND s.deleted_at IS NULL,
+			AND sa.deleted_at IS NULL
 			${search ? 'AND s.title ILIKE :search' : ''}
 			${startDate && endDate ? 'AND s.start_date BETWEEN :startEpoch AND :endEpoch' : ''}
 		ORDER BY s.start_date ASC
@@ -695,7 +696,7 @@ exports.getEnrolledSessions = async (page, limit, search, userId, startDate, end
 		return { rows, count: Number(count[0].count) }
 	} catch (error) {
 		console.error(error)
-		return error
+		throw error
 	}
 }
 
