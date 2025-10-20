@@ -566,6 +566,9 @@ module.exports = class MenteesHelper {
 				endDate
 			)
 
+			if (!sessionDetails || typeof sessionDetails.count !== 'number' || !Array.isArray(sessionDetails.rows)) {
+				return { rows: [], count: 0 }
+			}
 			if (sessionDetails.count > 0) {
 				const uniqueOrgIds = [...new Set(sessionDetails.rows.map((obj) => obj.mentor_organization_id))]
 				sessionDetails.rows = await entityTypeService.processEntityTypesToAddValueLabels(
@@ -575,6 +578,7 @@ module.exports = class MenteesHelper {
 					'mentor_organization_id'
 				)
 				sessionDetails.rows = await this.sessionMentorDetails(sessionDetails.rows)
+				sessionDetails.rows = sessionDetails.rows.map((r) => ({ ...r, is_enrolled: true }))
 			}
 
 			return sessionDetails
