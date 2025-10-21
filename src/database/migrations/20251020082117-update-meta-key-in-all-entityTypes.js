@@ -32,23 +32,32 @@ module.exports = {
 			}
 
 			for (const entityType of entityTypes) {
+				let meta
 				if (entityUpdate.hasOwnProperty(entityType.value)) {
-					await queryInterface.sequelize.query(
-						`
+					meta = entityUpdate[entityType.value]
+				} else {
+					meta = {
+						label: entityType.label,
+						visible: true,
+						visibility: 'main',
+					}
+				}
+
+				await queryInterface.sequelize.query(
+					`
               UPDATE entity_types
               SET meta = :meta
               WHERE value = :entityValue
             `,
-						{
-							replacements: {
-								meta: JSON.stringify(entityUpdate[entityType.value]),
-								entityValue: entityType.value,
-							},
-							type: Sequelize.QueryTypes.UPDATE,
-							transaction,
-						}
-					)
-				}
+					{
+						replacements: {
+							meta: JSON.stringify(meta),
+							entityValue: entityType.value,
+						},
+						type: Sequelize.QueryTypes.UPDATE,
+						transaction,
+					}
+				)
 			}
 
 			await transaction.commit()
