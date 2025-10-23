@@ -246,13 +246,6 @@ module.exports = class OrgAdminService {
 					if (!policyData.visible_to_organizations.includes(decodedToken.organization_id)) {
 						policyData.visible_to_organizations.push(decodedToken.organization_id)
 					}
-				} else if (
-					policyData?.external_mentor_visibility == common.CURRENT ||
-					policyData?.mentor_visibility_policy == common.CURRENT ||
-					policyData?.external_mentee_visibility == common.CURRENT ||
-					policyData?.mentee_visibility_policy == common.CURRENT
-				) {
-					policyData.visible_to_organizations = []
 				}
 
 				//Update all users belonging to the org with new policies
