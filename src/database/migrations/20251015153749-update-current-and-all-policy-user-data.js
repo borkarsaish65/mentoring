@@ -8,10 +8,10 @@ module.exports = {
 			const [orgResults] = await queryInterface.sequelize.query(
 				`
         SELECT organization_id FROM organization_extension WHERE 
-          session_visibility_policy IN ('CURRENT', 'ALL') OR 
-          external_mentor_visibility_policy IN ('CURRENT', 'ALL') OR 
-          mentor_visibility_policy IN ('CURRENT', 'ALL') OR 
-          external_session_visibility_policy IN ('CURRENT', 'ALL');;
+          session_visibility_policy IN ('CURRENT') OR 
+          external_mentor_visibility_policy IN ('CURRENT') OR 
+          mentor_visibility_policy IN ('CURRENT') OR 
+          external_session_visibility_policy IN ('CURRENT');
         `,
 				{ transaction }
 			)
