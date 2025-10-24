@@ -589,7 +589,7 @@ module.exports = {
             
             FROM
                 (SELECT * FROM public.sessions 
-                 WHERE public.session.started_at IS NOT NULL
+                 WHERE public.sessions.started_at IS NOT NULL
                    AND public.sessions.start_date > :start_date 
                    AND public.sessions.end_date < :end_date) AS Session
             JOIN
