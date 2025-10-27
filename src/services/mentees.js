@@ -1582,7 +1582,7 @@ module.exports = class MenteesHelper {
 				if (!validateDefaultRules) {
 					return responses.failureResponse({
 						message: 'USER_NOT_FOUND',
-						statusCode: httpStatusCode.for,
+						statusCode: httpStatusCode.forbidden,
 						responseCode: 'CLIENT_ERROR',
 					})
 				}
