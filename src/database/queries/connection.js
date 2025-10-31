@@ -283,6 +283,9 @@ exports.getConnectionsDetails = async (
 		let orgFilter = ''
 		let filterClause = ''
 		let rolesFilter = ''
+		let sortBy = 'ASC'
+		let sortField = 'mv.name'
+		let sortClause = `ORDER BY LOWER(${sortField}) ${sortBy}`
 
 		if (searchText) {
 			additionalFilter = `AND name ILIKE :search`
@@ -335,6 +338,7 @@ exports.getConnectionsDetails = async (
             ${filterClause}
             ${rolesFilter}
             ${additionalFilter}
+			${sortClause}
         `
 
 		const replacements = {
