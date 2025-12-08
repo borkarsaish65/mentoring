@@ -29,7 +29,7 @@ jobs:
       # 2. Clone USER service
       - run:
           name: Cloning user service
-          command: cd ../ && git clone https://github.com/ELEVATE-Project/user.git --branch dev --single-branch
+          command: cd ../ && git clone https://github.com/ELEVATE-Project/user.git --branch develop --single-branch
       - restore_cache:
           key: user-dependency-cache-{{ checksum "../user/src/package.json" }}
       - run:
