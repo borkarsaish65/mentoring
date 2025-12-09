@@ -52,13 +52,18 @@
 					"formsVersion": {
 						"type": "array",
 						"items": {
-							"type": "string"
+							"type": "object",
+							"properties": {
+								"id": { "type": "number" },
+								"type": { "type": "string" },
+								"version": { "type": "number" }
+							}
 						}
 					},
 					"correlation": {
 						"type": "string"
 					},
-					"meeting_platform": {
+					"meetingPlatform": {
 						"type": "string"
 					}
 				}
@@ -75,40 +80,21 @@
 				"type": "string"
 			},
 			"result": {
-				"type": "object",
-				"properties": {
-					"id": {
-						"type": "number"
-					},
-					"value": {
-						"type": "string"
-					},
-					"label": {
-						"type": "string"
-					},
-					"status": {
-						"type": "string"
-					},
-					"type": {
-						"type": "string"
-					},
-					"entity_type_id": {
-						"type": "number"
-					},
-					"created_by": {
-						"type": "string"
-					},
-					"updated_by": {
-						"type": "string"
-					},
-					"updated_at": {
-						"type": "string"
-					},
-					"created_at": {
-						"type": "string"
-					},
-					"deleted_at": {
-						"type": "null"
+				"type": "array",
+				"items": {
+					"type": "object",
+					"properties": {
+						"id": { "type": "number" },
+						"entity_type_id": { "type": "number" },
+						"value": { "type": "string" },
+						"label": { "type": "string" },
+						"status": { "type": "string" },
+						"type": { "type": "string" },
+						"created_by": { "type": "string" },
+						"updated_by": { "type": "string" },
+						"created_at": { "type": "string" },
+						"updated_at": { "type": "string" },
+						"deleted_at": { "type": "null" }
 					}
 				}
 			},
@@ -118,13 +104,18 @@
 					"formsVersion": {
 						"type": "array",
 						"items": {
-							"type": "string"
+							"type": "object",
+							"properties": {
+								"id": { "type": "number" },
+								"type": { "type": "string" },
+								"version": { "type": "number" }
+							}
 						}
 					},
 					"correlation": {
 						"type": "string"
 					},
-					"meeting_platform": {
+					"meetingPlatform": {
 						"type": "string"
 					}
 				}
@@ -141,40 +132,21 @@
 				"type": "string"
 			},
 			"result": {
-				"type": "object",
-				"properties": {
-					"id": {
-						"type": "number"
-					},
-					"entity_type_id": {
-						"type": "number"
-					},
-					"value": {
-						"type": "string"
-					},
-					"label": {
-						"type": "string"
-					},
-					"status": {
-						"type": "string"
-					},
-					"type": {
-						"type": "string"
-					},
-					"created_by": {
-						"type": "string"
-					},
-					"updated_by": {
-						"type": "string"
-					},
-					"created_at": {
-						"type": "string"
-					},
-					"updated_at": {
-						"type": "string"
-					},
-					"deleted_at": {
-						"type": "null"
+				"type": "array",
+				"items": {
+					"type": "object",
+					"properties": {
+						"id": { "type": "number" },
+						"entity_type_id": { "type": "number" },
+						"value": { "type": "string" },
+						"label": { "type": "string" },
+						"status": { "type": "string" },
+						"type": { "type": "string" },
+						"created_by": { "type": "string" },
+						"updated_by": { "type": ["string", "null"] },
+						"created_at": { "type": "string" },
+						"updated_at": { "type": "string" },
+						"deleted_at": { "type": "null" }
 					}
 				}
 			},
@@ -184,13 +156,18 @@
 					"formsVersion": {
 						"type": "array",
 						"items": {
-							"type": "string"
+							"type": "object",
+							"properties": {
+								"id": { "type": "number" },
+								"type": { "type": "string" },
+								"version": { "type": "number" }
+							}
 						}
 					},
 					"correlation": {
 						"type": "string"
 					},
-					"meeting_platform": {
+					"meetingPlatform": {
 						"type": "string"
 					}
 				}
@@ -218,13 +195,18 @@
 					"formsVersion": {
 						"type": "array",
 						"items": {
-							"type": "string"
+							"type": "object",
+							"properties": {
+								"id": { "type": "number" },
+								"type": { "type": "string" },
+								"version": { "type": "number" }
+							}
 						}
 					},
 					"correlation": {
 						"type": "string"
 					},
-					"meeting_platform": {
+					"meetingPlatform": {
 						"type": "string"
 					}
 				}

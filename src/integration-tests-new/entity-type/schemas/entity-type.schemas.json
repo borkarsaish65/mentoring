@@ -188,58 +188,52 @@
 				"type": "string"
 			},
 			"result": {
-				"type": "object",
-				"properties": {
-					"id": {
-						"type": "number"
-					},
-					"value": {
-						"type": "string"
-					},
-					"label": {
-						"type": "string"
-					},
-					"status": {
-						"type": "string"
-					},
-					"created_by": {
-						"type": "string"
-					},
-					"updated_by": {
-						"type": "string"
-					},
-					"allow_filtering": {
-						"type": "boolean"
-					},
-					"data_type": {
-						"type": "string"
-					},
-					"created_at": {
-						"type": "string"
-					},
-					"updated_at": {
-						"type": "string"
-					},
-					"deleted_at": {
-						"type": "null"
-					},
-					"organization_id": {
-						"type": "string"
-					},
-					"has_entities": {
-						"type": "boolean"
+				"type": "array",
+				"items": {
+					"type": "object",
+					"properties": {
+						"id": { "type": "number" },
+						"value": { "type": "string" },
+						"label": { "type": "string" },
+						"status": { "type": "string" },
+						"created_by": { "type": "string" },
+						"updated_by": { "type": "string" },
+						"allow_filtering": { "type": "boolean" },
+						"data_type": { "type": "string" },
+						"organization_id": { "type": "string" },
+						"parent_id": { "type": "null" },
+						"allow_custom_entities": { "type": "boolean" },
+						"has_entities": { "type": "boolean" },
+						"model_names": {
+							"type": "array",
+							"items": { "type": "string" }
+						},
+						"required": { "type": "boolean" },
+						"regex": { "type": "null" },
+						"report_filter": { "type": "boolean" },
+						"meta": { "type": "null" },
+						"created_at": { "type": "string" },
+						"updated_at": { "type": "string" },
+						"deleted_at": { "type": "null" }
 					}
 				}
 			},
 			"meta": {
 				"type": "object",
 				"properties": {
-					"correlation": {
-						"type": "string"
+					"formsVersion": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"id": { "type": "number" },
+								"type": { "type": "string" },
+								"version": { "type": "number" }
+							}
+						}
 					},
-					"meeting_platform": {
-						"type": "string"
-					}
+					"correlation": { "type": "string" },
+					"meetingPlatform": { "type": "string" }
 				}
 			}
 		}

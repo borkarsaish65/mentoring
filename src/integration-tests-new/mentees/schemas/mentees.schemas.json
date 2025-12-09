@@ -114,6 +114,9 @@
 			"result": {
 				"type": "object",
 				"properties": {
+					"value": {
+						"type": "string"
+					},
 					"platform": {
 						"type": "string"
 					},
@@ -125,10 +128,21 @@
 			"meta": {
 				"type": "object",
 				"properties": {
+					"formsVersion": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"id": { "type": "number" },
+								"type": { "type": "string" },
+								"version": { "type": "number" }
+							}
+						}
+					},
 					"correlation": {
 						"type": "string"
 					},
-					"meeting_platform": {
+					"meetingPlatform": {
 						"type": "string"
 					}
 				}
@@ -163,35 +177,44 @@
 	},
 	"GET_/mentoring/v1/mentees/homeFeed": {
 		"type": "object",
-
 		"properties": {
+			"responseCode": { "type": "string" },
 			"message": { "type": "string" },
-
 			"result": {
 				"type": "object",
 				"properties": {
-					"all_sessions": {
-						"type": "array"
-					},
-					"allSessions_count": {
-						"type": ["number", "integer"]
-					},
 					"my_sessions": {
 						"type": "array"
 					},
 					"my_sessions_count": {
 						"type": ["number", "integer"]
 					}
-				},
-				"required": ["all_sessions", "allSessions_count", "my_sessions", "my_sessions_count"],
-				"additionalProperties": true
+				}
 			},
-
-			"meta": {}
+			"meta": {
+				"type": "object",
+				"properties": {
+					"type": { "type": "string" },
+					"data": { "type": "array" },
+					"formsVersion": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"id": { "type": "number" },
+								"type": { "type": "string" },
+								"version": { "type": "number" }
+							},
+							"required": ["id", "type", "version"]
+						}
+					},
+					"correlation": { "type": "string" },
+					"meetingPlatform": { "type": "string" }
+				},
+				"required": ["type", "data", "correlation", "meetingPlatform"]
+			}
 		},
-
-		"required": ["message", "result"],
-
+		"required": ["responseCode", "message", "result", "meta"],
 		"additionalProperties": true
 	},
 	"GET_/mentoring/v1/mentees/list": {

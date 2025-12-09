@@ -1,6 +1,5 @@
 {
 	"POST_mentoring_v1_default-rule_create": {
-		"$schema": "http://json-schema.org/draft-04/schema#",
 		"type": "object",
 		"properties": {
 			"responseCode": {
@@ -46,7 +45,7 @@
 						"type": "object",
 						"properties": {
 							"exclude": {
-								"type": "string"
+								"type": "boolean"
 							}
 						}
 					},
@@ -99,7 +98,6 @@
 		}
 	},
 	"GET_mentoring_v1_default-rule_read": {
-		"$schema": "http://json-schema.org/draft-04/schema#",
 		"type": "object",
 		"properties": {
 			"responseCode": {
@@ -209,7 +207,6 @@
 		}
 	},
 	"PATCH_mentoring_v1_default-rule_update_id": {
-		"$schema": "http://json-schema.org/draft-04/schema#",
 		"type": "object",
 		"properties": {
 			"responseCode": {
@@ -254,7 +251,7 @@
 							"type": "object",
 							"properties": {
 								"exclude": {
-									"type": "string"
+									"type": "boolean"
 								}
 							}
 						},
@@ -311,7 +308,6 @@
 		}
 	},
 	"DELETE_mentoring_v1_default-rule_delete_id": {
-		"$schema": "http://json-schema.org/draft-04/schema#",
 		"type": "object",
 		"properties": {
 			"responseCode": {

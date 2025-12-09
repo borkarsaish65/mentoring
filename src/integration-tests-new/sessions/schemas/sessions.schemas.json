@@ -210,6 +210,53 @@
 			}
 		}
 	},
+	"GET_/mentoring/v1/mentees/joinSession/{sessionId}": {
+		"type": "object",
+		"properties": {
+			"responseCode": {
+				"type": "string"
+			},
+			"message": {
+				"type": "string"
+			},
+			"result": {
+				"type": "object",
+				"properties": {
+					"value": {
+						"type": "string"
+					},
+					"platform": {
+						"type": "string"
+					},
+					"link": {
+						"type": "string"
+					}
+				}
+			},
+			"meta": {
+				"type": "object",
+				"properties": {
+					"formsVersion": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"id": { "type": "number" },
+								"type": { "type": "string" },
+								"version": { "type": "number" }
+							}
+						}
+					},
+					"correlation": {
+						"type": "string"
+					},
+					"meetingPlatform": {
+						"type": "string"
+					}
+				}
+			}
+		}
+	},
 	"POST_/mentoring/v1/sessions/enroll/{sessionId}": {},
 	"POST_/mentoring/v1/sessions/unenroll/{sessionId}": {},
 	"GET_/mentoring/v1/sessions/start/{sessionId}": {},

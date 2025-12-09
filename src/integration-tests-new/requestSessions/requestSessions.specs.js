@@ -1,9 +1,7 @@
 jest.setTimeout(60000) // Set default timeout to 30 seconds
 const request = require('supertest')
-const Ajv = require('ajv')
 const BASE = process.env.BASE_URL || 'http://localhost:3000'
 const TOKEN = process.env.TEST_BEARER_TOKEN || 'test-token'
-const ajv = new Ajv({ strict: false })
 const commonHelper = require('@commonTests')
 let menteeDetails = null // This user will make the request
 let mentorDetails = null // This user will be the requestee
@@ -66,12 +64,7 @@ describe('Session Request Lifecycle', () => {
 			expect(res.status).toBe(201)
 			// validate response schema
 			const schema = schemas['POST_mentoring_v1_requestSessions_create']
-			const validate = ajv.compile(schema)
-			const valid = validate(res.body)
-			if (!valid) {
-				console.error('Schema validation errors:', validate.errors)
-			}
-			expect(valid).toBe(true)
+			expect(res.body).toMatchSchema(schema)
 			createdRequestSessionId = res.body.result.id // Capture the created request ID
 			expect(createdRequestSessionId).toBeDefined()
 		})
@@ -107,13 +100,7 @@ describe('Session Request Lifecycle', () => {
 			const res = await req
 			expect(res.status).toBe(201)
 			// validate response schema
-			const schema = schemas['POST_mentoring_v1_requestSessions_accept']
-			const validate = ajv.compile(schema)
-			const valid = validate(res.body)
-			if (!valid) {
-				console.error('Schema validation errors:', validate.errors)
-			}
-			expect(valid).toBe(true)
+			expect(res.body).toMatchSchema(schemas['POST_mentoring_v1_requestSessions_accept'])
 		})
 
 		test('should return 401/403 when unauthorized', async () => {
@@ -174,13 +161,7 @@ describe('Session Request Rejection Lifecycle', () => {
 
 			expect(res.status).toBe(201)
 
-			const schema = schemas['POST_mentoring_v1_requestSessions_reject']
-			const validate = ajv.compile(schema)
-			const valid = validate(res.body)
-			if (!valid) {
-				console.error('Schema validation errors:', validate.errors)
-			}
-			expect(valid).toBe(true)
+			expect(res.body).toMatchSchema(schemas['POST_mentoring_v1_requestSessions_reject'])
 		})
 	})
 })
@@ -193,16 +174,10 @@ describe('Standalone requestSessions endpoints', () => {
 			req = req.set('x-auth-token', menteeDetails.token)
 			const res = await req
 
-			expect(res.status).toBeGreaterThanOrEqual(200)
-			expect(res.status).toBeLessThan(300)
+			expect(res.status).toBe(200)
 			// validate response schema
 			const schema = schemas['GET_mentoring_v1_requestSessions_list']
-			const validate = ajv.compile(schema)
-			const valid = validate(res.body)
-			if (!valid) {
-				console.error('Schema validation errors:', validate.errors)
-			}
-			expect(valid).toBe(true)
+			expect(res.body).toMatchSchema(schema)
 		})
 
 		test('should return 401/403 when unauthorized', async () => {

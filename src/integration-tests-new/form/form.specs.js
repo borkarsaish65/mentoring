@@ -1,21 +1,25 @@
+jest.setTimeout(30000)
 const request = require('supertest')
-const Ajv = require('ajv')
 const BASE = process.env.BASE_URL || 'http://localhost:3000'
-const TOKEN = process.env.TEST_BEARER_TOKEN || 'test-token'
-const ajv = new Ajv({ strict: false })
+const commonHelper = require('@commonTests')
 
 const schemas = require('./schemas/form.schemas.json')
+
+let adminDetails = null
+beforeAll(async () => {
+	adminDetails = await commonHelper.adminLogin()
+})
 
 describe('form endpoints generated from api-doc.yaml', () => {
 	describe('POST /mentoring/v1/form/create', () => {
 		test('should return 200', async () => {
 			const url = `/mentoring/v1/form/create`
 			let req = request(BASE).post(url)
-			req = req.set('x-auth-token', 'string')
+			req = req.set('x-auth-token', adminDetails.token)
 			req = req
 				.send({
-					type: 'session',
-					sub_type: 'createSessions',
+					type: `session_${Date.now()}`,
+					sub_type: `createSessions_${Date.now()}`,
 					data: {
 						template_name: 'defaultTemplate',
 						fields: {
@@ -64,16 +68,8 @@ describe('form endpoints generated from api-doc.yaml', () => {
 				})
 				.set('Content-Type', 'application/json')
 			const res = await req
-			expect(res.status).toBeGreaterThanOrEqual(200)
-			expect(res.status).toBeLessThan(300)
-			// validate response schema
-			const schema = schemas['POST_/mentoring/v1/form/create']
-			const validate = ajv.compile(schema)
-			const valid = validate(res.body)
-			if (!valid) {
-				console.error('Schema validation errors:', validate.errors)
-			}
-			expect(valid).toBe(true)
+			expect(res.status).toBe(201)
+			expect(res.body).toMatchSchema(schemas['POST_/mentoring/v1/form/create'])
 		})
 
 		test('should return 401/403 when unauthorized', async () => {
@@ -84,10 +80,10 @@ describe('form endpoints generated from api-doc.yaml', () => {
 	})
 
 	describe('PUT /mentoring/v1/form/update/{formId}', () => {
-		test('should return 200', async () => {
+		test('should return 202', async () => {
 			const url = `/mentoring/v1/form/update/1`
 			let req = request(BASE).put(url)
-			req = req.set('x-auth-token', 'string')
+			req = req.set('x-auth-token', adminDetails.token)
 			req = req
 				.send({
 					type: 'session',
@@ -140,16 +136,8 @@ describe('form endpoints generated from api-doc.yaml', () => {
 				})
 				.set('Content-Type', 'application/json')
 			const res = await req
-			expect(res.status).toBeGreaterThanOrEqual(200)
-			expect(res.status).toBeLessThan(300)
-			// validate response schema
-			const schema = schemas['PUT_/mentoring/v1/form/update/{formId}']
-			const validate = ajv.compile(schema)
-			const valid = validate(res.body)
-			if (!valid) {
-				console.error('Schema validation errors:', validate.errors)
-			}
-			expect(valid).toBe(true)
+			expect(res.status).toBe(202)
+			expect(res.body).toMatchSchema(schemas['PUT_/mentoring/v1/form/update/{formId}'])
 		})
 
 		test('should return 401/403 when unauthorized', async () => {
@@ -163,7 +151,7 @@ describe('form endpoints generated from api-doc.yaml', () => {
 		test('should return 200', async () => {
 			const url = `/mentoring/v1/form/read/1`
 			let req = request(BASE).post(url)
-			req = req.set('x-auth-token', 'string')
+			req = req.set('x-auth-token', adminDetails.token)
 			req = req
 				.send({
 					type: 'session',
@@ -171,16 +159,8 @@ describe('form endpoints generated from api-doc.yaml', () => {
 				})
 				.set('Content-Type', 'application/json')
 			const res = await req
-			expect(res.status).toBeGreaterThanOrEqual(200)
-			expect(res.status).toBeLessThan(300)
-			// validate response schema
-			const schema = schemas['POST_/mentoring/v1/form/read/{formId}']
-			const validate = ajv.compile(schema)
-			const valid = validate(res.body)
-			if (!valid) {
-				console.error('Schema validation errors:', validate.errors)
-			}
-			expect(valid).toBe(true)
+			expect(res.status).toBe(200)
+			expect(res.body).toMatchSchema(schemas['POST_/mentoring/v1/form/read/{formId}'])
 		})
 
 		test('should return 401/403 when unauthorized', async () => {

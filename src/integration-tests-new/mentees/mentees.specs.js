@@ -1,9 +1,7 @@
 jest.setTimeout(100000)
 const request = require('supertest')
-const Ajv = require('ajv')
 const BASE = process.env.BASE_URL || 'http://localhost:3000'
 const TOKEN = process.env.TEST_BEARER_TOKEN || 'test-token'
-const ajv = new Ajv({ strict: false })
 const commonHelper = require('@commonTests')
 const schemas = require('./schemas/mentees.schemas.json')
 let userDetails = null
@@ -36,14 +34,7 @@ describe('mentees endpoints generated from api-doc.yaml', () => {
 	//     const res = await req;
 	//     expect(res.status).toBeGreaterThanOrEqual(200);
 	//     expect(res.status).toBeLessThan(300);
-	//     // validate response schema
-	//     const schema = schemas['GET_/mentoring/v1/mentees/sessions'];
-	//     const validate = ajv.compile(schema);
-	//     const valid = validate(res.body);
-	//     if (!valid) {
-	//       console.error("Schema validation errors:", validate.errors);
-	//     }
-	//     expect(valid).toBe(true);
+	//     expect(res.body).toMatchSchema(schemas['GET_/mentoring/v1/mentees/sessions']);
 	//   });
 
 	//   test('should return 401/403 when unauthorized', async () => {
@@ -62,14 +53,7 @@ describe('mentees endpoints generated from api-doc.yaml', () => {
 	//     const res = await req;
 	//     expect(res.status).toBeGreaterThanOrEqual(200);
 	//     expect(res.status).toBeLessThan(300);
-	//     // validate response schema
-	//     const schema = schemas['GET_/mentoring/v1/mentees/joinSession/{sessionId}'];
-	//     const validate = ajv.compile(schema);
-	//     const valid = validate(res.body);
-	//     if (!valid) {
-	//       console.error("Schema validation errors:", validate.errors);
-	//     }
-	//     expect(valid).toBe(true);
+	//     expect(res.body).toMatchSchema(schemas['GET_/mentoring/v1/mentees/joinSession/{sessionId}']);
 	//   });
 
 	//   test('should return 401/403 when unauthorized', async () => {
@@ -88,14 +72,7 @@ describe('mentees endpoints generated from api-doc.yaml', () => {
 	//     const res = await req;
 	//     expect(res.status).toBeGreaterThanOrEqual(200);
 	//     expect(res.status).toBeLessThan(300);
-	//     // validate response schema
-	//     const schema = schemas['GET_/mentoring/v1/mentees/reports'];
-	//     const validate = ajv.compile(schema);
-	//     const valid = validate(res.body);
-	//     if (!valid) {
-	//       console.error("Schema validation errors:", validate.errors);
-	//     }
-	//     expect(valid).toBe(true);
+	//     expect(res.body).toMatchSchema(schemas['GET_/mentoring/v1/mentees/reports']);
 	//   });
 
 	//   test('should return 401/403 when unauthorized', async () => {
@@ -112,16 +89,8 @@ describe('mentees endpoints generated from api-doc.yaml', () => {
 			let req = request(BASE).get(url)
 			req = req.set('x-auth-token', userDetails.token)
 			const res = await req
-			expect(res.status).toBeGreaterThanOrEqual(200)
-			expect(res.status).toBeLessThan(300)
-			// validate response schema
-			const schema = schemas['GET_/mentoring/v1/mentees/homeFeed']
-			const validate = ajv.compile(schema)
-			const valid = validate(res.body)
-			if (!valid) {
-				console.error('Schema validation errors:', validate.errors)
-			}
-			expect(valid).toBe(true)
+			expect(res.status).toBe(200)
+			expect(res.body).toMatchSchema(schemas['GET_/mentoring/v1/mentees/homeFeed'])
 		})
 
 		test('should return 401/403 when unauthorized', async () => {
@@ -137,16 +106,8 @@ describe('mentees endpoints generated from api-doc.yaml', () => {
 			let req = request(BASE).get(url)
 			req = req.set('x-auth-token', userDetails.token)
 			const res = await req
-			expect(res.status).toBeGreaterThanOrEqual(200)
-			expect(res.status).toBeLessThan(300)
-			// validate response schema
-			const schema = schemas['GET_/mentoring/v1/mentees/list']
-			const validate = ajv.compile(schema)
-			const valid = validate(res.body)
-			if (!valid) {
-				console.error('Schema validation errors:', validate.errors)
-			}
-			expect(valid).toBe(true)
+			expect(res.status).toBe(200)
+			expect(res.body).toMatchSchema(schemas['GET_/mentoring/v1/mentees/list'])
 		})
 
 		test('should return 401/403 when unauthorized', async () => {

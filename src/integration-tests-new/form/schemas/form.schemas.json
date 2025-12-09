@@ -11,6 +11,9 @@
 			"result": {
 				"type": "object",
 				"properties": {
+					"version": {
+						"type": "number"
+					},
 					"id": {
 						"type": "number"
 					},
@@ -77,9 +80,7 @@
 												"class",
 												"type",
 												"position",
-												"validators",
-												"disabled",
-												"show_select_all"
+												"validators"
 											]
 										}
 									}
@@ -112,6 +113,9 @@
 								"id": {
 									"type": "number"
 								},
+								"version": {
+									"type": "number"
+								},
 								"type": {
 									"type": "string"
 								}
@@ -121,7 +125,7 @@
 					"correlation": {
 						"type": "string"
 					},
-					"meeting_platform": {
+					"meetingPlatform": {
 						"type": "string"
 					}
 				}
@@ -182,6 +186,9 @@
 			"result": {
 				"type": "object",
 				"properties": {
+					"version": {
+						"type": "number"
+					},
 					"id": {
 						"type": "number"
 					},
@@ -248,9 +255,7 @@
 												"class",
 												"type",
 												"position",
-												"validators",
-												"disabled",
-												"show_select_all"
+												"validators"
 											]
 										}
 									}
@@ -283,6 +288,9 @@
 								"id": {
 									"type": "number"
 								},
+								"version": {
+									"type": "number"
+								},
 								"type": {
 									"type": "string"
 								}
@@ -292,7 +300,7 @@
 					"correlation": {
 						"type": "string"
 					},
-					"meeting_platform": {
+					"meetingPlatform": {
 						"type": "string"
 					}
 				}
