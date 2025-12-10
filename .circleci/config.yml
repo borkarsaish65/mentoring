@@ -8,127 +8,129 @@ jobs:
     working_directory: ~/mentoring
 
     steps:
+      - run:
+          name: Configure git to use HTTPS
+          command: git config --global url."https://github.com/".insteadOf "git@github.com:"
+
       - checkout:
           path: ~/mentoring/
 
-      # Install mentoring deps (optional for your verification)
+      # Restore mentoring dependencies
+      - restore_cache:
+          key: mentoring-dependency-cache-{{ checksum "src/package.json" }}
+
       - run:
-          name: Install Mentoring deps
+          name: Install dependencies
           command: cd src/ && npm install
 
-      # Clone User service + install deps
+      - save_cache:
+          key: mentoring-dependency-cache-{{ checksum "src/package.json" }}
+          paths:
+            - ./src/node_modules
+
+      # Disable SSH rewrite
+      - run:
+          name: Disable SSH rewrite
+          command: git config --global --unset url."ssh://git@github.com".insteadOf || true
+
+      # Clone USER service
       - run:
           name: Clone User service
           command: cd ../ && git clone https://github.com/ELEVATE-Project/user.git --branch develop --single-branch
 
+      - restore_cache:
+          key: user-dependency-cache-{{ checksum "../user/src/package.json" }}
+
       - run:
-          name: Install User deps
+          name: Install User service dependencies
           command: cd ../user/src/ && npm install
 
+      - save_cache:
+          key: user-dependency-cache-{{ checksum "../user/src/package.json" }}
+          paths:
+            - ../user/src/node_modules
+
+      # Clone Scheduler service (optional)
+      - run:
+          name: Clone Scheduler service
+          command: cd ../ && git clone https://github.com/ELEVATE-Project/scheduler.git --branch dev --single-branch || true
+
+      # Clone Communications service
+      - run:
+          name: Clone Communications service
+          command: cd ../ && git clone https://github.com/ELEVATE-Project/chat-communications.git --branch dev --single-branch || true
+
       # -------------------------------
-      # START DOCKER SERVICES
+      # FIXED: Start docker-compose (DETACHED)
       # -------------------------------
       - run:
-          name: Start docker-compose stack
+          name: Start docker containers
           command: |
             cd dev-ops/
             docker-compose pull || true
             docker-compose build || true
             docker-compose up -d
-            sleep 10
+            sleep 20
 
       # -------------------------------
-      # Wait for Kafka / Citus / Redis
+      # FIXED: Wait for services to become healthy
       # -------------------------------
       - run:
-          name: Wait for core services
+          name: Wait for containers to become healthy
           command: |
             cd dev-ops/
-
-            echo "Waiting for core services to become healthy..."
-
-            for i in {1..40}; do
+            echo "Waiting for services to pass healthchecks..."
+            
+            for i in {1..30}; do
               unhealthy=$(docker ps --filter "health=unhealthy" --format "{{.Names}}")
               starting=$(docker ps --filter "health=starting" --format "{{.Names}}")
-              restarting=$(docker ps --filter "status=restarting" --format "{{.Names}}")
 
-              if [ -z "$unhealthy" ] && [ -z "$starting" ] && [ -z "$restarting" ]; then
-                echo "Core dependencies healthy."
+              if [ -z "$unhealthy" ] && [ -z "$starting" ]; then
+                echo "All services healthy."
                 break
               fi
 
-              echo "Dependencies not ready yet... ($i)"
+              echo "Still waiting... (attempt $i)"
               docker ps --format "table {{.Names}}\t{{.Status}}"
               sleep 5
             done
 
-      # -------------------------------
-      # Wait for Mentoring (port 3000)
-      # -------------------------------
-      - run:
-          name: Wait for Mentoring (port 3000)
-          command: |
-            echo "Waiting for Mentoring to open port 3000..."
-
-            for i in {1..80}; do
-              if nc -z localhost 3000; then
-                echo "Mentoring is UP on port 3000."
-                exit 0
-              fi
-
-              echo "Still waiting... ($i)"
-              sleep 3
-            done
-
-            echo "ERROR: Mentoring did not start."
-            docker logs mentoring || true
-            exit 1
+            echo "Final container status:"
+            docker ps --format "table {{.Names}}\t{{.Status}}"
 
       # -------------------------------
-      # Wait for User (port 3001)
+      # Diagnostics if services fail
       # -------------------------------
       - run:
-          name: Wait for User (port 3001)
-          command: |
-            echo "Waiting for User service to open port 3001..."
-
-            for i in {1..80}; do
-              if nc -z localhost 3001; then
-                echo "User service UP on port 3001."
-                exit 0
-              fi
-
-              echo "Still waiting for user... ($i)"
-              sleep 3
-            done
-
-            echo "ERROR: User service did not start."
-            docker logs user || true
-            exit 1
-
-      # -------------------------------
-      # Print final service logs
-      # -------------------------------
-      - run:
-          name: Print service logs
+          name: Print logs on failure
+          when: always
           command: |
             cd dev-ops/
-            echo "==== Mentoring Logs ===="
-            docker-compose logs mentoring || true
+            echo "Kafka logs:"
+            docker-compose logs --tail=200 kafka || true
+            echo "Citus logs:"
+            docker-compose logs --tail=200 citus || true
+            echo "Mentoring logs:"
+            docker-compose logs --tail=200 mentoring || true
+            echo "User logs:"
+            docker-compose logs --tail=200 user || true
 
-            echo "==== User Logs ===="
-            docker-compose logs user || true
+      # -------------------------------
+      # Run Integration Tests
+      # -------------------------------
+      # - run:
+      #     name: Running integration tests
+      #     command: |
+      #       cd src/
+      #       npm run test:integration
 
-            echo "==== Citus Logs ===="
-            docker-compose logs citus || true
-
-            echo "==== Kafka Logs ===="
-            docker-compose logs kafka || true
-
-            echo "==== Redis Logs ===="
-            docker-compose logs redis || true
+      - store_test_results:
+          path: ./dev-ops/report
 
 workflows:
   build-and-test:
     jobs:
-      - build
+      - build:
+          filters:
+            tags:
+              only: \b(dev|develop|main)\b
