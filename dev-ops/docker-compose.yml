@@ -80,10 +80,8 @@ services:
     ports:
       - '3000:3000'
       - '9229:9229'
-    command: >
-      sh -c "npm run db:init && 
-             npm run db:seed:all && 
-             npm run dev"
+    command: ["sh", "/var/src/start.sh"]
+
     environment:
       - KAFKA_URL=kafka:9092
       - USER_SERVICE_HOST=http://user:3001
