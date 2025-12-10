@@ -59,12 +59,7 @@ jobs:
       - run:
           name: Clone Communications service
           command: cd ../ && git clone https://github.com/ELEVATE-Project/chat-communications.git --branch dev --single-branch || true
-     
-      - run:
-          name: Install netcat for port readiness checks
-          command: |
-            sudo apt-get update
-            sudo apt-get install -y netcat
+
       # -------------------------------
       # FIXED: Start docker-compose (DETACHED)
       # -------------------------------
@@ -123,30 +118,12 @@ jobs:
       # -------------------------------
       # Run Integration Tests
       # -------------------------------
-      # - run:
-      #     name: Running integration tests
-      #     command: |
-      #       cd src/
-      #       npm run test:integration
-
-      # -------------------------------
-      # Run Unit Tests
-      # -------------------------------
       - run:
-          name: Wait for Mentoring server startup message
+          name: Running integration tests
           command: |
-            echo "Waiting for server startup log message..."
+            cd src/
+            npm run test:integration
 
-             for i in {1..120}; do
-             if docker logs mentoring 2>&1 | grep -q "Application is running on the port:"; then
-              echo "Server startup detected!"
-              break
-              fi
-
-              echo "Still waiting for application start... ($i)"
-              sleep 3
-            done
-            
       - store_test_results:
           path: ./dev-ops/report
 
