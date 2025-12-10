@@ -1,5 +1,5 @@
 const { Umzug, SequelizeStorage } = require('umzug')
-const { sequelize } = require('../src/models') // <-- this is where Sequelize is initialized
+const { sequelize } = require('../src/database/models') // <-- this is where Sequelize is initialized
 
 async function run() {
 	try {
