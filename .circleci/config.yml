@@ -125,7 +125,7 @@ jobs:
           command: |
             export MENTORING=$(docker ps --format "{{.Names}}" | grep mentoring)
             echo "Waiting for MIGRATION_SUCCESS..."
-            for i in {1..120}; do
+            for i in {1..60}; do
               if docker logs "$MENTORING" 2>&1 | grep -q "MIGRATION_SUCCESS"; then
                 echo "Migrations completed."
                 break
@@ -144,7 +144,7 @@ jobs:
           command: |
             export MENTORING=$(docker ps --format "{{.Names}}" | grep mentoring)
             echo "Waiting for SEEDER_SUCCESS..."
-            for i in {1..120}; do
+            for i in {1..60}; do
               if docker logs "$MENTORING" 2>&1 | grep -q "SEEDER_SUCCESS"; then
                 echo "Seeders completed."
                 break

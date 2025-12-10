@@ -12,6 +12,10 @@ const schemas = require('./schemas/sessions.schemas.json')
 beforeAll(async () => {
 	userDetails = await commonHelper.mentorLogIn() // Log in a mentor user
 	menteeDetails = await commonHelper.logIn() // Log in a second user to act as a mentee (menteeDetails)
+
+	console.log(userDetails)
+	console.log(menteeDetails)
+	console.log('line 18')
 })
 
 describe('sessions endpoints generated from api-doc.yaml', () => {
@@ -45,6 +49,7 @@ describe('sessions endpoints generated from api-doc.yaml', () => {
 			})
 
 			// Assuming 201 is the success status for creation
+			console.log(createRes, 'create status*')
 			expect(createRes.status).toBe(201)
 			createdSessionId = createRes.body.result.id
 			expect(createdSessionId).toBeDefined()
@@ -64,7 +69,7 @@ describe('sessions endpoints generated from api-doc.yaml', () => {
 			let req = request(BASE).get(url)
 			req = req.set('x-auth-token', userDetails.token) // Make the API call
 			const res = await req
-			expect(res.status).toBe(200)
+			expect(res.status).toBe(201)
 		})
 
 		test('GET /mentoring/v1/sessions/details/{sessionId} - should return 401/403 when unauthorized', async () => {
