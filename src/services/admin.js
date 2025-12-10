@@ -35,7 +35,7 @@ class NotificationHelper {
 		orgCode,
 		templateData = {},
 		subjectData = {},
-		tenantCodes,
+		tenantCode,
 	}) {
 		try {
 			if (!templateCode || !recipients?.length) {
@@ -387,7 +387,7 @@ module.exports = class AdminService {
 				// Cache invalidation: Clear mentee cache after removal
 				if (menteeDetailsRemoved > 0) {
 					try {
-						await cacheHelper.mentee.delete(tenantCode, userInfo.organization_code, userId)
+						await cacheHelper.mentee.delete(tenantCode, userId)
 					} catch (cacheError) {
 						console.error(`Cache deletion failed for mentee ${userId}:`, cacheError)
 					}
@@ -642,7 +642,17 @@ module.exports = class AdminService {
 
 			// Unenroll attendees from sessions
 			const sessionIds = removedSessionsDetail.map((session) => session.id)
-			const unenrollCount = await sessionAttendeesQueries.unEnrollAllAttendeesOfSessions(sessionIds)
+			const unenrollDetails = await sessionAttendeesQueries.unEnrollAllAttendeesOfSessions(sessionIds, tenantCode)
+			if (unenrollDetails && unenrollDetails.deletedCount > 0 && Array.isArray(unenrollDetails.deletedRecords)) {
+				for (const menteeData of unenrollDetails.deletedRecords) {
+					try {
+						await cacheHelper.mentee.delete(tenantCode, menteeData.organization_code, menteeData.mentee_id)
+					} catch (cacheError) {
+						console.error(`Cache deletion failed for mentee ${menteeId}:`, cacheError)
+					}
+				}
+			}
+
 			return notificationResult
 		} catch (error) {
 			console.error('An error occurred in notifySessionAttendees:', error)
@@ -1245,7 +1255,7 @@ module.exports = class AdminService {
 
 			// Cache invalidation: Clear mentor cache after removal
 			try {
-				await cacheHelper.mentor.delete(tenantCode, userOrgCode, mentorUserId)
+				await cacheHelper.mentor.delete(tenantCode, mentorUserId)
 			} catch (cacheError) {
 				console.error(`Cache deletion failed for mentor ${mentorUserId}:`, cacheError)
 			}
