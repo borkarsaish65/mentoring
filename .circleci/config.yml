@@ -118,11 +118,60 @@ jobs:
       # -------------------------------
       # Run Integration Tests
       # -------------------------------
+      # -------------------------------
+      # Wait for Mentoring (3000) and User (3001)
+      # -------------------------------
+      - run:
+          name: Wait for Mentoring (3000) and User (3001)
+          command: |
+            echo "Waiting for mentoring on port 3000..."
+            for i in {1..60}; do
+              if nc -z localhost 3000; then
+                echo "Mentoring is UP on port 3000."
+                break
+              fi
+              echo "Port 3000 not open yet... ($i)"
+              sleep 3
+            done
+
+            # Hard fail if still not available
+            if ! nc -z localhost 3000; then
+              echo "ERROR: mentoring never started on port 3000."
+              echo "------- mentoring logs -------"
+              docker logs mentoring || true
+              exit 1
+            fi
+
+            echo "Waiting for user service on port 3001..."
+            for i in {1..60}; do
+              if nc -z localhost 3001; then
+                echo "User service is UP on port 3001."
+                break
+              fi
+              echo "Port 3001 not open yet... ($i)"
+              sleep 3
+            done
+
+            # Hard fail if still not available
+            if ! nc -z localhost 3001; then
+              echo "ERROR: user service never started on port 3001."
+              echo "------- user logs -------"
+              docker logs user || true
+              exit 1
+            fi
+
+            echo "Both services are online. Proceeding to integration tests."
+
+
+      # -------------------------------
+      # Run Integration Tests
+      # -------------------------------
       - run:
           name: Running integration tests
           command: |
             cd src/
             npm run test:integration
+
 
       - store_test_results:
           path: ./dev-ops/report
