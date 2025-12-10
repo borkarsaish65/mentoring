@@ -7,21 +7,8 @@ let baseURL = 'http://localhost:3000'
 //supertest hits the HTTP server (your app)
 let defaultHeaders
 let admin_secret_code = process.env.ADMIN_SECRET_CODE || 'ADMIN_SECRET_CODE'
-let cachedMentee
-let cachedMentor
-let cachedAdmin
+
 const logIn = async () => {
-	if (cachedMentee) {
-		defaultHeaders = {
-			'x-auth-token': 'bearer ' + cachedMentee.token,
-			Connection: 'keep-alive',
-			'Content-Type': 'application/json',
-		}
-		global.request = defaults(supertest(baseURL))
-		global.request.set(defaultHeaders)
-		global.userId = cachedMentee.userId
-		return cachedMentee
-	}
 	try {
 		let request = defaults(supertest('http://localhost:3001'))
 		let waitOn = require('wait-on')
@@ -67,7 +54,6 @@ const logIn = async () => {
 				organizations: res.body.result.user.organizations,
 			}
 
-			cachedMentee = userDetails
 			return userDetails
 		} else {
 			console.error('Error while getting access token')
@@ -78,17 +64,6 @@ const logIn = async () => {
 	}
 }
 const mentorLogIn = async () => {
-	if (cachedMentor) {
-		defaultHeaders = {
-			'x-auth-token': 'bearer ' + cachedMentor.token,
-			Connection: 'keep-alive',
-			'Content-Type': 'application/json',
-		}
-		global.request = defaults(supertest(baseURL))
-		global.request.set(defaultHeaders)
-		global.userId = cachedMentor.userId
-		return cachedMentor
-	}
 	try {
 		let request = defaults(supertest('http://localhost:3001'))
 		var waitOn = require('wait-on')
@@ -135,7 +110,7 @@ const mentorLogIn = async () => {
 				password: password,
 				organizations: res.body.result.user.organizations,
 			}
-			cachedMentor = mentorDetails
+
 			return mentorDetails
 		} else {
 			console.error('Error while getting access token')
@@ -146,17 +121,6 @@ const mentorLogIn = async () => {
 	}
 }
 const adminLogin = async () => {
-	if (cachedAdmin) {
-		defaultHeaders = {
-			'x-auth-token': 'bearer ' + cachedAdmin.token,
-			Connection: 'keep-alive',
-			'Content-Type': 'application/json',
-		}
-		global.request = defaults(supertest(baseURL))
-		global.request.set(defaultHeaders)
-		global.userId = cachedAdmin.userId
-		return cachedAdmin
-	}
 	try {
 		let request = defaults(supertest('http://localhost:3001'))
 		var waitOn = require('wait-on')
@@ -204,7 +168,6 @@ const adminLogin = async () => {
 				organizations: res.body.result.user.organizations,
 			}
 
-			cachedAdmin = adminDetails
 			return adminDetails
 		} else {
 			console.error('Error while getting access token')
