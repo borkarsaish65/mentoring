@@ -88,6 +88,7 @@ services:
       - KAFKA_URL=kafka:9092
       - USER_SERVICE_HOST=http://user:3001
       - REDIS_HOST=redis://redis:6379
+      - SCHEDULER_SERVICE_HOST=http://scheduler:4000
       - DEV_DATABASE_URL=postgres://postgres:postgres@citus:5432/elevate-mentoring
       - ENABLE_CHAT=false
       - ADMIN_SECRET_CODE=ADMIN_SECRET_CODE
@@ -119,6 +120,7 @@ services:
     environment:
       - KAFKA_URL=kafka:9092
       - REDIS_HOST=redis://redis:6379
+      - SCHEDULER_SERVICE_HOST=http://scheduler:4000
       - DEV_DATABASE_URL=postgres://postgres:postgres@citus:5432/mentoring_user
       - ENABLE_EMAIL_OTP_VERIFICATION=false
       - ADMIN_SECRET_CODE=ADMIN_SECRET_CODE
