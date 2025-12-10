@@ -102,37 +102,37 @@ services:
     env_file:
       - ./integration_test.mentoring.env
 
-  # user:
-  #   build: '../../user/' # Preserved from your old file
-  #   image: elevate/user:2.4
-  #   volumes:
-  #     - ../../user/src/:/var/src
-  #   ports:
-  #     - '3001:3001'
-  #    # - '9229:9229'
-  #   command: >
-  #     sh -c "sleep 20 && 
-  #            npm run db:init && 
-  #            npm run db:seed:all && 
-  #            nodemon --trace-warnings app.js"
-  #   environment:
-  #     - KAFKA_URL=kafka:9092
-  #     - REDIS_HOST=redis://redis:6379
-  #     - SCHEDULER_SERVICE_HOST=http://scheduler:4000
-  #     - DEV_DATABASE_URL=postgres://postgres:postgres@citus:5432/mentoring_user
-  #     - ENABLE_EMAIL_OTP_VERIFICATION=false
-  #     - ADMIN_SECRET_CODE=ADMIN_SECRET_CODE
-  #   depends_on:
-  #     kafka:
-  #       condition: service_healthy
-  #     citus:
-  #       condition: service_healthy
-  #     redis:
-  #       condition: service_healthy
-  #   networks:
-  #     - elevate_net
-  #   env_file:
-  #     - ./integration_test.user.env
+  user:
+    build: '../../user/' # Preserved from your old file
+    image: elevate/user:2.4
+    volumes:
+      - ../../user/src/:/var/src
+    ports:
+      - '3001:3001'
+     # - '9229:9229'
+    command: >
+      sh -c "sleep 20 && 
+             npm run db:init && 
+             npm run db:seed:all && 
+             nodemon --trace-warnings app.js"
+    environment:
+      - KAFKA_URL=kafka:9092
+      - REDIS_HOST=redis://redis:6379
+      - SCHEDULER_SERVICE_HOST=http://scheduler:4000
+      - DEV_DATABASE_URL=postgres://postgres:postgres@citus:5432/mentoring_user
+      - ENABLE_EMAIL_OTP_VERIFICATION=false
+      - ADMIN_SECRET_CODE=ADMIN_SECRET_CODE
+    depends_on:
+      kafka:
+        condition: service_healthy
+      citus:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - elevate_net
+    env_file:
+      - ./integration_test.user.env
 
 networks:
   elevate_net:
