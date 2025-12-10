@@ -85,8 +85,6 @@ const mentorLogIn = async () => {
 			secretCode: 'secret-code',
 		})
 
-		console.log(res.body, '<-- 87')
-
 		res = await request.post('/user/v1/account/login').set('origin', 'localhost').send({
 			identifier: email,
 			password: 'PassworD@@@123',
