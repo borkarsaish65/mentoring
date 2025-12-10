@@ -8,6 +8,9 @@ jobs:
     working_directory: ~/mentoring
 
     steps:
+      # ----------------------------------------------
+      # Git Setup
+      # ----------------------------------------------
       - run:
           name: Configure git to use HTTPS
           command: git config --global url."https://github.com/".insteadOf "git@github.com:"
@@ -15,12 +18,14 @@ jobs:
       - checkout:
           path: ~/mentoring/
 
-      # Restore mentoring dependencies
+      # ----------------------------------------------
+      # Install Mentoring dependencies
+      # ----------------------------------------------
       - restore_cache:
           key: mentoring-dependency-cache-{{ checksum "src/package.json" }}
 
       - run:
-          name: Install dependencies
+          name: Install mentoring dependencies
           command: cd src/ && npm install
 
       - save_cache:
@@ -28,12 +33,13 @@ jobs:
           paths:
             - ./src/node_modules
 
-      # Disable SSH rewrite
+      # ----------------------------------------------
+      # Clone Required Microservices
+      # ----------------------------------------------
       - run:
           name: Disable SSH rewrite
           command: git config --global --unset url."ssh://git@github.com".insteadOf || true
 
-      # Clone USER service
       - run:
           name: Clone User service
           command: cd ../ && git clone https://github.com/ELEVATE-Project/user.git --branch develop --single-branch
@@ -50,131 +56,142 @@ jobs:
           paths:
             - ../user/src/node_modules
 
-      # Clone Scheduler service (optional)
       - run:
-          name: Clone Scheduler service
+          name: Clone Scheduler service (optional)
           command: cd ../ && git clone https://github.com/ELEVATE-Project/scheduler.git --branch dev --single-branch || true
 
-      # Clone Communications service
       - run:
           name: Clone Communications service
           command: cd ../ && git clone https://github.com/ELEVATE-Project/chat-communications.git --branch dev --single-branch || true
 
-      # -------------------------------
-      # FIXED: Start docker-compose (DETACHED)
-      # -------------------------------
+      # =============================================================
+      # STARTUP: RUN DOCKER-COMPOSE STACK + HEALTH & PORT READINESS
+      # =============================================================
+
+      # ----------------------------------------------
+      # Start docker-compose
+      # ----------------------------------------------
       - run:
-          name: Start docker containers
+          name: Start docker-compose stack
           command: |
             cd dev-ops/
+            echo "Pulling and building images..."
             docker-compose pull || true
             docker-compose build || true
-            docker-compose up -d
-            sleep 20
 
-      # -------------------------------
-      # FIXED: Wait for services to become healthy
-      # -------------------------------
+            echo "Starting stack..."
+            docker-compose up -d
+
+            echo "Initial buffer..."
+            sleep 10
+
+      # ----------------------------------------------
+      # Wait for Kafka, Redis, Citus healthchecks
+      # ----------------------------------------------
       - run:
-          name: Wait for containers to become healthy
+          name: Wait for core services (Kafka, Redis, Citus)
           command: |
             cd dev-ops/
-            echo "Waiting for services to pass healthchecks..."
-            
-            for i in {1..30}; do
+            echo "Waiting for dependency services..."
+
+            for i in {1..40}; do
               unhealthy=$(docker ps --filter "health=unhealthy" --format "{{.Names}}")
               starting=$(docker ps --filter "health=starting" --format "{{.Names}}")
+              restarting=$(docker ps --filter "status=restarting" --format "{{.Names}}")
 
-              if [ -z "$unhealthy" ] && [ -z "$starting" ]; then
-                echo "All services healthy."
+              if [ -z "$unhealthy" ] && [ -z "$starting" ] && [ -z "$restarting" ]; then
+                echo "Dependency services healthy."
                 break
               fi
 
-              echo "Still waiting... (attempt $i)"
+              echo "Not ready yet (attempt $i)..."
               docker ps --format "table {{.Names}}\t{{.Status}}"
               sleep 5
             done
 
-            echo "Final container status:"
+            echo "Final dependency statuses:"
             docker ps --format "table {{.Names}}\t{{.Status}}"
 
-      # -------------------------------
-      # Diagnostics if services fail
-      # -------------------------------
+      # ----------------------------------------------
+      # Wait for Mentoring (migrations + seeds + dev server)
+      # ----------------------------------------------
       - run:
-          name: Print logs on failure
-          when: always
+          name: Wait for Mentoring service (port 3000)
+          command: |
+            echo "Waiting for mentoring to finish migrations + start server (port 3000)..."
+
+            for i in {1..80}; do
+              if nc -z localhost 3000; then
+                echo "Mentoring READY on port 3000."
+                exit 0
+              fi
+
+              echo "Still waiting... ($i)"
+              sleep 3
+            done
+
+            echo "ERROR: Mentoring never opened port 3000."
+            echo "------ Mentoring Logs ------"
+            docker logs mentoring || true
+            exit 1
+
+      # ----------------------------------------------
+      # Wait for User service (port 3001)
+      # ----------------------------------------------
+      - run:
+          name: Wait for User service (port 3001)
+          command: |
+            echo "Waiting for User service (port 3001)..."
+
+            for i in {1..80}; do
+              if nc -z localhost 3001; then
+                echo "User service READY on port 3001."
+                exit 0
+              fi
+
+              echo "Still waiting... ($i)"
+              sleep 3
+            done
+
+            echo "ERROR: User service never opened port 3001."
+            echo "------ User Logs ------"
+            docker logs user || true
+            exit 1
+
+
+      # ----------------------------------------------
+      # Dump logs on failure
+      # ----------------------------------------------
+      - run:
+          name: Dump logs on failure
+          when: on_fail
           command: |
             cd dev-ops/
-            echo "Kafka logs:"
-            docker-compose logs --tail=200 kafka || true
-            echo "Citus logs:"
-            docker-compose logs --tail=200 citus || true
-            echo "Mentoring logs:"
-            docker-compose logs --tail=200 mentoring || true
-            echo "User logs:"
-            docker-compose logs --tail=200 user || true
 
-      # -------------------------------
+            echo "===== Kafka Logs ====="
+            docker-compose logs kafka || true
+
+            echo "===== Citus Logs ====="
+            docker-compose logs citus || true
+
+            echo "===== Mentoring Logs ====="
+            docker-compose logs mentoring || true
+
+            echo "===== User Logs ====="
+            docker-compose logs user || true
+
+      # ----------------------------------------------
       # Run Integration Tests
-      # -------------------------------
-      # -------------------------------
-      # Wait for Mentoring (3000) and User (3001)
-      # -------------------------------
+      # ----------------------------------------------
       - run:
-          name: Wait for Mentoring (3000) and User (3001)
-          command: |
-            echo "Waiting for mentoring on port 3000..."
-            for i in {1..60}; do
-              if nc -z localhost 3000; then
-                echo "Mentoring is UP on port 3000."
-                break
-              fi
-              echo "Port 3000 not open yet... ($i)"
-              sleep 3
-            done
-
-            # Hard fail if still not available
-            if ! nc -z localhost 3000; then
-              echo "ERROR: mentoring never started on port 3000."
-              echo "------- mentoring logs -------"
-              docker logs mentoring || true
-              exit 1
-            fi
-
-            echo "Waiting for user service on port 3001..."
-            for i in {1..60}; do
-              if nc -z localhost 3001; then
-                echo "User service is UP on port 3001."
-                break
-              fi
-              echo "Port 3001 not open yet... ($i)"
-              sleep 3
-            done
-
-            # Hard fail if still not available
-            if ! nc -z localhost 3001; then
-              echo "ERROR: user service never started on port 3001."
-              echo "------- user logs -------"
-              docker logs user || true
-              exit 1
-            fi
-
-            echo "Both services are online. Proceeding to integration tests."
-
-
-      # -------------------------------
-      # Run Integration Tests
-      # -------------------------------
-      - run:
-          name: Running integration tests
+          name: Run integration tests
           command: |
             cd src/
             npm run test:integration
 
-
       - store_test_results:
           path: ./dev-ops/report
+
 
 workflows:
   build-and-test:
