@@ -60,6 +60,10 @@ jobs:
           name: Clone Communications service
           command: cd ../ && git clone https://github.com/ELEVATE-Project/chat-communications.git --branch dev --single-branch || true
 
+
+      - run:
+          name: Copy config.json into mentoring src
+          command: cp dev-ops/sample_config.json src/config.json
       # -------------------------------
       # FIXED: Start docker-compose (DETACHED)
       # -------------------------------
