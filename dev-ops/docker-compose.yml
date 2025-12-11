@@ -74,6 +74,7 @@ services:
     image: elevate/mentoring:2.4
     volumes:
       - ../src/:/var/src
+      - ./configs/kafka.ci.js:/var/src/configs/kafka.js:ro
     ports:
       - '3000:3000'
       - '9229:9229'
