@@ -1,8 +1,6 @@
 const request = require('supertest')
-const Ajv = require('ajv')
 const BASE = process.env.BASE_URL || 'http://localhost:3000'
 const TOKEN = process.env.TEST_BEARER_TOKEN || 'test-token'
-const ajv = new Ajv({ strict: false })
 
 const schemas = require('./schemas/report-type.schemas.json')
 
@@ -18,16 +16,10 @@ describe('report-type endpoints generated from api-doc.yaml', () => {
 				})
 				.set('Content-Type', 'application/json')
 			const res = await req
-			expect(res.status).toBeGreaterThanOrEqual(200)
-			expect(res.status).toBeLessThan(300)
+			expect(res.status).toBe(201)
 			// validate response schema
 			const schema = schemas['POST_mentoring_v1_report-type_create']
-			const validate = ajv.compile(schema)
-			const valid = validate(res.body)
-			if (!valid) {
-				console.error('Schema validation errors:', validate.errors)
-			}
-			expect(valid).toBe(true)
+			expect(res.body).toMatchSchema(schema)
 		})
 
 		test('should return 400/422 for invalid body', async () => {
@@ -44,18 +36,12 @@ describe('report-type endpoints generated from api-doc.yaml', () => {
 		test('should return 200', async () => {
 			const url = `/mentoring/v1/report-type/read?title=random_title`
 			let req = request(BASE).get(url)
-			req = req.set('x-auth-token', 'bearer {{token}}')
+			req = req.set('x-auth-token', TOKEN)
 			const res = await req
-			expect(res.status).toBeGreaterThanOrEqual(200)
-			expect(res.status).toBeLessThan(300)
+			expect(res.status).toBe(200)
 			// validate response schema
 			const schema = schemas['GET_mentoring_v1_report-type_read']
-			const validate = ajv.compile(schema)
-			const valid = validate(res.body)
-			if (!valid) {
-				console.error('Schema validation errors:', validate.errors)
-			}
-			expect(valid).toBe(true)
+			expect(res.body).toMatchSchema(schema)
 		})
 	})
 
@@ -63,23 +49,17 @@ describe('report-type endpoints generated from api-doc.yaml', () => {
 		test('should return 200', async () => {
 			const url = `/mentoring/v1/report-type/update?id=1`
 			let req = request(BASE).post(url)
-			req = req.set('x-auth-token', 'bearer {{token}}')
+			req = req.set('x-auth-token', TOKEN)
 			req = req
 				.send({
 					title: 'string',
 				})
 				.set('Content-Type', 'application/json')
 			const res = await req
-			expect(res.status).toBeGreaterThanOrEqual(200)
-			expect(res.status).toBeLessThan(300)
+			expect(res.status).toBe(200)
 			// validate response schema
 			const schema = schemas['POST_mentoring_v1_report-type_update']
-			const validate = ajv.compile(schema)
-			const valid = validate(res.body)
-			if (!valid) {
-				console.error('Schema validation errors:', validate.errors)
-			}
-			expect(valid).toBe(true)
+			expect(res.body).toMatchSchema(schema)
 		})
 	})
 
@@ -89,16 +69,10 @@ describe('report-type endpoints generated from api-doc.yaml', () => {
 			let req = request(BASE).delete(url)
 			req = req.set('x-auth-token', 'bearer {{token}}')
 			const res = await req
-			expect(res.status).toBeGreaterThanOrEqual(200)
-			expect(res.status).toBeLessThan(300)
+			expect(res.status).toBe(200)
 			// validate response schema
 			const schema = schemas['DELETE_mentoring_v1_report-type_delete']
-			const validate = ajv.compile(schema)
-			const valid = validate(res.body)
-			if (!valid) {
-				console.error('Schema validation errors:', validate.errors)
-			}
-			expect(valid).toBe(true)
+			expect(res.body).toMatchSchema(schema)
 		})
 	})
 })

@@ -194,16 +194,10 @@ describe('Standalone requestSessions endpoints', () => {
       let req = request(BASE).get(url);
       req = req.set('x-auth-token', "test-token");
       const res = await req;
-      expect(res.status).toBeGreaterThanOrEqual(200);
-      expect(res.status).toBeLessThan(300);
+      expect(res.status).toBe(200);
       // validate response schema
       const schema = schemas['GET_mentoring_v1_requestSessions_getDetails'];
-      const validate = ajv.compile(schema);
-      const valid = validate(res.body);
-      if (!valid) {
-        console.error("Schema validation errors:", validate.errors);
-      }
-      expect(valid).toBe(true);
+      expect(res.body).toMatchSchema(schema);
     });
 
     test('should return 401/403 when unauthorized', async () => {
@@ -220,16 +214,10 @@ describe('Standalone requestSessions endpoints', () => {
       let req = request(BASE).get(url);
       req = req.set('x-auth-token', "test-token");
       const res = await req;
-      expect(res.status).toBeGreaterThanOrEqual(200);
-      expect(res.status).toBeLessThan(300);
+      expect(res.status).toBe(200);
       // validate response schema
       const schema = schemas['GET_mentoring_v1_requestSessions_userAvailability'];
-      const validate = ajv.compile(schema);
-      const valid = validate(res.body);
-      if (!valid) {
-        console.error("Schema validation errors:", validate.errors);
-      }
-      expect(valid).toBe(true);
+      expect(res.body).toMatchSchema(schema);
     });
 
     test('should return 401/403 when unauthorized', async () => {
@@ -249,16 +237,10 @@ describe('Standalone requestSessions endpoints', () => {
   "request_session_id": "string"
 }).set('Content-Type', 'application/json');
       const res = await req;
-      expect(res.status).toBeGreaterThanOrEqual(200);
-      expect(res.status).toBeLessThan(300);
+      expect(res.status).toBe(201);
       // validate response schema
       const schema = schemas['POST_mentoring_v1_requestSessions_accept'];
-      const validate = ajv.compile(schema);
-      const valid = validate(res.body);
-      if (!valid) {
-        console.error("Schema validation errors:", validate.errors);
-      }
-      expect(valid).toBe(true);
+      expect(res.body).toMatchSchema(schema);
     });
 
     test('should return 401/403 when unauthorized', async () => {
@@ -287,16 +269,10 @@ describe('Standalone requestSessions endpoints', () => {
   "request_session_id": "string"
 }).set('Content-Type', 'application/json');
       const res = await req;
-      expect(res.status).toBeGreaterThanOrEqual(200);
-      expect(res.status).toBeLessThan(300);
+      expect(res.status).toBe(201);
       // validate response schema
       const schema = schemas['POST_mentoring_v1_requestSessions_reject'];
-      const validate = ajv.compile(schema);
-      const valid = validate(res.body);
-      if (!valid) {
-        console.error("Schema validation errors:", validate.errors);
-      }
-      expect(valid).toBe(true);
+      expect(res.body).toMatchSchema(schema);
     });
 
     test('should return 401/403 when unauthorized', async () => {

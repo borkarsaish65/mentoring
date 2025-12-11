@@ -32,8 +32,7 @@ describe('mentees endpoints generated from api-doc.yaml', () => {
 	//     let req = request(BASE).get(url);
 	//     req = req.set('x-auth-token', "string");
 	//     const res = await req;
-	//     expect(res.status).toBeGreaterThanOrEqual(200);
-	//     expect(res.status).toBeLessThan(300);
+	//     expect(res.status).toBe(200);
 	//     expect(res.body).toMatchSchema(schemas['GET_/mentoring/v1/mentees/sessions']);
 	//   });
 
@@ -51,8 +50,7 @@ describe('mentees endpoints generated from api-doc.yaml', () => {
 	//     let req = request(BASE).get(url);
 	//     req = req.set('x-auth-token', "string");
 	//     const res = await req;
-	//     expect(res.status).toBeGreaterThanOrEqual(200);
-	//     expect(res.status).toBeLessThan(300);
+	//     expect(res.status).toBe(200);
 	//     expect(res.body).toMatchSchema(schemas['GET_/mentoring/v1/mentees/joinSession/{sessionId}']);
 	//   });
 
@@ -70,8 +68,7 @@ describe('mentees endpoints generated from api-doc.yaml', () => {
 	//     let req = request(BASE).get(url);
 	//     req = req.set('x-auth-token', "string");
 	//     const res = await req;
-	//     expect(res.status).toBeGreaterThanOrEqual(200);
-	//     expect(res.status).toBeLessThan(300);
+	//     expect(res.status).toBe(200);
 	//     expect(res.body).toMatchSchema(schemas['GET_/mentoring/v1/mentees/reports']);
 	//   });
 

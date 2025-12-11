@@ -368,16 +368,10 @@ describe('sessions endpoints generated from api-doc.yaml', () => {
       let req = request(BASE).get(url);
       req = req.set('x-auth-token', userDetails.token);
       const res = await req;
-      expect(res.status).toBeGreaterThanOrEqual(200);
-      expect(res.status).toBeLessThan(300);
+      expect(res.status).toBe(200);
       // validate response schema
       const schema = schemas['GET_/mentoring/v1/sessions/list'];
-      const validate = ajv.compile(schema);
-      const valid = validate(res.body);
-      if (!valid) {
-        console.error("Schema validation errors:", validate.errors);
-      }
-      expect(valid).toBe(true);
+      expect(res.body).toMatchSchema(schema);
     });
 
     test('should return 401/403 when unauthorized', async () => {
@@ -395,16 +389,10 @@ describe('sessions endpoints generated from api-doc.yaml', () => {
       let req = request(BASE).get(url);
       req = req.set('x-auth-token', userDetails.token);
       const res = await req;
-      expect(res.status).toBeGreaterThanOrEqual(200);
-      expect(res.status).toBeLessThan(300);
+      expect(res.status).toBe(200);
       // validate response schema
       const schema = schemas['GET_/mentoring/v1/sessions/share/{sessionId}'];
-      const validate = ajv.compile(schema);
-      const valid = validate(res.body);
-      if (!valid) {
-        console.error("Schema validation errors:", validate.errors);
-      }
-      expect(valid).toBe(true);
+      expect(res.body).toMatchSchema(schema);
     });
 
     test('should return 401/403 when unauthorized', async () => {
@@ -444,16 +432,10 @@ describe('sessions endpoints generated from api-doc.yaml', () => {
         ]
       }).set('Content-Type', 'application/json');
       const res = await req;
-      expect(res.status).toBeGreaterThanOrEqual(200);
-      expect(res.status).toBeLessThan(300);
+      expect(res.status).toBe(201);
       // validate response schema
       const schema = schemas['POST_/mentoring/v1/sessions/update'];
-      const validate = ajv.compile(schema);
-      const valid = validate(res.body);
-      if (!valid) {
-        console.error("Schema validation errors:", validate.errors);
-      }
-      expect(valid).toBe(true);
+      expect(res.body).toMatchSchema(schema);
     });
 
     test('should return 401/403 when unauthorized', async () => {
@@ -471,16 +453,10 @@ describe('sessions endpoints generated from api-doc.yaml', () => {
       let req = request(BASE).delete(url);
       req = req.set('x-auth-token', userDetails.token);
       const res = await req;
-      expect(res.status).toBeGreaterThanOrEqual(200);
-      expect(res.status).toBeLessThan(300);
+      expect(res.status).toBe(202);
       // validate response schema
       const schema = schemas['DELETE_/mentoring/v1/sessions/update/{sessionId}'];
-      const validate = ajv.compile(schema);
-      const valid = validate(res.body);
-      if (!valid) {
-        console.error("Schema validation errors:", validate.errors);
-      }
-      expect(valid).toBe(true);
+      expect(res.body).toMatchSchema(schema);
     });
 
     test('should return 401/403 when unauthorized', async () => {
@@ -518,16 +494,10 @@ describe('sessions endpoints generated from api-doc.yaml', () => {
         ]
       }).set('Content-Type', 'application/json');
       const res = await req;
-      expect(res.status).toBeGreaterThanOrEqual(200);
-      expect(res.status).toBeLessThan(300);
+      expect(res.status).toBe(202);
       // validate response schema
       const schema = schemas['POST_/mentoring/v1/sessions/update/{sessionId}'];
-      const validate = ajv.compile(schema);
-      const valid = validate(res.body);
-      if (!valid) {
-        console.error("Schema validation errors:", validate.errors);
-      }
-      expect(valid).toBe(true);
+      expect(res.body).toMatchSchema(schema);
     });
 
     test('should return 401/403 when unauthorized', async () => {
@@ -545,16 +515,10 @@ describe('sessions endpoints generated from api-doc.yaml', () => {
       let req = request(BASE).get(url);
       req = req.set('x-auth-token', userDetails.token);
       const res = await req;
-      expect(res.status).toBeGreaterThanOrEqual(200);
-      expect(res.status).toBeLessThan(300);
+      expect(res.status).toBe(200);
       // validate response schema
       const schema = schemas['GET_/mentoring/v1/sessions/getRecording/{sessionId}'];
-      const validate = ajv.compile(schema);
-      const valid = validate(res.body);
-      if (!valid) {
-        console.error("Schema validation errors:", validate.errors);
-      }
-      expect(valid).toBe(true);
+      expect(res.body).toMatchSchema(schema);
     });
 
     test('should return 401/403 when unauthorized', async () => {
@@ -572,16 +536,10 @@ describe('sessions endpoints generated from api-doc.yaml', () => {
       let req = request(BASE).patch(url);
       req = req.set('x-auth-token', userDetails.token);
       const res = await req;
-      expect(res.status).toBeGreaterThanOrEqual(200);
-      expect(res.status).toBeLessThan(300);
+      expect(res.status).toBe(200);
       // validate response schema
       const schema = schemas['PATCH_/mentoring/v1/sessions/updateRecordingUrl/{internalSessionId}'];
-      const validate = ajv.compile(schema);
-      const valid = validate(res.body);
-      if (!valid) {
-        console.error("Schema validation errors:", validate.errors);
-      }
-      expect(valid).toBe(true);
+      expect(res.body).toMatchSchema(schema);
     });
 
     test('should return 401/403 when unauthorized', async () => {

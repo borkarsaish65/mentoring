@@ -1,8 +1,6 @@
 const request = require('supertest')
-const Ajv = require('ajv')
 const BASE = process.env.BASE_URL || 'http://localhost:3000'
 const TOKEN = process.env.TEST_BEARER_TOKEN || 'test-token'
-const ajv = new Ajv({ strict: false })
 
 const schemas = require('./schemas/org-admin.schemas.json')
 
@@ -20,16 +18,10 @@ describe('org-admin endpoints generated from api-doc.yaml', () => {
 				})
 				.set('Content-Type', 'application/json')
 			const res = await req
-			expect(res.status).toBeGreaterThanOrEqual(200)
-			expect(res.status).toBeLessThan(300)
+			expect(res.status).toBe(201)
 			// validate response schema
 			const schema = schemas['POST_mentoring_v1_org-admin_roleChange']
-			const validate = ajv.compile(schema)
-			const valid = validate(res.body)
-			if (!valid) {
-				console.error('Schema validation errors:', validate.errors)
-			}
-			expect(valid).toBe(true)
+			expect(res.body).toMatchSchema(schema)
 		})
 	})
 
@@ -45,16 +37,10 @@ describe('org-admin endpoints generated from api-doc.yaml', () => {
 				})
 				.set('Content-Type', 'application/json')
 			const res = await req
-			expect(res.status).toBeGreaterThanOrEqual(200)
-			expect(res.status).toBeLessThan(300)
+			expect(res.status).toBe(200)
 			// validate response schema
 			const schema = schemas['POST_mentoring_v1_org-admin_inheritEntityType']
-			const validate = ajv.compile(schema)
-			const valid = validate(res.body)
-			if (!valid) {
-				console.error('Schema validation errors:', validate.errors)
-			}
-			expect(valid).toBe(true)
+			expect(res.body).toMatchSchema(schema)
 		})
 	})
 
@@ -64,16 +50,10 @@ describe('org-admin endpoints generated from api-doc.yaml', () => {
 			let req = request(BASE).get(url)
 			req = req.set('x-auth-token', 'string')
 			const res = await req
-			expect(res.status).toBeGreaterThanOrEqual(200)
-			expect(res.status).toBeLessThan(300)
+			expect(res.status).toBe(200)
 			// validate response schema
 			const schema = schemas['GET_mentoring_v1_org-admin_getOrgPolicies']
-			const validate = ajv.compile(schema)
-			const valid = validate(res.body)
-			if (!valid) {
-				console.error('Schema validation errors:', validate.errors)
-			}
-			expect(valid).toBe(true)
+			expect(res.body).toMatchSchema(schema)
 		})
 	})
 
@@ -94,16 +74,10 @@ describe('org-admin endpoints generated from api-doc.yaml', () => {
 				})
 				.set('Content-Type', 'application/json')
 			const res = await req
-			expect(res.status).toBeGreaterThanOrEqual(200)
-			expect(res.status).toBeLessThan(300)
+			expect(res.status).toBe(200)
 			// validate response schema
 			const schema = schemas['POST_mentoring_v1_org-admin_updateRelatedOrgs']
-			const validate = ajv.compile(schema)
-			const valid = validate(res.body)
-			if (!valid) {
-				console.error('Schema validation errors:', validate.errors)
-			}
-			expect(valid).toBe(true)
+			expect(res.body).toMatchSchema(schema)
 		})
 	})
 
@@ -122,16 +96,10 @@ describe('org-admin endpoints generated from api-doc.yaml', () => {
 				})
 				.set('Content-Type', 'application/json')
 			const res = await req
-			expect(res.status).toBeGreaterThanOrEqual(200)
-			expect(res.status).toBeLessThan(300)
+			expect(res.status).toBe(200)
 			// validate response schema
 			const schema = schemas['POST_mentoring_v1_org-admin_setOrgPolicies']
-			const validate = ajv.compile(schema)
-			const valid = validate(res.body)
-			if (!valid) {
-				console.error('Schema validation errors:', validate.errors)
-			}
-			expect(valid).toBe(true)
+			expect(res.body).toMatchSchema(schema)
 		})
 	})
 
@@ -142,16 +110,10 @@ describe('org-admin endpoints generated from api-doc.yaml', () => {
 			req = req.set('x-auth-token', 'string')
 			req = req.send('string').set('Content-Type', 'application/json')
 			const res = await req
-			expect(res.status).toBeGreaterThanOrEqual(200)
-			expect(res.status).toBeLessThan(300)
+			expect(res.status).toBe(200)
 			// validate response schema
 			const schema = schemas['POST_mentoring_v1_org-admin_uploadSampleCSV']
-			const validate = ajv.compile(schema)
-			const valid = validate(res.body)
-			if (!valid) {
-				console.error('Schema validation errors:', validate.errors)
-			}
-			expect(valid).toBe(true)
+			expect(res.body).toMatchSchema(schema)
 		})
 	})
 
@@ -169,16 +131,10 @@ describe('org-admin endpoints generated from api-doc.yaml', () => {
 				})
 				.set('Content-Type', 'application/json')
 			const res = await req
-			expect(res.status).toBeGreaterThanOrEqual(200)
-			expect(res.status).toBeLessThan(300)
+			expect(res.status).toBe(200)
 			// validate response schema
 			const schema = schemas['POST_mentoring_v1_org-admin_updateTheme']
-			const validate = ajv.compile(schema)
-			const valid = validate(res.body)
-			if (!valid) {
-				console.error('Schema validation errors:', validate.errors)
-			}
-			expect(valid).toBe(true)
+			expect(res.body).toMatchSchema(schema)
 		})
 	})
 
@@ -188,16 +144,10 @@ describe('org-admin endpoints generated from api-doc.yaml', () => {
 			let req = request(BASE).get(url)
 			req = req.set('x-auth-token', 'bearer {{token}}')
 			const res = await req
-			expect(res.status).toBeGreaterThanOrEqual(200)
-			expect(res.status).toBeLessThan(300)
+			expect(res.status).toBe(200)
 			// validate response schema
 			const schema = schemas['GET_mentoring_v1_org-admin_themeDetails']
-			const validate = ajv.compile(schema)
-			const valid = validate(res.body)
-			if (!valid) {
-				console.error('Schema validation errors:', validate.errors)
-			}
-			expect(valid).toBe(true)
+			expect(res.body).toMatchSchema(schema)
 		})
 	})
 })

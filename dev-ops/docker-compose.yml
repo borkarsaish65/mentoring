@@ -52,7 +52,6 @@ services:
     logging:
       driver: local
 
-  # NEW: Citus DB (Fresh instance, no volumes)
   citus:
     image: citusdata/citus:13.0
     container_name: citus_db
@@ -70,10 +69,8 @@ services:
       timeout: 5s
       retries: 5
 
-  # ---------------- APPLICATION SERVICES ----------------
-
   mentoring:
-    build: '../' # Preserved from your old file
+    build: '../' 
     image: elevate/mentoring:2.4
     volumes:
       - ../src/:/var/src
@@ -103,7 +100,7 @@ services:
       - ./integration_test.mentoring.env
 
   user:
-    build: '../../user/' # Preserved from your old file
+    build: '../../user/' 
     image: elevate/user:2.4
     volumes:
       - ../../user/src/:/var/src
@@ -141,4 +138,3 @@ networks:
 volumes:
   zookeeper-data:
   kafka-data:
-  # No DB volumes here = Fresh DB every time

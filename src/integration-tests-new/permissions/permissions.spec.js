@@ -1,8 +1,6 @@
 const request = require('supertest')
-const Ajv = require('ajv')
 const BASE = process.env.BASE_URL || 'http://localhost:3000'
 const TOKEN = process.env.TEST_BEARER_TOKEN || 'test-token'
-const ajv = new Ajv({ strict: false })
 
 const schemas = require('./schemas/permissions.schemas.json')
 
@@ -22,16 +20,10 @@ describe('permissions endpoints generated from api-doc.yaml', () => {
 				})
 				.set('Content-Type', 'application/json')
 			const res = await req
-			expect(res.status).toBeGreaterThanOrEqual(200)
-			expect(res.status).toBeLessThan(300)
+			expect(res.status).toBe(201)
 			// validate response schema
 			const schema = schemas['POST_mentoring_v1_permissions_create']
-			const validate = ajv.compile(schema)
-			const valid = validate(res.body)
-			if (!valid) {
-				console.error('Schema validation errors:', validate.errors)
-			}
-			expect(valid).toBe(true)
+			expect(res.body).toMatchSchema(schema)
 		})
 
 		test('should return 400/422 for invalid body', async () => {
@@ -59,16 +51,10 @@ describe('permissions endpoints generated from api-doc.yaml', () => {
 				})
 				.set('Content-Type', 'application/json')
 			const res = await req
-			expect(res.status).toBeGreaterThanOrEqual(200)
-			expect(res.status).toBeLessThan(300)
+			expect(res.status).toBe(201)
 			// validate response schema
 			const schema = schemas['POST_mentoring_v1_permissions_update_id']
-			const validate = ajv.compile(schema)
-			const valid = validate(res.body)
-			if (!valid) {
-				console.error('Schema validation errors:', validate.errors)
-			}
-			expect(valid).toBe(true)
+			expect(res.body).toMatchSchema(schema)
 		})
 	})
 
@@ -78,16 +64,10 @@ describe('permissions endpoints generated from api-doc.yaml', () => {
 			let req = request(BASE).delete(url)
 			req = req.set('x-auth-token', 'string')
 			const res = await req
-			expect(res.status).toBeGreaterThanOrEqual(200)
-			expect(res.status).toBeLessThan(300)
+			expect(res.status).toBe(202)
 			// validate response schema
 			const schema = schemas['DELETE_mentoring_v1_permissions_delete_id']
-			const validate = ajv.compile(schema)
-			const valid = validate(res.body)
-			if (!valid) {
-				console.error('Schema validation errors:', validate.errors)
-			}
-			expect(valid).toBe(true)
+			expect(res.body).toMatchSchema(schema)
 		})
 	})
 
@@ -97,16 +77,10 @@ describe('permissions endpoints generated from api-doc.yaml', () => {
 			let req = request(BASE).get(url)
 			req = req.set('x-auth-token', 'string')
 			const res = await req
-			expect(res.status).toBeGreaterThanOrEqual(200)
-			expect(res.status).toBeLessThan(300)
+			expect(res.status).toBe(200)
 			// validate response schema
 			const schema = schemas['GET_mentoring_v1_permissions_list_page_page_limit_limit_search_search']
-			const validate = ajv.compile(schema)
-			const valid = validate(res.body)
-			if (!valid) {
-				console.error('Schema validation errors:', validate.errors)
-			}
-			expect(valid).toBe(true)
+			expect(res.body).toMatchSchema(schema)
 		})
 	})
 })

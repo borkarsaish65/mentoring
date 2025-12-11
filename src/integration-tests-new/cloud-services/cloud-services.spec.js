@@ -1,8 +1,6 @@
 const request = require('supertest')
-const Ajv = require('ajv')
 const BASE = process.env.BASE_URL || 'http://localhost:3000'
 const TOKEN = process.env.TEST_BEARER_TOKEN || 'test-token'
-const ajv = new Ajv({ strict: false })
 
 const schemas = require('./schemas/cloud-services.schemas.json')
 
@@ -13,16 +11,10 @@ describe('cloud-services endpoints generated from api-doc.yaml', () => {
 			let req = request(BASE).get(url)
 			req = req.set('x-auth-token', 'string')
 			const res = await req
-			expect(res.status).toBeGreaterThanOrEqual(200)
-			expect(res.status).toBeLessThan(300)
+			expect(res.status).toBe(200)
 			// validate response schema
 			const schema = schemas['GET_mentoring_v1_cloud-services_getSignedUrl']
-			const validate = ajv.compile(schema)
-			const valid = validate(res.body)
-			if (!valid) {
-				console.error('Schema validation errors:', validate.errors)
-			}
-			expect(valid).toBe(true)
+			expect(res.body).toMatchSchema(schema)
 		})
 	})
 
@@ -32,16 +24,10 @@ describe('cloud-services endpoints generated from api-doc.yaml', () => {
 			let req = request(BASE).get(url)
 			req = req.set('x-auth-token', 'string')
 			const res = await req
-			expect(res.status).toBeGreaterThanOrEqual(200)
-			expect(res.status).toBeLessThan(300)
+			expect(res.status).toBe(200)
 			// validate response schema
 			const schema = schemas['GET_mentoring_v1_cloud-services_getDownloadableUrl']
-			const validate = ajv.compile(schema)
-			const valid = validate(res.body)
-			if (!valid) {
-				console.error('Schema validation errors:', validate.errors)
-			}
-			expect(valid).toBe(true)
+			expect(res.body).toMatchSchema(schema)
 		})
 	})
 })

@@ -1,8 +1,6 @@
 const request = require('supertest')
-const Ajv = require('ajv')
 const BASE = process.env.BASE_URL || 'http://localhost:3000'
 const TOKEN = process.env.TEST_BEARER_TOKEN || 'test-token'
-const ajv = new Ajv({ strict: false })
 
 const schemas = require('./schemas/questions.schemas.json')
 
@@ -35,16 +33,10 @@ describe('questions endpoints generated from api-doc.yaml', () => {
 				})
 				.set('Content-Type', 'application/json')
 			const res = await req
-			expect(res.status).toBeGreaterThanOrEqual(200)
-			expect(res.status).toBeLessThan(300)
+			expect(res.status).toBe(201)
 			// validate response schema
 			const schema = schemas['POST_/mentoring/v1/questions/create']
-			const validate = ajv.compile(schema)
-			const valid = validate(res.body)
-			if (!valid) {
-				console.error('Schema validation errors:', validate.errors)
-			}
-			expect(valid).toBe(true)
+			expect(res.body).toMatchSchema(schema)
 		})
 
 		test('should return 401/403 when unauthorized', async () => {
@@ -78,16 +70,10 @@ describe('questions endpoints generated from api-doc.yaml', () => {
 				})
 				.set('Content-Type', 'application/json')
 			const res = await req
-			expect(res.status).toBeGreaterThanOrEqual(200)
-			expect(res.status).toBeLessThan(300)
+			expect(res.status).toBe(202)
 			// validate response schema
 			const schema = schemas['PUT_/mentoring/v1/questions/update/{QuestionId}']
-			const validate = ajv.compile(schema)
-			const valid = validate(res.body)
-			if (!valid) {
-				console.error('Schema validation errors:', validate.errors)
-			}
-			expect(valid).toBe(true)
+			expect(res.body).toMatchSchema(schema)
 		})
 
 		test('should return 401/403 when unauthorized', async () => {
@@ -103,16 +89,10 @@ describe('questions endpoints generated from api-doc.yaml', () => {
 			let req = request(BASE).get(url)
 			req = req.set('x-auth-token', 'string')
 			const res = await req
-			expect(res.status).toBeGreaterThanOrEqual(200)
-			expect(res.status).toBeLessThan(300)
+			expect(res.status).toBe(200)
 			// validate response schema
 			const schema = schemas['GET_/mentoring/v1/questions/read/{QuestionId}']
-			const validate = ajv.compile(schema)
-			const valid = validate(res.body)
-			if (!valid) {
-				console.error('Schema validation errors:', validate.errors)
-			}
-			expect(valid).toBe(true)
+			expect(res.body).toMatchSchema(schema)
 		})
 
 		test('should return 401/403 when unauthorized', async () => {
