@@ -513,6 +513,7 @@ const generateWhereClause = (tableName) => {
  */
 function validateAndBuildFilters(input, validationData) {
 	const entityTypes = {}
+	let filterType = {}
 
 	// Ensure validationData is an array
 	if (!Array.isArray(validationData)) {
@@ -522,6 +523,8 @@ function validateAndBuildFilters(input, validationData) {
 	// Build the entityTypes dictionary
 	validationData.forEach((entityType) => {
 		entityTypes[entityType.value] = entityType.data_type
+		const type = entityType?.meta?.filterType?.trim()?.toUpperCase()
+		filterType[entityType.value] = type === 'OR' ? 'OR' : 'AND'
 	})
 
 	const queryParts = [] // Array to store parts of the query
@@ -539,14 +542,21 @@ function validateAndBuildFilters(input, validationData) {
 	}
 
 	// Function to handle array types
-	function handleArrayType(key, values) {
+	function handleArrayType(key, values, filterType) {
 		const arrayValues = values
 			.map((value, index) => {
 				replacements[`${key}_${index}`] = value
 				return `:${key}_${index}`
 			})
 			.join(', ')
-		queryParts.push(`"${key}" @> ARRAY[${arrayValues}]::character varying[]`)
+
+		const currentFilter = filterType[key]?.trim()?.toUpperCase() === 'OR' ? 'OR' : 'AND'
+
+		if (currentFilter === 'OR') {
+			queryParts.push(`"${key}" && ARRAY[${arrayValues}]::character varying[]`)
+		} else {
+			queryParts.push(`"${key}" @> ARRAY[${arrayValues}]::character varying[]`)
+		}
 	}
 
 	// Iterate over each key in the input object
@@ -556,9 +566,9 @@ function validateAndBuildFilters(input, validationData) {
 
 			if (dataType) {
 				if (common.ENTITY_TYPE_DATA_TYPES.STRING_TYPES.includes(dataType)) {
-					handleStringType(key, input[key])
+					handleStringType(key, input[key], filterType)
 				} else if (common.ENTITY_TYPE_DATA_TYPES.ARRAY_TYPES.includes(dataType)) {
-					handleArrayType(key, input[key])
+					handleArrayType(key, input[key], filterType)
 				}
 			} else {
 				// Remove keys that are not in the validationData
@@ -724,6 +734,7 @@ function convertEntitiesForFilter(entityTypes) {
 			})
 		}
 
+		const filterType = entityType?.meta?.filterType?.trim()?.toUpperCase() === 'OR' ? 'OR' : 'AND'
 		const newObj = {
 			id: entityType.id,
 			label: entityType.label,
@@ -731,6 +742,7 @@ function convertEntitiesForFilter(entityTypes) {
 			parent_id: entityType.parent_id,
 			organization_id: entityType.organization_id,
 			entities: entityType.entities || [],
+			filterType: filterType,
 		}
 
 		result[key].push(newObj)
