@@ -59,16 +59,6 @@ module.exports = {
 			deleted_at: {
 				type: Sequelize.DATE,
 			},
-			tenant_code: {
-				type: Sequelize.STRING,
-				allowNull: false,
-				defaultValue: process.env.DEFAULT_TENANT_CODE,
-			},
-			organization_code: {
-				type: Sequelize.STRING,
-				allowNull: false,
-				defaultValue: process.env.DEFAULT_ORGANIZATION_CODE,
-			},
 		})
 
 		// Add an index for the 'value' column

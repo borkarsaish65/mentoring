@@ -920,12 +920,6 @@ module.exports = {
 					created_at: new Date(),
 				},
 			]
-
-			formData.forEach((formInstance) => {
-				formInstance.tenant_code = process.env.DEFAULT_TENANT_CODE
-				formInstance.organization_code = process.env.DEFAULT_ORGANIZATION_CODE
-			})
-
 			await queryInterface.bulkInsert('forms', formData, {})
 		} catch (error) {
 			console.error('Error seeding forms:', error)
