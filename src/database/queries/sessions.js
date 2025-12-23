@@ -163,21 +163,30 @@ exports.updateRecords = async (data, options = {}) => {
 	}
 }
 
-exports.findAllMigrations = async (filter, options = {}) => {
+exports.findAllMigrations = async (filter) => {
 	try {
-		//	filter.tenant_code = tenantCode
+		const whereClauses = []
+		const replacements = {}
 
-		// Safe merge: tenant filtering cannot be overridden by options.where
-		const { where: optionsWhere, ...otherOptions } = options
+		Object.entries(filter).forEach(([key, value]) => {
+			if (value === undefined) return
 
-		return await Session.findAll({
-			where: {
-				...optionsWhere, // Allow additional where conditions
-				...filter, // But tenant filtering takes priority
-			},
-			...otherOptions,
-			raw: true,
+			whereClauses.push(`"${key}" = :${key}`)
+			replacements[key] = value
 		})
+
+		const sql = `
+      SELECT *
+      FROM sessions
+      ${whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : ''}
+    `
+
+		const result = await Sequelize.query(sql, {
+			replacements,
+			type: QueryTypes.SELECT,
+		})
+
+		return result
 	} catch (error) {
 		return error
 	}
