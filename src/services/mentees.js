@@ -1536,7 +1536,6 @@ module.exports = class MenteesHelper {
 					responseCode: 'CLIENT_ERROR',
 				})
 
-			/*
 			let validationData = await entityTypeCache.getEntityTypesAndEntitiesWithCache(
 				{
 					status: common.ACTIVE_STATUS,
@@ -1545,17 +1544,6 @@ module.exports = class MenteesHelper {
 				tenantCode,
 				organizationCode,
 				userExtensionModelName
-			)
-				*/
-
-			let validationData = await entityTypeCache.getEntityTypesAndEntitiesForModel(
-				userExtensionModelName,
-				tenantCode,
-				organizationCode,
-				{
-					status: common.ACTIVE_STATUS,
-					//model_names: { [Op.overlap]: [userExtensionModelName] },
-				}
 			)
 
 			let filteredQuery = utils.validateAndBuildFilters(

@@ -563,7 +563,7 @@ function validateAndBuildFilters(input, validationData) {
 
 			if (dataType) {
 				if (common.ENTITY_TYPE_DATA_TYPES.STRING_TYPES.includes(dataType)) {
-					handleStringType(key, input[key], filterType)
+					handleStringType(key, input[key])
 				} else if (common.ENTITY_TYPE_DATA_TYPES.ARRAY_TYPES.includes(dataType)) {
 					let filterToBeApplied = getArrayFilterOperator(filterType, key)
 					handleArrayType(key, input[key], filterToBeApplied)

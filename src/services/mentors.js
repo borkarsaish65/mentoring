@@ -83,8 +83,6 @@ module.exports = class MentorsHelper {
 					statusCode: httpStatusCode.bad_request,
 					responseCode: 'CLIENT_ERROR',
 				})
-
-			/*
 			let validationData = await entityTypeCache.getEntityTypesAndEntitiesWithCache(
 				{
 					status: common.ACTIVE_STATUS,
@@ -94,18 +92,6 @@ module.exports = class MentorsHelper {
 				tenantCode,
 				orgCode,
 				sessionModelName
-			)
-				*/
-
-			let validationData = await entityTypeCache.getEntityTypesAndEntitiesForModel(
-				sessionModelName,
-				tenantCode,
-				orgCode,
-				{
-					status: common.ACTIVE_STATUS,
-					allow_filtering: true,
-					//model_names: { [Op.contains]: [sessionModelName] },
-				}
 			)
 
 			if (!orgCode) {
