@@ -120,8 +120,6 @@ module.exports = {
 				allow_filtering: true,
 				organization_id: defaultOrgId,
 				has_entities: true,
-				organization_code: process.env.DEFAULT_ORGANIZATION_CODE,
-				tenant_code: process.env.DEFAULT_TENANT_CODE,
 			}
 
 			// Check if the key is in sessionEntityTypes before adding model_names
@@ -155,7 +153,7 @@ module.exports = {
 					eachEntity.created_at = new Date()
 					eachEntity.updated_at = new Date()
 					eachEntity.created_by = 0
-					eachEntity.tenant_code = process.env.DEFAULT_TENANT_CODE
+
 					entitiesFinalArray.push(eachEntity)
 				})
 			}
