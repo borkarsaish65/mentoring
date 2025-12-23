@@ -107,9 +107,30 @@ const getTimeZone = (date, format, tz = null) => {
 const utcFormat = () => {
 	return momentTimeZone().utc().format('YYYY-MM-DDTHH:mm:ss')
 }
+/**
+ * Get PostgreSQL array comparison operator based on filter type
+ * @param {Object} filterType - Map of entity types to their filter types (OR/AND)
+ * @param {String} key - Entity type key
+ * @returns {String} PostgreSQL operator:
+ *   - '&&' (overlap) for OR filtering: matches if ANY value matches
+ *   - '@>' (contains) for AND filtering: matches if ALL values match
+ */
+function getArrayFilterOperator(filterType, key) {
+	if (!filterType || typeof filterType !== 'object') {
+		return '@>'
+	}
+	const type = filterType[key]?.trim()?.toUpperCase()
+	return type === 'OR' ? '&&' : '@>'
+}
 
-const getArrayFilterOperator = (filterType, key) => {
-	return filterType[key]?.trim()?.toUpperCase() === 'OR' ? '&&' : '@>'
+/**
+ * Extract and normalize filterType from entity metadata
+ * @param {Object} entityType - Entity type object with optional meta.filterType
+ * @returns {String} - Normalized filter type ('OR' or 'AND')
+ */
+function getFilterType(entityType) {
+	const type = entityType?.meta?.filterType?.trim()?.toUpperCase()
+	return type === 'OR' ? 'OR' : 'AND'
 }
 
 /**
@@ -527,8 +548,7 @@ function validateAndBuildFilters(input, validationData) {
 	// Build the entityTypes dictionary
 	validationData.forEach((entityType) => {
 		entityTypes[entityType.value] = entityType.data_type
-		const type = entityType?.meta?.filterType?.trim()?.toUpperCase()
-		filterType[entityType.value] = type === 'OR' ? 'OR' : 'AND'
+		filterType[entityType.value] = getFilterType(entityType)
 	})
 
 	const queryParts = [] // Array to store parts of the query
@@ -732,7 +752,7 @@ function convertEntitiesForFilter(entityTypes) {
 			})
 		}
 
-		const filterType = entityType?.meta?.filterType?.trim()?.toUpperCase() === 'OR' ? 'OR' : 'AND'
+		const filterTypeValue = getFilterType(entityType)
 		const newObj = {
 			id: entityType.id,
 			label: entityType.label,
@@ -740,7 +760,7 @@ function convertEntitiesForFilter(entityTypes) {
 			parent_id: entityType.parent_id,
 			organization_id: entityType.organization_id,
 			entities: entityType.entities || [],
-			filterType: filterType,
+			filterType: filterTypeValue,
 		}
 
 		result[key].push(newObj)
