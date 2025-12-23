@@ -163,6 +163,26 @@ exports.updateRecords = async (data, options = {}) => {
 	}
 }
 
+exports.findAllMigrations = async (filter, options = {}) => {
+	try {
+		//	filter.tenant_code = tenantCode
+
+		// Safe merge: tenant filtering cannot be overridden by options.where
+		const { where: optionsWhere, ...otherOptions } = options
+
+		return await Session.findAll({
+			where: {
+				...optionsWhere, // Allow additional where conditions
+				...filter, // But tenant filtering takes priority
+			},
+			...otherOptions,
+			raw: true,
+		})
+	} catch (error) {
+		return error
+	}
+}
+
 exports.findAll = async (filter, tenantCode, options = {}) => {
 	try {
 		filter.tenant_code = tenantCode
