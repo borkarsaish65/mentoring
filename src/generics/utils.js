@@ -555,6 +555,16 @@ function validateAndBuildFilters(input, validationData) {
 	const replacements = {} // Object to store replacements for Sequelize
 
 	// Function to handle string types
+	/**
+	 * Handles filtering for string/scalar type fields
+	 * Note: String types always use OR logic because a scalar field can only hold one value at a time.
+	 * The filterType (OR/AND) configuration only applies to array-type field where records can contain
+	 * multiple values. For example, a status field cannot be both 'Active' AND 'Inactive' simultaneously,
+	 * so filtering for multiple statuses must use OR: (status = 'Active' OR status = 'Inactive')
+	 *
+	 * @param {String} key - Field name to filter
+	 * @param {Array<String>} values - Array of possible values to match
+	 */
 	function handleStringType(key, values) {
 		const orConditions = values
 			.map((value, index) => {
@@ -753,6 +763,9 @@ function convertEntitiesForFilter(entityTypes) {
 		}
 
 		const filterTypeValue = getFilterType(entityType)
+		/*
+		filterTypeValue indicates the filtering logic (OR or AND) which is used 
+		*/
 		const newObj = {
 			id: entityType.id,
 			label: entityType.label,
