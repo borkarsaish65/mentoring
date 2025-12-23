@@ -108,6 +108,10 @@ const utcFormat = () => {
 	return momentTimeZone().utc().format('YYYY-MM-DDTHH:mm:ss')
 }
 
+const getArrayFilterOperator = (filterType, key) => {
+	return filterType[key]?.trim()?.toUpperCase() === 'OR' ? '&&' : '@>'
+}
+
 /**
  * md5 hash
  * @function
@@ -542,21 +546,14 @@ function validateAndBuildFilters(input, validationData) {
 	}
 
 	// Function to handle array types
-	function handleArrayType(key, values, filterType) {
+	function handleArrayType(key, values, filter) {
 		const arrayValues = values
 			.map((value, index) => {
 				replacements[`${key}_${index}`] = value
 				return `:${key}_${index}`
 			})
 			.join(', ')
-
-		const currentFilter = filterType[key]?.trim()?.toUpperCase() === 'OR' ? 'OR' : 'AND'
-
-		if (currentFilter === 'OR') {
-			queryParts.push(`"${key}" && ARRAY[${arrayValues}]::character varying[]`)
-		} else {
-			queryParts.push(`"${key}" @> ARRAY[${arrayValues}]::character varying[]`)
-		}
+		queryParts.push(`"${key}" ${filter} ARRAY[${arrayValues}]::character varying[]`)
 	}
 
 	// Iterate over each key in the input object
@@ -568,7 +565,8 @@ function validateAndBuildFilters(input, validationData) {
 				if (common.ENTITY_TYPE_DATA_TYPES.STRING_TYPES.includes(dataType)) {
 					handleStringType(key, input[key], filterType)
 				} else if (common.ENTITY_TYPE_DATA_TYPES.ARRAY_TYPES.includes(dataType)) {
-					handleArrayType(key, input[key], filterType)
+					let filterToBeApplied = getArrayFilterOperator(filterType, key)
+					handleArrayType(key, input[key], filterToBeApplied)
 				}
 			} else {
 				// Remove keys that are not in the validationData
