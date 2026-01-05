@@ -97,7 +97,7 @@ services:
     networks:
       - elevate_net
     env_file:
-      - ./integration_test.mentoring.env
+      - integration_test.mentoring.env
 
   user:
     build: '../../user/' 
@@ -129,7 +129,7 @@ services:
     networks:
       - elevate_net
     env_file:
-      - ./integration_test.user.env
+      - integration_test.user.env
 
 networks:
   elevate_net:
