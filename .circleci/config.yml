@@ -73,7 +73,8 @@ jobs:
             cd dev-ops/
             docker-compose pull || true
             docker-compose build || true
-            docker-compose up -d citus kafka redis
+            docker-compose up -d
+            sleep 20
 
       # -------------------------------
       # FIXED: Wait for services to become healthy
@@ -118,27 +119,40 @@ jobs:
             echo "User logs:"
             docker-compose logs --tail=200 user || true
 
-      - run:
-          name: Run DB migrations
-          command: |
-            cd src
-            npx sequelize-cli db:migrate
 
       - run:
-          name: Run DB seeders
+          name: Wait for mentoring MIGRATION_SUCCESS
           command: |
-            cd src
-            npx sequelize-cli db:seed:all
+            export MENTORING=$(docker ps --format "{{.Names}}" | grep mentoring)
+            echo "Waiting for MIGRATION_SUCCESS..."
+            for i in {1..60}; do
+              if docker logs "$MENTORING" 2>&1 | grep -q "MIGRATION_SUCCESS"; then
+                echo "Migrations completed."
+                break
+              fi
+              echo "Waiting for migrations... ($i)"
+              sleep 3
+            done
 
-      # ------------------------
-      # Start application services
+
+
+            # ------------------------
+      # Wait for seeders
       # ------------------------
       - run:
-          name: Start application containers
+          name: Wait for mentoring SEEDER_SUCCESS
           command: |
-            cd dev-ops
-            docker-compose up -d mentoring user
-            
+            export MENTORING=$(docker ps --format "{{.Names}}" | grep mentoring)
+            echo "Waiting for SEEDER_SUCCESS..."
+            for i in {1..60}; do
+              if docker logs "$MENTORING" 2>&1 | grep -q "SEEDER_SUCCESS"; then
+                echo "Seeders completed."
+                break
+              fi
+              echo "Waiting for seeders... ($i)"
+              sleep 3
+            done
+
       # -------------------------------
       # Run Integration Tests
       # -------------------------------
