@@ -73,8 +73,7 @@ jobs:
             cd dev-ops/
             docker-compose pull || true
             docker-compose build || true
-            docker-compose up -d
-            sleep 20
+            docker-compose up -d citus kafka redis
 
       # -------------------------------
       # FIXED: Wait for services to become healthy
@@ -119,7 +118,27 @@ jobs:
             echo "User logs:"
             docker-compose logs --tail=200 user || true
 
+      - run:
+          name: Run DB migrations
+          command: |
+            cd src
+            npx sequelize-cli db:migrate
 
+      - run:
+          name: Run DB seeders
+          command: |
+            cd src
+            npx sequelize-cli db:seed:all
+
+      # ------------------------
+      # Start application services
+      # ------------------------
+      - run:
+          name: Start application containers
+          command: |
+            cd dev-ops
+            docker-compose up -d mentoring user
+            
       - run:
           name: Wait for mentoring MIGRATION_SUCCESS
           command: |
