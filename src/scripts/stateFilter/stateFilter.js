@@ -40,7 +40,7 @@ const sequelize = new Sequelize(args.userdb, {
 ;(async () => {
 	try {
 		await sequelize.authenticate()
-		console.log(`Connected to database: ${args.userdb}`)
+		console.log(`Connected to database userdb`)
 		// continue with your logic here
 
 		//query entity type with value=location
