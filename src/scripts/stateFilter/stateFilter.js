@@ -1,5 +1,4 @@
 /*
-write description below 
 
 this script connects to a database, queries entity types and entities, and migrates data between databases.
 pass the required database connection details as command line arguments.
