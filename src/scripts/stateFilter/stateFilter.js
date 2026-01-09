@@ -33,11 +33,7 @@ if (!args.userdb) {
 // Decide how this maps to connection config.
 // Option A: use the db name directly with shared credentials
 const sequelize = new Sequelize(args.userdb, {
-	host: process.env.DB_HOST || 'localhost',
-	port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 5432,
-	dialect: process.env.DB_DIALECT || 'postgres',
-	username: process.env.DB_USER,
-	password: process.env.DB_PASSWORD,
+	dialect: 'postgres',
 	logging: false,
 })
 
@@ -52,7 +48,7 @@ const sequelize = new Sequelize(args.userdb, {
       SELECT id,value,label,status,allow_filtering,data_type,organization_id,parent_id,allow_custom_entities,has_entities,model_names,required,regex FROM entity_types WHERE value = 'location' limit 1
     `)
 
-		if (!entityType) {
+		if (!entityType || entityType.length === 0) {
 			throw new Error('Entity type not found')
 		}
 
