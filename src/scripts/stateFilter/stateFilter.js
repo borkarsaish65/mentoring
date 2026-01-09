@@ -65,7 +65,6 @@ const sequelize = new Sequelize(args.userdb, {
 
 		//create entity_type in mentoring db with information got from step 2
 		const targetDbUrl = process.env.DEV_DATABASE_URL
-		console.log(targetDbUrl, 'Target Database URL...')
 
 		if (!targetDbUrl) {
 			throw new Error('Target database URL is not defined')
