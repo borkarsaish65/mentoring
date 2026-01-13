@@ -91,9 +91,11 @@ jobs:
       # Config
       # -------------------------------
       - run:
-          name: Prepare Kafka config for CI
+          name: Configure Kafka for CI
           command: |
-                cp src/configs/kafka.ci.js src/configs/kafka.js
+            export MENTORING=$(docker ps --format "{{.Names}}" | grep mentoring)
+            docker exec "$MENTORING" \
+              sh -c 'cp /var/src/configs/kafka.ci.js /var/src/configs/kafka.js'
 
 
       # -------------------------------
@@ -134,12 +136,12 @@ jobs:
       # -------------------------------
       # CI-specific Kafka config
       # -------------------------------
-      - run:
-          name: Configure Kafka for CI
-          command: |
-            export MENTORING=$(docker ps --format "{{.Names}}" | grep mentoring)
-            docker exec "$MENTORING" \
-              sh -c 'cp /var/src/configs/kafka.ci.js /var/src/configs/kafka.js'
+      # - run:
+      #     name: Configure Kafka for CI
+      #     command: |
+      #       export MENTORING=$(docker ps --format "{{.Names}}" | grep mentoring)
+      #       docker exec "$MENTORING" \
+      #         sh -c 'cp /var/src/configs/kafka.ci.js /var/src/configs/kafka.js'
 
       # -------------------------------
       # Run migrations (EXPLICIT)
