@@ -147,7 +147,7 @@ jobs:
           command: |
             export MENTORING=$(docker ps --format "{{.Names}}" | grep mentoring)
             echo "Running migrations in $MENTORING"
-            docker exec "$MENTORING" npm run db:init:integration
+            docker exec "$MENTORING" npm run db:init
 
       # -------------------------------
       # Run seeders (EXPLICIT)
@@ -157,7 +157,7 @@ jobs:
           command: |
             export MENTORING=$(docker ps --format "{{.Names}}" | grep mentoring)
             echo "Running seeders in $MENTORING"
-            docker exec "$MENTORING" npm run db:seed:all:integration
+            docker exec "$MENTORING" npm run db:seed:all
 
       # -------------------------------
       # Run integration tests
