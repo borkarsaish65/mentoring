@@ -1,7 +1,6 @@
 jest.setTimeout(100000)
 const request = require('supertest')
 const BASE = process.env.BASE_URL || 'http://localhost:3000'
-const TOKEN = process.env.TEST_BEARER_TOKEN || 'test-token'
 const commonHelper = require('@commonTests')
 const schemas = require('./schemas/mentees.schemas.json')
 let userDetails = null
