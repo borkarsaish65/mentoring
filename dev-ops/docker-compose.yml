@@ -55,6 +55,8 @@ services:
   citus:
     image: citusdata/citus:13.0
     container_name: citus_db
+    volumes:
+      - ../src/distributionColumns.psql:/var/src/distributionColumns.psql
     ports:
       - '5432:5432'
     environment:
