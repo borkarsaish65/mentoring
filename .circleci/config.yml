@@ -134,24 +134,6 @@ jobs:
               docker ps --format "table {{.Names}}\t{{.Status}}"
               sleep 5
             done
-            
-      - run:
-          name: Enable Citus and run distributionColumns.psql
-          command: |
-                cd dev-ops
-                echo "Enabling Citus extension..."
-                docker-compose exec citus psql \
-                -U postgres \
-                -d elevate-mentoring \
-                -c "CREATE EXTENSION IF NOT EXISTS citus;"
-
-                echo "Running distributionColumns.psql..."
-                    docker-compose exec citus psql \
-                    -U postgres \
-                    -d elevate-mentoring \
-                  -f /var/src/distributionColumns.psql
-
-
       # -------------------------------
       # Run migrations (EXPLICIT)
       # -------------------------------
@@ -171,7 +153,22 @@ jobs:
             export MENTORING=$(docker ps --format "{{.Names}}" | grep mentoring)
             echo "Running seeders in $MENTORING"
             docker exec "$MENTORING" npm run db:seed:all
+            
+      - run:
+          name: Enable Citus and run distributionColumns.psql
+          command: |
+                cd dev-ops
+                echo "Enabling Citus extension..."
+                docker-compose exec citus psql \
+                -U postgres \
+                -d elevate-mentoring \
+                -c "CREATE EXTENSION IF NOT EXISTS citus;"
 
+                echo "Running distributionColumns.psql..."
+                    docker-compose exec citus psql \
+                    -U postgres \
+                    -d elevate-mentoring \
+                  -f /var/src/distributionColumns.psql
       # -------------------------------
       # Run integration tests
       # -------------------------------
