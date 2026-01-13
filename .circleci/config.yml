@@ -92,7 +92,7 @@ jobs:
       # -------------------------------
       - run:
           name: Copy config.json
-          command: cp dev-ops/sample_config.json src/config.json
+          command: cp dev-ops/integration_test.config.json src/config.json
 
       - run:
           name: Prepare Kafka config for CI
