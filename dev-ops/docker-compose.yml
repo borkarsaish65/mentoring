@@ -77,7 +77,7 @@ services:
     ports:
       - '3000:3000'
       - '9229:9229'
-    command: ["sh", "/var/src/start.sh"]
+    command: ["npm", "run", "dev"]
 
     environment:
       - KAFKA_URL=kafka:9092
