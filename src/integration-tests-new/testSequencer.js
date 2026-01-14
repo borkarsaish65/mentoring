@@ -9,11 +9,11 @@ class CustomSequencer extends Sequencer {
 			'entity/entity.specs.js',
 			'entity-type/entity-type.specs.js',
 			'form/form.specs.js',
-			'mentees/mentees.specs.js',
-			'mentors/mentors.specs.js',
 			'profile/profile.specs.js',
 			'requestSessions/requestSessions.specs.js',
 			'sessions/sessions.specs.js',
+			'mentees/mentees.specs.js',
+			'mentors/mentors.specs.js',
 			'default-rule/default-rule.specs.js',
 		]
 

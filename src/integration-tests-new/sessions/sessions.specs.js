@@ -48,7 +48,6 @@ describe('sessions endpoints generated from api-doc.yaml', () => {
 			})
 
 			// Assuming 201 is the success status for creation
-			console.log(createRes, 'create status*')
 			expect(createRes.status).toBe(201)
 			createdSessionId = createRes.body.result.id
 			expect(createdSessionId).toBeDefined()
