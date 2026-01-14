@@ -144,16 +144,6 @@ jobs:
             echo "Running migrations in $MENTORING"
             docker exec "$MENTORING" npm run db:init
 
-      # -------------------------------
-      # Run seeders (EXPLICIT)
-      # -------------------------------
-      - run:
-          name: Run mentoring seeders
-          command: |
-            export MENTORING=$(docker ps --format "{{.Names}}" | grep mentoring)
-            echo "Running seeders in $MENTORING"
-            docker exec "$MENTORING" npm run db:seed:all
-
       - run:
             name: Enable Citus and run distributionColumns.psql
             command: |
@@ -173,6 +163,16 @@ jobs:
               -f /var/src/distributionColumns.psql
 
               echo "Citus setup completed."
+
+      # -------------------------------
+      # Run seeders (EXPLICIT)
+      # -------------------------------
+      - run:
+          name: Run mentoring seeders
+          command: |
+            export MENTORING=$(docker ps --format "{{.Names}}" | grep mentoring)
+            echo "Running seeders in $MENTORING"
+            docker exec "$MENTORING" npm run db:seed:all
 
       # -------------------------------
       # Run integration tests
