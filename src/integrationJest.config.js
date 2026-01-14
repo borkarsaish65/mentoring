@@ -19,7 +19,7 @@ module.exports = {
 		'@helpers/(.*)': '<rootDir>/helpers/$1',
 		'@utils/(.*)': '<rootDir>/utils/$1',
 	},
-	testMatch: ['<rootDir>/integration-tests-new/**/*.specs.js'],
+	testMatch: ['<rootDir>/integration-tests-new/**/*.specss.js'],
 	testSequencer: '<rootDir>/integration-tests-new/testSequencer',
 	reporters: ['default', ['jest-junit', { suiteName: 'jest tests', outputDirectory: '../dev-ops/report' }]],
 }
