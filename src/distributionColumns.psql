@@ -1,3 +1,6 @@
+SELECT create_reference_table('entity_types');
+SELECT create_reference_table('permissions');
+SELECT create_reference_table('sessions');
 SELECT create_distributed_table('availabilities', 'tenant_code');
 SELECT create_distributed_table('connection_requests', 'tenant_code');
 SELECT create_distributed_table('connections', 'tenant_code');
