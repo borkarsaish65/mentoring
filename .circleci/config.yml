@@ -181,6 +181,28 @@ jobs:
             echo "Starting mentoring app..."
             docker exec -d "$MENTORING" npm run dev
 
+      - run:
+         name: Run user migrations
+         command: |
+          export USER=$(docker ps --format "{{.Names}}" | grep user)
+          echo "Running user migrations in $USER"
+          docker exec "$USER" npm run db:init
+
+      - run:
+            name: Run user seeders
+            command: |
+               export USER=$(docker ps --format "{{.Names}}" | grep user)
+               docker exec "$USER" npm run db:seed:all
+
+
+      - run:
+            name: Start user service
+            command: |
+              export USER=$(docker ps --format "{{.Names}}" | grep user)
+              echo "Starting user service..."
+              docker exec -d "$USER" npm run dev
+
+
       # -------------------------------
       # Run integration tests
       # -------------------------------
