@@ -108,6 +108,31 @@ const getTimeZone = (date, format, tz = null) => {
 const utcFormat = () => {
 	return momentTimeZone().utc().format('YYYY-MM-DDTHH:mm:ss')
 }
+/**
+ * Get PostgreSQL array comparison operator based on filter type
+ * @param {Object} filterType - Map of entity types to their filter types (OR/AND)
+ * @param {String} key - Entity type key
+ * @returns {String} PostgreSQL operator:
+ *   - '&&' (overlap) for OR filtering: matches if ANY value matches
+ *   - '@>' (contains) for AND filtering: matches if ALL values match
+ */
+function getArrayFilterOperator(filterType, key) {
+	if (!filterType || typeof filterType !== 'object') {
+		return '@>'
+	}
+	const type = filterType[key]?.trim()?.toUpperCase()
+	return type === 'OR' ? '&&' : '@>'
+}
+
+/**
+ * Extract and normalize filterType from entity metadata
+ * @param {Object} entityType - Entity type object with optional meta.filterType
+ * @returns {String} - Normalized filter type ('OR' or 'AND')
+ */
+function getFilterType(entityType) {
+	const type = entityType?.meta?.filterType?.trim()?.toUpperCase()
+	return type === 'OR' ? 'OR' : 'AND'
+}
 
 /**
  * md5 hash
@@ -515,16 +540,27 @@ const generateWhereClause = (tableName) => {
  */
 function validateAndBuildFilters(input, validationData) {
 	const entityTypes = {}
-
+	let filterType = {}
 	// Build the entityTypes dictionary
 	validationData.forEach((entityType) => {
 		entityTypes[entityType.value] = entityType.data_type
+		filterType[entityType.value] = getFilterType(entityType)
 	})
 
 	const queryParts = [] // Array to store parts of the query
 	const replacements = {} // Object to store replacements for Sequelize
 
 	// Function to handle string types
+	/**
+	 * Handles filtering for string/scalar type fields
+	 * Note: String types always use OR logic because a scalar field can only hold one value at a time.
+	 * The filterType (OR/AND) configuration only applies to array-type field where records can contain
+	 * multiple values. For example, a status field cannot be both 'Active' AND 'Inactive' simultaneously,
+	 * so filtering for multiple statuses must use OR: (status = 'Active' OR status = 'Inactive')
+	 *
+	 * @param {String} key - Field name to filter
+	 * @param {Array<String>} values - Array of possible values to match
+	 */
 	function handleStringType(key, values) {
 		const orConditions = values
 			.map((value, index) => {
@@ -536,14 +572,14 @@ function validateAndBuildFilters(input, validationData) {
 	}
 
 	// Function to handle array types
-	function handleArrayType(key, values) {
+	function handleArrayType(key, values, filter) {
 		const arrayValues = values
 			.map((value, index) => {
 				replacements[`${key}_${index}`] = value
 				return `:${key}_${index}`
 			})
 			.join(', ')
-		queryParts.push(`"${key}" @> ARRAY[${arrayValues}]::character varying[]`)
+		queryParts.push(`"${key}" ${filter} ARRAY[${arrayValues}]::character varying[]`)
 	}
 
 	// Iterate over each key in the input object
@@ -555,7 +591,8 @@ function validateAndBuildFilters(input, validationData) {
 				if (common.ENTITY_TYPE_DATA_TYPES.STRING_TYPES.includes(dataType)) {
 					handleStringType(key, input[key])
 				} else if (common.ENTITY_TYPE_DATA_TYPES.ARRAY_TYPES.includes(dataType)) {
-					handleArrayType(key, input[key])
+					let filterToBeApplied = getArrayFilterOperator(filterType, key)
+					handleArrayType(key, input[key], filterToBeApplied)
 				}
 			} else {
 				// Remove keys that are not in the validationData
@@ -714,6 +751,10 @@ function convertEntitiesForFilter(entityTypes) {
 			result[key] = []
 		}
 
+		const filterTypeValue = getFilterType(entityType)
+		/*
+		filterTypeValue indicates the filtering logic (OR or AND) which is used 
+		*/
 		const newObj = {
 			id: entityType.id,
 			label: entityType.label,
@@ -721,6 +762,7 @@ function convertEntitiesForFilter(entityTypes) {
 			parent_id: entityType.parent_id,
 			organization_id: entityType.organization_id,
 			entities: entityType.entities || [],
+			filterType: filterTypeValue,
 		}
 
 		result[key].push(newObj)
