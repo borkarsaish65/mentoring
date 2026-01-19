@@ -135,6 +135,7 @@ const sequelize = new Sequelize(args.userdb, {
 					updated_at: now,
 					required: false,
 					organization_id: defaultOrgId,
+					allow_custom_entities: false,
 				}))
 
 				const rowsSql = entityTypeToInsert.map((row, rowIndex) => {
