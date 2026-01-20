@@ -5,12 +5,12 @@ class CustomSequencer extends Sequencer {
 	sort(tests) {
 		// Define exact execution order (must match actual filenames)
 		const executionOrder = [
+			'mentees/mentees.specs.js',
+			'mentors/mentors.specs.js',
 			'connections/connections.specs.js',
 			'entity/entity.specs.js',
 			'entity-type/entity-type.specs.js',
 			'form/form.specs.js',
-			'mentees/mentees.specs.js',
-			'mentors/mentors.specs.js',
 			'profile/profile.specs.js',
 			'requestSessions/requestSessions.specs.js',
 			'sessions/sessions.specs.js',

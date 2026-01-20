@@ -1,7 +1,5 @@
 const request = require('supertest')
 const BASE = process.env.BASE_URL || 'http://localhost:3000'
-const TOKEN = process.env.TEST_BEARER_TOKEN || 'test-token'
-
 const schemas = require('./schemas/questions.schemas.json')
 
 describe('questions endpoints generated from api-doc.yaml', () => {

@@ -1,13 +1,14 @@
 jest.setTimeout(100000)
 const request = require('supertest')
 const BASE = process.env.BASE_URL || 'http://localhost:3000'
-const TOKEN = process.env.TEST_BEARER_TOKEN || 'test-token'
 const commonHelper = require('@commonTests')
 const schemas = require('./schemas/mentees.schemas.json')
 let userDetails = null
 
 beforeAll(async () => {
 	console.log('setting up global variables....')
+	adminDetails = await commonHelper.adminLogin()
+	let adminToken = adminDetails.token
 	userDetails = await commonHelper.logIn()
 
 	let profileCreate = await request(BASE)
@@ -23,6 +24,8 @@ beforeAll(async () => {
 			external_session_visibility: 'CURRENT',
 			external_mentor_visibility: 'ALL',
 		})
+
+	await request(BASE).post('/mentoring/v1/admin/triggerViewRebuild').set('x-auth-token', adminToken)
 })
 
 describe('mentees endpoints generated from api-doc.yaml', () => {
