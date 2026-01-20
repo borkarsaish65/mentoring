@@ -531,7 +531,7 @@ const sessions = {
 const entityTypes = {
 	async get(tenantCode, orgCode, modelName, entityValue) {
 		try {
-			const compositeId = entityValue ? `model:${modelName}:${entityValue}` : `model:${modelName}`
+			const compositeId = `model:${modelName}:${entityValue}`
 			const useInternal = nsUseInternal('entityTypes')
 
 			// Step 1: Check user-specific cache first
