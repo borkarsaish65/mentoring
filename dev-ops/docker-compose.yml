@@ -78,13 +78,6 @@ services:
       - ../src/:/var/src
     ports:
       - '3000:3000'
-      - '9229:9229'
-    # command: >
-    #   sh -c "sleep 20 && 
-    #          npm run db:init && 
-    #          npm run db:seed:all && 
-    #          nodemon --trace-warnings app.js"
-    #command: ['npm','run','dev']
     environment:
       - KAFKA_URL=kafka:9092
       - USER_SERVICE_HOST=http://user:3001
@@ -112,12 +105,6 @@ services:
       - ../../user/src/:/var/src
     ports:
       - '3001:3001'
-     # - '9229:9229'
-    # command: >
-    #   sh -c "sleep 20 && 
-    #          npm run db:init && 
-    #          npm run db:seed:all && 
-    #          nodemon --trace-warnings app.js"
     environment:
       - KAFKA_URL=kafka:9092
       - REDIS_HOST=redis://redis:6379

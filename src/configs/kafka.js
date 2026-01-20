@@ -49,7 +49,6 @@ async function startConsumer(kafkaClient) {
 		heartbeatInterval: 3000,
 	})
 
-	// Lifecycle logs (important)
 	consumer.on(consumer.events.GROUP_JOIN, (e) => {
 		logger.info(`Kafka Consumer: Group join – partitions assigned = ${JSON.stringify(e.payload?.memberAssignment)}`)
 	})
@@ -70,9 +69,6 @@ async function startConsumer(kafkaClient) {
 	await consumer.subscribe({ topics })
 	logger.info(`Kafka Consumer: Subscribed to topics = ${JSON.stringify(topics)}`)
 
-	//------------------------------------------------------------------
-	// EACH BATCH VERSION (FIXES HEARTBEAT + MISSED MESSAGES)
-	//------------------------------------------------------------------
 	await consumer.run({
 		autoCommit: true, // safe because processing is fast per message
 		eachBatch: async ({ batch, heartbeat, resolveOffset, commitOffsetsIfNecessary, isRunning, isStale }) => {
@@ -161,7 +157,7 @@ async function startConsumer(kafkaClient) {
 				}
 
 				//--------------------------------------------------------
-				// MARK MESSAGE AS PROCESSED
+				// MARKS MESSAGE AS PROCESSED
 				//--------------------------------------------------------
 				resolveOffset(offset)
 
