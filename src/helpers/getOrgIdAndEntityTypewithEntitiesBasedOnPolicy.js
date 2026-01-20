@@ -250,7 +250,7 @@ module.exports = class OrganizationAndEntityTypePolicyHelper {
 				}
 			}
 			if (modelName) {
-				filter.model_names = { [Op.contains]: [modelName] }
+				filter.model_names = { [Op.contains]: modelName }
 			}
 			//fetch entity types and entities
 			// Handle both array and string cases for tenantCodes
@@ -265,8 +265,8 @@ module.exports = class OrganizationAndEntityTypePolicyHelper {
 				try {
 					entityTypesWithEntities = await entityTypeCache.getEntityTypesAndEntitiesForModel(
 						modelName,
-						filter.organization_code[Op.in],
 						finalTenantCodes,
+						filter.organization_code[Op.in],
 						{
 							allow_filtering: filter.allow_filtering,
 							has_entities: filter.has_entities,
