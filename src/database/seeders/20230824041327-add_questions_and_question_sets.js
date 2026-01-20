@@ -104,8 +104,6 @@ module.exports = {
 					status: 'PUBLISHED',
 					updated_at: new Date(),
 					created_at: new Date(),
-					organization_code: process.env.DEFAULT_ORGANIZATION_CODE,
-					tenant_code: process.env.DEFAULT_TENANT_CODE,
 				}
 
 				questionSetFinalArray.push(questionSetRow)
@@ -118,8 +116,6 @@ module.exports = {
 				questionsArray[questionSet].forEach((question) => {
 					question.created_at = new Date()
 					question.updated_at = new Date()
-					question.organization_code = process.env.DEFAULT_ORGANIZATION_CODE
-					question.tenant_code = process.env.DEFAULT_TENANT_CODE
 
 					question.rendering_data = JSON.stringify(question.rendering_data)
 					if (question.category) {

@@ -160,35 +160,6 @@ exports.updateRecords = async (data, options = {}) => {
 	}
 }
 
-exports.findAllMigrations = async (filter) => {
-	try {
-		const whereClauses = []
-		const replacements = {}
-
-		Object.entries(filter).forEach(([key, value]) => {
-			if (value === undefined) return
-
-			whereClauses.push(`"${key}" = :${key}`)
-			replacements[key] = value
-		})
-
-		const sql = `
-      SELECT *
-      FROM sessions
-      ${whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : ''}
-    `
-
-		const result = await Sequelize.query(sql, {
-			replacements,
-			type: QueryTypes.SELECT,
-		})
-
-		return result
-	} catch (error) {
-		return error
-	}
-}
-
 exports.findAll = async (filter, tenantCode, options = {}) => {
 	try {
 		filter.tenant_code = tenantCode
