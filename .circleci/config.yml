@@ -94,12 +94,6 @@ jobs:
           name: Copy config.json
           command: cp dev-ops/integration_test.config.json src/config.json
 
-      - run:
-          name: Prepare Kafka config for CI
-          command: |
-              cp src/configs/kafka.ci.js src/configs/kafka.js
-
-
       # -------------------------------
       # Start docker-compose
       # -------------------------------
