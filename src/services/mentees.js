@@ -1495,8 +1495,8 @@ module.exports = class MenteesHelper {
 
 			// Parse organization codes from query parameters
 			let organization_codes = []
-			if (queryParams.hasOwnProperty('organization_codes')) {
-				organization_codes = queryParams['organization_codes'].split(',')
+			if (queryParams.hasOwnProperty('organization_ids')) {
+				organization_codes = queryParams['organization_ids'].split(',')
 			}
 
 			// Extract sort parameters
@@ -1675,7 +1675,8 @@ module.exports = class MenteesHelper {
 						extensionDetails.data = processedData
 					}
 				} catch (entityError) {
-					return entityError
+					console.error('Error processing entity types:', entityError)
+					throw entityError
 				}
 			}
 
@@ -1714,7 +1715,7 @@ module.exports = class MenteesHelper {
 			throw error
 		}
 	}
-	static async filterMenteeListBasedOnSaasPolicy(userId, isAMentor, organizationKeys = [], tenantCode, orgCode) {
+	static async filterMenteeListBasedOnSaasPolicy(userId, isAMentor, organizationCodes = [], tenantCode, orgCode) {
 		try {
 			// let extensionColumns = isAMentor ? await mentorQueries.getColumns() : await menteeQueries.getColumns()
 			// // check for external_mentee_visibility else fetch external_mentor_visibility
@@ -1780,12 +1781,12 @@ module.exports = class MenteesHelper {
 			let filter = ''
 			let additionalFilter = ''
 
-			if (organizationKeys.length !== 0) {
-				additionalFilter = `AND "organization_code" in (${organizationKeys
+			if (organizationCodes.length !== 0) {
+				additionalFilter = `AND "organization_code" in (${organizationCodes
 					.map((code) => `'${code}'`)
 					.join(',')}) `
 			}
-			const requesterOrgCode = userPolicyDetails.organization_code || getOrgPolicy?.organization_code || orgCode
+			const requesterOrgCode = userPolicyDetails.organization_code
 			const requesterOrgId = userPolicyDetails.organization_id
 
 			// Important: visible_to_organizations stores organization IDs (from related_orgs), not codes
@@ -1796,8 +1797,16 @@ module.exports = class MenteesHelper {
 				// Filter user data based on policy
 				// generate filter based on condition
 				if (visibilityPolicy === common.CURRENT) {
+					/**
+					 * if user external_mentor_visibility is current. He can only see his/her organizations mentors
+					 * so we will check mentor's organization_id and user organization_id are matching
+					 */
 					filter = `AND "organization_code" = '${requesterOrgCode}'`
 				} else if (visibilityPolicy === common.ASSOCIATED) {
+					/**
+					 * If user external_mentor_visibility is associated
+					 * <<point**>> first we need to check if mentor's visible_to_organizations contain the user organization_id and verify mentor's visibility is not current (if it is ALL and ASSOCIATED it is accessible)
+					 */
 					filter =
 						additionalFilter +
 						`AND ( ('${requesterOrgId}' = ANY("visible_to_organizations") AND "mentee_visibility" != 'CURRENT')`
@@ -1805,6 +1814,10 @@ module.exports = class MenteesHelper {
 					if (additionalFilter.length === 0) filter += ` OR organization_code = '${requesterOrgCode}' )`
 					else filter += `)`
 				} else if (visibilityPolicy === common.ALL) {
+					/**
+					 * We need to check if mentor's visible_to_organizations contain the user organization_id and verify mentor's visibility is not current (if it is ALL and ASSOCIATED it is accessible)
+					 * OR if mentor visibility is ALL that mentor is also accessible
+					 */
 					filter =
 						additionalFilter +
 						`AND (('${requesterOrgId}' = ANY("visible_to_organizations") AND "mentee_visibility" != 'CURRENT' ) OR "mentee_visibility" = 'ALL' OR "organization_code" = '${requesterOrgCode}')`
