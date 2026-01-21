@@ -70,7 +70,8 @@ module.exports = class OrganizationAndEntityTypePolicyHelper {
 						tenantCode: orgExtension.tenant_code,
 					})
 					if (userOrgDetails.success && userOrgDetails.data?.result?.related_orgs?.length > 0) {
-						relatedOrgs = userOrgDetails.data.result.related_orgs
+						// Cast related_orgs to strings to match OrganizationExtension.organization_id (character varying)
+						relatedOrgs = userOrgDetails.data.result.related_orgs.map((orgId) => String(orgId))
 					}
 
 					if (visibilityPolicy === common.ASSOCIATED) {
@@ -206,9 +207,19 @@ module.exports = class OrganizationAndEntityTypePolicyHelper {
 				}
 			}
 
+			// Add id field to each organization object (id = organization_code)
+			const organizationInfoWithId = organizationInfo.map((org) => ({
+				...org,
+				id: org.organization_code,
+			}))
+
 			return {
 				success: true,
-				result: { organizationCodes: organizationCodes, tenantCodes: tenantCodes, organizationInfo },
+				result: {
+					organizationCodes: organizationCodes,
+					tenantCodes: tenantCodes,
+					organizationInfo: organizationInfoWithId,
+				},
 			}
 		} catch (error) {
 			return {

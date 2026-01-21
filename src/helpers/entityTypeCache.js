@@ -270,7 +270,8 @@ async function getEntityTypesAndEntitiesForModel(modelName, tenantCode, orgCode,
 				return formattedCachedEntities
 			}
 		} catch (cacheError) {
-			return cacheError
+			console.error(`Entity type cache read failed (cache+DB): ${cacheError.message}`, cacheError)
+			throw cacheError
 		}
 
 		// Cache miss - fetch from database with user-centric approach
