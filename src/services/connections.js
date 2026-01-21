@@ -43,7 +43,7 @@ module.exports = class ConnectionHelper {
 	static async initiate(bodyData, userId, tenantCode, orgCode) {
 		try {
 			// Check if the target user exists using cache with automatic DB fallback
-			const userExists = await cacheHelper.mentee.get(tenantCode, orgCode, bodyData.user_id, false)
+			const userExists = await cacheHelper.mentee.get(tenantCode, bodyData.user_id)
 			if (!userExists) {
 				return responses.failureResponse({
 					statusCode: httpStatusCode.not_found,
@@ -125,7 +125,7 @@ module.exports = class ConnectionHelper {
 			const userExtensionsModelName = await userExtensionQueries.getModelName()
 
 			// Use getCacheOnly first, then fallback to database query if cache miss
-			let userDetails = await cacheHelper.mentee.getCacheOnly(tenantCode, defaults.orgCode, friendId)
+			let userDetails = await cacheHelper.mentee.getCacheOnly(tenantCode, friendId)
 
 			if (!userDetails) {
 				userDetails = await userExtensionQueries.getMenteeExtension(
@@ -540,7 +540,7 @@ module.exports = class ConnectionHelper {
 			)
 
 			// Get mentor details using getCacheOnly first, then fallback to database query
-			let mentorDetails = await cacheHelper.mentor.getCacheOnly(tenantCode, orgCode, mentorId)
+			let mentorDetails = await cacheHelper.mentor.getCacheOnly(tenantCode, mentorId)
 
 			if (!mentorDetails) {
 				mentorDetails = await mentorExtensionQueries.getMentorExtension(mentorId, ['name'], true, tenantCode)
@@ -623,7 +623,7 @@ module.exports = class ConnectionHelper {
 			)
 
 			// Get mentor details using getCacheOnly first, then fallback to database query
-			let mentorDetails = await cacheHelper.mentor.getCacheOnly(tenantCode, orgCode, mentorId)
+			let mentorDetails = await cacheHelper.mentor.getCacheOnly(tenantCode, mentorId)
 
 			if (!mentorDetails) {
 				mentorDetails = await mentorExtensionQueries.getMentorExtension(mentorId, ['name'], false, tenantCode)
@@ -687,7 +687,7 @@ module.exports = class ConnectionHelper {
 	 * @returns {Promise<Object>} A success response indicating whether the connection exists.
 	 * @throws Will throw an error if an unexpected issue occurs during the check.
 	 */
-	static async checkConnectionIfExists(user_id, body) {
+	static async checkConnectionIfExists(user_id, body, tenantCode) {
 		try {
 			const { friend_id } = body
 
@@ -700,16 +700,17 @@ module.exports = class ConnectionHelper {
 				})
 			}
 
-			const userInfo = await communicationHelper.resolve(friend_id)
+			const userInfo = await communicationHelper.resolve(friend_id, tenantCode)
+
 			if (!userInfo) {
 				return responses.failureResponse({
 					responseCode: 'CLIENT_ERROR',
 					statusCode: httpStatusCode.not_found,
-					message: USER_NOT_FOUND,
+					message: 'USER_NOT_FOUND',
 				})
 			}
 
-			const connectionCheck = await connectionQueries.getConnection(user_id, userInfo.user_id)
+			const connectionCheck = await connectionQueries.getConnection(user_id, userInfo.user_id, tenantCode)
 
 			if (connectionCheck) {
 				connectionExists = true
