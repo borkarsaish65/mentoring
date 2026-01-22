@@ -1492,15 +1492,17 @@ module.exports = class MenteesHelper {
 				additionalProjectionString = queryParams.fields
 				delete queryParams.fields
 			}
-			let organization_ids = []
 
+			// Parse organization codes from query parameters
+			let organization_codes = []
+			if (queryParams.hasOwnProperty('organization_ids')) {
+				organization_codes = queryParams['organization_ids'].split(',')
+			}
+
+			// Extract sort parameters
 			const [sortBy, order] = ['name'].includes(queryParams.sort_by)
 				? [queryParams.sort_by, queryParams.order || 'ASC']
 				: [false, 'ASC']
-
-			if (queryParams.hasOwnProperty('organization_ids')) {
-				organization_ids = queryParams['organization_ids'].split(',')
-			}
 
 			const query = utils.processQueryParametersWithExclusions(queryParams)
 			const userExtensionModelName = await menteeQueries.getModelName()
@@ -1518,7 +1520,7 @@ module.exports = class MenteesHelper {
 					connectedQuery,
 					searchText,
 					queryParams.mentorId ? queryParams.mentorId : userId,
-					organization_ids,
+					organization_codes,
 					[], // roles can be passed if needed
 					tenantCode
 				)
@@ -1566,11 +1568,7 @@ module.exports = class MenteesHelper {
 				userExtensionModelName
 			)
 
-			let filteredQuery = utils.validateAndBuildFilters(
-				query,
-				JSON.parse(JSON.stringify(validationData)),
-				userExtensionModelName
-			)
+			let filteredQuery = utils.validateAndBuildFilters(query, validationData)
 
 			const emailIds = []
 			const searchTextArray = searchText ? searchText.split(',') : []
@@ -1585,7 +1583,7 @@ module.exports = class MenteesHelper {
 			const saasFilter = await this.filterMenteeListBasedOnSaasPolicy(
 				userId,
 				isAMentor,
-				organization_ids,
+				organization_codes,
 				tenantCode,
 				organizationCode
 			)
@@ -1633,18 +1631,15 @@ module.exports = class MenteesHelper {
 			extensionDetails.data = await Promise.all(
 				extensionDetails.data.map(async (user) => {
 					let decryptedEmail = null
-					// Safely decrypt email with error handling
 					if (user.email) {
 						try {
 							decryptedEmail = await emailEncryption.decrypt(user.email)
 						} catch (decryptError) {
-							// Keep original email or set to null if decryption fails
 							decryptedEmail = null
 						}
 					}
 
 					let imageUrl = null
-					// Safely get downloadable URL for image with error handling
 					if (user.image) {
 						try {
 							imageUrl = (await utils.getDownloadableUrl(user.image)) ?? null
@@ -1667,21 +1662,21 @@ module.exports = class MenteesHelper {
 			// Step 5: Process entity types (reuse organizationIds) with error handling
 			if (extensionDetails.data.length > 0) {
 				try {
+					const organizationCodes = uniqueOrgs.map((org) => org.organization_code).filter(Boolean)
 					const processedData = await entityTypeService.processEntityTypesToAddValueLabels(
 						extensionDetails.data,
-						organizationIds,
+						organizationCodes,
 						userExtensionModelName,
-						'organization_id',
+						'organization_code',
 						[],
-						[tenantCode] // Pass tenantCode to the entity processing service
+						[tenantCode]
 					)
 					if (Array.isArray(processedData)) {
 						extensionDetails.data = processedData
-					} else {
-						// Keep original data if processing fails
 					}
 				} catch (entityError) {
-					// Keep original data if processing fails
+					console.error('Error processing entity types:', entityError)
+					throw entityError
 				}
 			}
 
@@ -1720,7 +1715,7 @@ module.exports = class MenteesHelper {
 			throw error
 		}
 	}
-	static async filterMenteeListBasedOnSaasPolicy(userId, isAMentor, organization_ids = [], tenantCode, orgCode) {
+	static async filterMenteeListBasedOnSaasPolicy(userId, isAMentor, organizationCodes = [], tenantCode, orgCode) {
 		try {
 			// let extensionColumns = isAMentor ? await mentorQueries.getColumns() : await menteeQueries.getColumns()
 			// // check for external_mentee_visibility else fetch external_mentor_visibility
@@ -1732,13 +1727,13 @@ module.exports = class MenteesHelper {
 			const userPolicyDetails = isAMentor
 				? await mentorQueries.getMentorExtension(
 						userId,
-						['external_mentee_visibility', 'organization_id'],
+						['external_mentee_visibility', 'organization_id', 'organization_code'],
 						false,
 						tenantCode
 				  )
 				: await menteeQueries.getMenteeExtension(
 						userId,
-						['external_mentee_visibility', 'organization_id'],
+						['external_mentee_visibility', 'organization_id', 'organization_code'],
 						false,
 						tenantCode
 				  )
@@ -1784,12 +1779,19 @@ module.exports = class MenteesHelper {
 			}
 
 			let filter = ''
-			// searching for specific organization
-			let additionalFilter = ``
-			if (organization_ids.length !== 0) {
-				additionalFilter = `AND "organization_id" in (${organization_ids.map((id) => `'${id}'`).join(',')}) `
+			let additionalFilter = ''
+
+			if (organizationCodes.length !== 0) {
+				additionalFilter = `AND "organization_code" in (${organizationCodes
+					.map((code) => `'${code}'`)
+					.join(',')}) `
 			}
-			if (getOrgPolicy.external_mentee_visibility_policy && userPolicyDetails.organization_id) {
+			const requesterOrgCode = userPolicyDetails.organization_code
+			const requesterOrgId = userPolicyDetails.organization_id
+
+			// Important: visible_to_organizations stores organization IDs (from related_orgs), not codes
+			// So we must use organization_id when checking visible_to_organizations
+			if (getOrgPolicy?.external_mentee_visibility_policy && requesterOrgCode && requesterOrgId) {
 				const visibilityPolicy = getOrgPolicy.external_mentee_visibility_policy
 
 				// Filter user data based on policy
@@ -1799,7 +1801,7 @@ module.exports = class MenteesHelper {
 					 * if user external_mentor_visibility is current. He can only see his/her organizations mentors
 					 * so we will check mentor's organization_id and user organization_id are matching
 					 */
-					filter = `AND "organization_id" = '${userPolicyDetails.organization_id}'`
+					filter = `AND "organization_code" = '${requesterOrgCode}'`
 				} else if (visibilityPolicy === common.ASSOCIATED) {
 					/**
 					 * If user external_mentor_visibility is associated
@@ -1807,9 +1809,9 @@ module.exports = class MenteesHelper {
 					 */
 					filter =
 						additionalFilter +
-						`AND ( (:userOrgId = ANY("visible_to_organizations") AND "mentee_visibility" != 'CURRENT')`
+						`AND ( ('${requesterOrgId}' = ANY("visible_to_organizations") AND "mentee_visibility" != 'CURRENT')`
 
-					if (additionalFilter.length === 0) filter += ` OR organization_id = :userOrgId )`
+					if (additionalFilter.length === 0) filter += ` OR organization_code = '${requesterOrgCode}' )`
 					else filter += `)`
 				} else if (visibilityPolicy === common.ALL) {
 					/**
@@ -1818,7 +1820,7 @@ module.exports = class MenteesHelper {
 					 */
 					filter =
 						additionalFilter +
-						`AND (('${userPolicyDetails.organization_id}' = ANY("visible_to_organizations") AND "mentee_visibility" != 'CURRENT' ) OR "mentee_visibility" = 'ALL' OR "organization_id" = '${userPolicyDetails.organization_id}')`
+						`AND (('${requesterOrgId}' = ANY("visible_to_organizations") AND "mentee_visibility" != 'CURRENT' ) OR "mentee_visibility" = 'ALL' OR "organization_code" = '${requesterOrgCode}')`
 				}
 			}
 
