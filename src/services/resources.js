@@ -17,8 +17,12 @@ module.exports = class SessionsHelper {
 
 	static async deleteResource(resourceId, sessionId, userId, organizationId, tenantCode) {
 		try {
-			// Optimized: Single query with JOIN validation - eliminates separate session existence check
-			const deletedRows = await resourceQueries.deleteResourceByIdWithSessionValidation(resourceId, tenantCode)
+			// Validate resource belongs to the specified session and delete it
+			const deletedRows = await resourceQueries.deleteResourceByIdWithSessionValidation(
+				resourceId,
+				sessionId,
+				tenantCode
+			)
 
 			if (deletedRows === 0) {
 				return responses.failureResponse({
