@@ -189,7 +189,7 @@ module.exports = class AdminService {
 					userTenantCode = userRecord[0].tenant_code
 					// Decrypt email if present (matching getUsersByUserIds behavior)
 					if (userRecord[0].email) {
-						userRecord[0].email = await emailEncryption.decrypt(userRecord[0].email.toLowerCase())
+						userRecord[0].email = await emailEncryption.decrypt(userRecord[0].email)
 					}
 					getUserDetails = userRecord
 				}
