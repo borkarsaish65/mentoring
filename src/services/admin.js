@@ -25,6 +25,7 @@ const entityTypeHelper = require('@helpers/entityTypeCache')
 const orgQueries = require('@database/queries/organisationExtension')
 const formQueries = require('@database/queries/form')
 const cacheHelper = require('@generics/cacheHelper')
+const emailEncryption = require('@utils/emailEncryption')
 // sessionOwnership removed - functionality replaced by direct Session queries
 
 // Generic notification helper class
@@ -164,12 +165,38 @@ module.exports = class AdminService {
 	 * @returns {JSON} - List of users
 	 */
 
-	static async userDelete(userId, currentUserId, organizationCode, tenantCode, token = '') {
+	static async userDelete(userId, currentUserId, organizationCode, tenantCode, token = '', isAdmin = false) {
 		try {
 			let result = {}
 
 			// Step 1: Fetch user details
-			const getUserDetails = await menteeQueries.getUsersByUserIds([userId], {}, tenantCode) // userId = "1"
+			let getUserDetails = []
+			let userTenantCode = tenantCode
+
+			// Optimization: If admin, query directly without tenant restriction (1 query)
+			// If regular user (self-deletion), use tenant code from token (1 query)
+			if (isAdmin) {
+				// Admin can delete users from any tenant - query without tenant restriction
+				const userRecord = await sequelize.query(
+					`SELECT * FROM user_extensions WHERE user_id = :userId AND deleted_at IS NULL LIMIT 1`,
+					{
+						type: QueryTypes.SELECT,
+						replacements: { userId },
+					}
+				)
+
+				if (userRecord && userRecord.length > 0) {
+					userTenantCode = userRecord[0].tenant_code
+					// Decrypt email if present (matching getUsersByUserIds behavior)
+					if (userRecord[0].email) {
+						userRecord[0].email = await emailEncryption.decrypt(userRecord[0].email.toLowerCase())
+					}
+					getUserDetails = userRecord
+				}
+			} else {
+				// Regular user deleting themselves - use tenant code from token (optimized path)
+				getUserDetails = await menteeQueries.getUsersByUserIds([userId], {}, tenantCode)
+			}
 
 			if (!getUserDetails || getUserDetails.length === 0) {
 				return responses.failureResponse({
@@ -183,7 +210,8 @@ module.exports = class AdminService {
 			const isMentor = userInfo.is_mentor === true
 
 			// Step 2: Check if user is a session manager
-			const getUserDetailById = await userRequests.fetchUserDetails({ token, userId, tenantCode }) // userId = "1"
+			// Use the user's actual tenant code for fetching user details
+			const getUserDetailById = await userRequests.fetchUserDetails({ token, userId, userTenantCode }) // userId = "1"
 			const roleTitles = getUserDetailById?.data?.result?.user_roles?.map((r) => r.title) || []
 			const isSessionManager = roleTitles.includes(common.SESSION_MANAGER_ROLE)
 
@@ -226,10 +254,16 @@ module.exports = class AdminService {
 			const defaults = await getDefaults()
 
 			// Step 4: Check for user connections
-			const connectionCount = await connectionQueries.getConnectionsCount('', userId, [], tenantCode) // filter, userId = "1", organizationIds = ["1", "2"]
+			// Use user's actual tenant code for connection queries
+			const connectionCount = await connectionQueries.getConnectionsCount('', userId, [], userTenantCode) // filter, userId = "1", organizationIds = ["1", "2"]
 
 			if (connectionCount > 0) {
-				let mentorIds = await connectionQueries.getConnectedUsers(userId, 'user_id', 'friend_id', tenantCode)
+				let mentorIds = await connectionQueries.getConnectedUsers(
+					userId,
+					'user_id',
+					'friend_id',
+					userTenantCode
+				)
 				if (mentorIds.length === 0) {
 					// Continue with deletion process even if no mentors are connected
 					mentorIds = []
@@ -240,21 +274,21 @@ module.exports = class AdminService {
 					{
 						attributes: ['user_id', 'name', 'email'],
 					},
-					tenantCode
+					userTenantCode
 				)
 
 				// Soft delete in communication service - handle invalid-users gracefully
 				let removeChatUser, removeChatAvatar, updateChatUserName
 
 				try {
-					removeChatUser = await communicationHelper.setActiveStatus(userId, false, false, tenantCode) // ( userId = "1", activeStatus = "true" or "false")
+					removeChatUser = await communicationHelper.setActiveStatus(userId, false, false, userTenantCode) // ( userId = "1", activeStatus = "true" or "false")
 				} catch (error) {
 					console.log(`Communication setActiveStatus failed:`, error.response?.data?.message || error.message)
 					removeChatUser = { result: { success: false }, error: error.message }
 				}
 
 				try {
-					removeChatAvatar = await communicationHelper.removeAvatar(userId, tenantCode)
+					removeChatAvatar = await communicationHelper.removeAvatar(userId, userTenantCode)
 				} catch (error) {
 					console.log(`Communication removeAvatar failed:`, error.response?.data?.message || error.message)
 					removeChatAvatar = { result: { success: false }, error: error.message }
@@ -262,7 +296,11 @@ module.exports = class AdminService {
 
 				// Update user name to 'User Not Found'
 				try {
-					updateChatUserName = await communicationHelper.updateUser(userId, common.USER_NOT_FOUND, tenantCode) // userId: "1", name: "User Name"
+					updateChatUserName = await communicationHelper.updateUser(
+						userId,
+						common.USER_NOT_FOUND,
+						userTenantCode
+					) // userId: "1", name: "User Name"
 				} catch (error) {
 					console.log(`Communication updateUser failed:`, error.response?.data?.message || error.message)
 					updateChatUserName = { result: { success: false }, error: error.message }
@@ -278,20 +316,20 @@ module.exports = class AdminService {
 						userId,
 						'friend_id',
 						'user_id',
-						tenantCode
+						userTenantCode
 					)
 					const connectedMentees = await userExtensionQueries.getUsersByUserIds(
 						menteeIds,
 						{
 							attributes: ['user_id', 'name', 'email'],
 						},
-						tenantCode,
+						userTenantCode,
 						true
 					)
 
 					if (connectedMentees.length > 0) {
 						const orgCodes = [userInfo.organization_code, defaults.orgCode].filter(Boolean)
-						const tenantCodes = [tenantCode, defaults.tenantCode].filter(Boolean)
+						const tenantCodes = [userTenantCode, defaults.tenantCode].filter(Boolean)
 						result.isMenteeNotifiedAboutMentorDeletion = await this.notifyMenteesAboutMentorDeletion(
 							connectedMentees,
 							userInfo.name || 'Mentor',
@@ -309,13 +347,13 @@ module.exports = class AdminService {
 				// Delete user connections and requests from DB
 				result.isConnectionsAndRequestsRemoved = await connectionQueries.deleteUserConnectionsAndRequests(
 					userId,
-					tenantCode
+					userTenantCode
 				) // userId = "1"
 
 				// Notify connected mentors about mentee deletion
 				if (connectedMentors.length > 0 && !isMentor) {
 					const orgCodes = [userInfo.organization_code, defaults.orgCode].filter(Boolean)
-					const tenantCodes = [tenantCode, defaults.tenantCode].filter(Boolean)
+					const tenantCodes = [userTenantCode, defaults.tenantCode].filter(Boolean)
 
 					result.isMentorNotifiedAboutMenteeDeletion = await this.notifyMentorsAboutMenteeDeletion(
 						connectedMentors,
@@ -344,12 +382,12 @@ module.exports = class AdminService {
 
 			if (isMentor) {
 				// Handle mentor-specific deletion tasks
-				await this.handleMentorDeletion(userId, userInfo, result, tenantCode)
+				await this.handleMentorDeletion(userId, userInfo, result, userTenantCode)
 				mentorDetailsRemoved = result.mentorDetailsRemoved
 			}
 
 			// Step 5: Session Request Deletion & Notifications
-			const requestSessions = await this.findAllRequestSessions(userId, tenantCode) // userId = "1"
+			const requestSessions = await this.findAllRequestSessions(userId, userTenantCode) // userId = "1"
 
 			if (!defaults.orgCode)
 				return responses.failureResponse({
@@ -370,12 +408,12 @@ module.exports = class AdminService {
 				// Collect all session request IDs for deletion
 				result.isRequestedSessionRemoved = await requestSessionQueries.markRequestsAsDeleted(
 					allSessionRequestIds,
-					tenantCode
+					userTenantCode
 				) // allSessionRequestIds = ["1", "2"]
 
 				// Use both user's codes and defaults for notification templates
 				const orgCodes = [organizationCode, defaults.orgCode].filter(Boolean)
-				const tenantCodes = [tenantCode, defaults.tenantCode].filter(Boolean)
+				const tenantCodes = [userTenantCode, defaults.tenantCode].filter(Boolean)
 
 				if (requestedSessions.length > 0) {
 					result.isRequestedSessionMentorNotified = await this.NotifySessionRequestedUsers(
@@ -385,7 +423,7 @@ module.exports = class AdminService {
 						orgCodes,
 						tenantCodes,
 						organizationCode,
-						tenantCode
+						userTenantCode
 					) // (sessionsDetails, received, sent, orgCodes, tenantCodes)
 				}
 
@@ -397,21 +435,21 @@ module.exports = class AdminService {
 						orgCodes,
 						tenantCodes,
 						organizationCode,
-						tenantCode
+						userTenantCode
 					) // (sessionsDetails, received, sent, orgCodes, tenantCodes)
 				}
 			}
 
-			await this.notifySessionManagerIfMenteeDeleted(userId, userInfo, result, tenantCode)
+			await this.notifySessionManagerIfMenteeDeleted(userId, userInfo, result, userTenantCode)
 
 			// Always check and remove mentee extension (user can be both mentor and mentee)
 			try {
-				menteeDetailsRemoved = await menteeQueries.deleteMenteeExtension(userId, tenantCode) // userId = "1"
+				menteeDetailsRemoved = await menteeQueries.deleteMenteeExtension(userId, userTenantCode) // userId = "1"
 
 				// Cache invalidation: Clear mentee cache after removal
 				if (menteeDetailsRemoved > 0) {
 					try {
-						await cacheHelper.mentee.delete(tenantCode, userId)
+						await cacheHelper.mentee.delete(userTenantCode, userId)
 					} catch (cacheError) {
 						console.error(`Cache deletion failed for mentee ${userId}:`, cacheError)
 					}
@@ -428,7 +466,7 @@ module.exports = class AdminService {
 			const privateSessions = await sessionQueries.getUpcomingSessionsOfMentee(
 				userId,
 				common.SESSION_TYPE.PRIVATE,
-				tenantCode
+				userTenantCode
 			)
 
 			// increment seats_remaining
@@ -436,7 +474,7 @@ module.exports = class AdminService {
 				const upcomingPublicSessions = await sessionQueries.getUpcomingSessionsOfMentee(
 					userId,
 					common.SESSION_TYPE.PUBLIC,
-					tenantCode
+					userTenantCode
 				)
 				// Ensure both are arrays before spreading
 				const privateSessArray = Array.isArray(privateSessions) ? privateSessions : []
@@ -445,12 +483,12 @@ module.exports = class AdminService {
 				for (const session of allUpcomingSessions) {
 					await sessionQueries.updateRecords(
 						{ seats_remaining: literal('seats_remaining + 1') },
-						{ where: { id: session.id, tenant_code: tenantCode } }
+						{ where: { id: session.id, tenant_code: userTenantCode } }
 					)
 
 					// Cache invalidation: Clear session cache after seats_remaining update
 					try {
-						await cacheHelper.sessions.delete(tenantCode, session.id)
+						await cacheHelper.sessions.delete(userTenantCode, session.id)
 					} catch (cacheError) {
 						console.error(`Cache deletion failed for session ${session.id}:`, cacheError)
 					}
@@ -465,7 +503,7 @@ module.exports = class AdminService {
 			try {
 				if (privateSessions.length > 0) {
 					const orgCodes = [userInfo.organization_code, defaults.orgCode].filter(Boolean)
-					const tenantCodes = [tenantCode, defaults.tenantCode].filter(Boolean)
+					const tenantCodes = [userTenantCode, defaults.tenantCode].filter(Boolean)
 
 					result.isPrivateSessionsCancelled = await this.notifyAndCancelPrivateSessions(
 						privateSessions,
@@ -482,7 +520,7 @@ module.exports = class AdminService {
 
 			// Step 8: Remove user from ALL sessions (attendees and enrollments) - not just upcoming
 			try {
-				const sessionCleanup = await sessionAttendeesQueries.removeUserFromAllSessions(userId, tenantCode)
+				const sessionCleanup = await sessionAttendeesQueries.removeUserFromAllSessions(userId, userTenantCode)
 				result.isUnenrolledFromSessions = sessionCleanup.attendeeResult >= 0
 			} catch (error) {
 				console.error('Error removing user from all sessions:', error)
