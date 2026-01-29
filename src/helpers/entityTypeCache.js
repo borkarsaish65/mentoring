@@ -282,7 +282,7 @@ async function getEntityTypesAndEntitiesForModel(modelName, tenantCode, orgCode,
 			const userFilter = {
 				status: 'ACTIVE',
 				organization_code: orgCode,
-				model_names: { [Op.contains]: modelName },
+				model_names: { [Op.contains]: [modelName] },
 			}
 			const userEntityTypes = await entityTypeQueries.findUserEntityTypesAndEntities(userFilter, tenantCode)
 			if (userEntityTypes && userEntityTypes.length > 0) {
