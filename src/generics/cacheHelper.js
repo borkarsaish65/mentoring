@@ -999,7 +999,7 @@ const mentor = {
 				return cachedProfile
 			}
 
-			const rawExtension = await mentorQueries.getMentorExtension(mentorId, [], false, tenantCode)
+			const rawExtension = await mentorQueries.getMentorExtension(mentorId, [], true, tenantCode)
 			return rawExtension
 		} catch (error) {
 			console.error(`❌ Failed to get mentor profile ${mentorId} from cache/database:`, error)
@@ -1237,7 +1237,7 @@ const mentee = {
 				return cachedProfile
 			}
 
-			const rawExtension = await userQueries.getMenteeExtension(menteeId, [], false, tenantCode)
+			const rawExtension = await userQueries.getMenteeExtension(menteeId, [], true, tenantCode)
 			return rawExtension
 		} catch (error) {
 			console.error(`❌ Failed to get mentee profile ${menteeId} from cache/database:`, error)
