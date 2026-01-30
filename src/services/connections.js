@@ -155,6 +155,12 @@ module.exports = class ConnectionHelper {
 					message: 'USER_NOT_FOUND',
 				})
 			}
+
+			// Remove email from response - not needed for connection details
+			if (userDetails.email) {
+				delete userDetails.email
+			}
+
 			userDetails.image &&= (await userRequests.getDownloadableUrl(userDetails.image))?.result
 
 			// Fetch entity types associated with the user
@@ -701,6 +707,7 @@ module.exports = class ConnectionHelper {
 			}
 
 			const userInfo = await communicationHelper.resolve(friend_id, tenantCode)
+
 			if (!userInfo) {
 				return responses.failureResponse({
 					responseCode: 'CLIENT_ERROR',
