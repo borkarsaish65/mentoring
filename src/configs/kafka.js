@@ -17,6 +17,7 @@ const organizationConsumer = require('@generics/kafka/consumers/organization')
 
 module.exports = async () => {
 	const kafkaIps = process.env.KAFKA_URL.split(',')
+
 	const KafkaClient = new Kafka({
 		clientId: 'mentoring',
 		brokers: kafkaIps,
@@ -37,9 +38,9 @@ module.exports = async () => {
 	global.kafkaProducer = producer
 	global.kafkaClient = KafkaClient
 
-	startConsumer(KafkaClient).catch((err) =>
+	startConsumer(KafkaClient).catch((err) => {
 		logger.error('Kafka consumer failed to start', { err: err?.stack || err?.message })
-	)
+	})
 }
 
 async function startConsumer(kafkaClient) {
@@ -64,7 +65,7 @@ async function startConsumer(kafkaClient) {
 	await consumer.connect()
 	logger.info('Kafka Consumer: Connected to broker')
 
-	const topics = [process.env.EVENTS_TOPIC, process.env.CLEAR_INTERNAL_CACHE]
+	const topics = [process.env.EVENTS_TOPIC, process.env.CLEAR_INTERNAL_CACHE].filter(Boolean)
 
 	await consumer.subscribe({ topics })
 	logger.info(`Kafka Consumer: Subscribed to topics = ${JSON.stringify(topics)}`)
