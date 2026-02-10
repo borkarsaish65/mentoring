@@ -90,7 +90,6 @@ exports.getEnrolledMentees = async (sessionId, queryParams, userID) => {
 			'meta',
 			'email_verified',
 			'gender',
-			'location',
 			'about',
 			'share_link',
 			'status',
