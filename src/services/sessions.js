@@ -1016,11 +1016,14 @@ module.exports = class SessionsHelper {
 
 			const orgDetails = await organisationExtensionQueries.findOne(
 				{ organization_id: mentorExtension.organization_id },
-				{ attributes: ['name'] }
+				{ attributes: ['name', 'organization_id'] }
 			)
 
 			if (orgDetails && orgDetails.name) {
-				sessionDetails.organization = orgDetails.name
+				sessionDetails['organization'] = {
+					id: mentorExtension.organization_id,
+					name: orgDetails.name,
+				}
 			}
 
 			sessionDetails.mentor_name = mentorExtension.name
