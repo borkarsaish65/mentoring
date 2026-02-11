@@ -25,7 +25,8 @@ beforeAll(async () => {
 			external_mentor_visibility: 'ALL',
 		})
 
-	await request(BASE).post('/mentoring/v1/admin/triggerViewRebuild').set('x-auth-token', adminToken)
+	let result = await request(BASE).post('/mentoring/v1/admin/triggerViewRebuild').set('x-auth-token', adminToken)
+	console.log(result, '<--trigger view build result...28')
 })
 
 describe('mentees endpoints generated from api-doc.yaml', () => {
