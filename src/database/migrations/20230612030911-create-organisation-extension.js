@@ -27,14 +27,6 @@ module.exports = {
 			allow_mentor_override: {
 				type: Sequelize.BOOLEAN,
 			},
-			organization_code: {
-				type: Sequelize.STRING,
-				allowNull: false,
-			},
-			tenant_code: {
-				type: Sequelize.STRING,
-				allowNull: false,
-			},
 			created_at: {
 				allowNull: false,
 				type: Sequelize.DATE,
