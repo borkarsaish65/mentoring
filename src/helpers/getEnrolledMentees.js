@@ -27,9 +27,8 @@ exports.getEnrolledMentees = async (sessionId, queryParams, userID) => {
 				],
 			},
 		}
-		let [enrolledUsers, attendeesAccounts] = await Promise.all([
-			menteeExtensionQueries.getUsersByUserIds(menteeIds, options),
-			userRequests.getListOfUserDetails(menteeIds).then((result) => result.result),
+		let [enrolledUsers] = await Promise.all([
+			userRequests.getUserDetailedList(menteeIds).then((result) => result.result),
 		])
 
 		enrolledUsers.forEach((user) => {
@@ -68,18 +67,9 @@ exports.getEnrolledMentees = async (sessionId, queryParams, userID) => {
 			'organization_id'
 		)
 
-		// Merge arrays based on user_id and id
-		const mergedUserArray = enrolledUsers.map((user) => {
-			const matchingUserDetails = attendeesAccounts.find((details) => details.id === user.user_id)
-
-			// Merge properties from user and matchingUserDetails
-
-			return matchingUserDetails ? { ...user, ...matchingUserDetails } : user
-		})
-
 		if (queryParams?.csv === 'true') {
 			const csv = parser.parse(
-				mergedUserArray.map((user, index) => ({
+				enrolledUsers.map((user, index) => ({
 					index_number: index + 1,
 					name: user.name,
 					designation: user.designation
@@ -100,7 +90,6 @@ exports.getEnrolledMentees = async (sessionId, queryParams, userID) => {
 			'meta',
 			'email_verified',
 			'gender',
-			'location',
 			'about',
 			'share_link',
 			'status',
@@ -111,7 +100,8 @@ exports.getEnrolledMentees = async (sessionId, queryParams, userID) => {
 			'custom_entity_text',
 		]
 
-		const cleanedAttendeesAccounts = mergedUserArray.map((user, index) => {
+		const cleanedAttendeesAccounts = enrolledUsers.map((user, index) => {
+			user.id = user.user_id
 			propertiesToDelete.forEach((property) => {
 				delete user[property]
 			})

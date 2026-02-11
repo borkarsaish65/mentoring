@@ -7,6 +7,7 @@ const Sequelize = require('@database/models/index').sequelize
 const common = require('@constants/common')
 const _ = require('lodash')
 const { Op } = require('sequelize')
+const emailEncryption = require('@utils/emailEncryption')
 
 module.exports = class MentorExtensionQueries {
 	static async getColumns() {
@@ -86,7 +87,9 @@ module.exports = class MentorExtensionQueries {
 			} else {
 				mentor = await MentorExtension.findOne(queryOptions)
 			}
-
+			if (mentor && mentor.email) {
+				mentor.email = await emailEncryption.decrypt(mentor.email.toLowerCase())
+			}
 			return mentor
 		} catch (error) {
 			throw error
@@ -123,6 +126,10 @@ module.exports = class MentorExtensionQueries {
 					external_session_visibility: null,
 					external_mentor_visibility: null,
 					deleted_at: Date.now(),
+					name: null,
+					email: null,
+					phone: null,
+					image: null,
 				},
 				{
 					where: {
@@ -207,7 +214,7 @@ module.exports = class MentorExtensionQueries {
 			}
 
 			let projectionClause =
-				'user_id,rating,meta,mentor_visibility,mentee_visibility,organization_id,designation,area_of_expertise,education_qualification,custom_entity_text,name'
+				'name,email,designation,organization_id,area_of_expertise,education_qualification,custom_entity_text,user_id,rating,mentor_visibility,mentee_visibility,meta'
 
 			if (returnOnlyUserId) {
 				projectionClause = 'user_id'

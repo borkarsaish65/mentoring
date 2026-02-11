@@ -5,6 +5,7 @@ const Sequelize = require('@database/models/index').sequelize
 const common = require('@constants/common')
 const _ = require('lodash')
 const { Op } = require('sequelize')
+const emailEncryption = require('@utils/emailEncryption')
 
 module.exports = class MenteeExtensionQueries {
 	static async getColumns() {
@@ -155,6 +156,9 @@ module.exports = class MenteeExtensionQueries {
 			} else {
 				mentee = await MenteeExtension.findOne(queryOptions)
 			}
+			if (mentee && mentee.email) {
+				mentee.email = await emailEncryption.decrypt(mentee.email.toLowerCase())
+			}
 			return mentee
 		} catch (error) {
 			throw error
@@ -192,6 +196,10 @@ module.exports = class MenteeExtensionQueries {
 					external_mentee_visibility: null,
 					mentee_visibility: null,
 					deleted_at: Date.now(),
+					name: null,
+					email: null,
+					phone: null,
+					image: null,
 				},
 				{
 					where: {
@@ -340,15 +348,15 @@ module.exports = class MenteeExtensionQueries {
 			throw error
 		}
 	}
-	static async findOneFromView(userId) {
+	static async findOneFromView(userId, attributes = []) {
 		try {
+			const columns = attributes.length > 0 ? attributes.join(', ') : '*'
 			let query = `
 				SELECT *
 				FROM ${common.materializedViewsPrefix + MenteeExtension.tableName}
 				WHERE user_id = :userId
 				LIMIT 1
 			`
-
 			const user = await Sequelize.query(query, {
 				replacements: { userId },
 				type: QueryTypes.SELECT,
@@ -392,11 +400,13 @@ module.exports = class MenteeExtensionQueries {
 
 			let projectionClause = `
 				user_id,
-				mentee_visibility,
+				name,
+				email,
 				organization_id,
 				designation,
 				area_of_expertise,
 				education_qualification,
+				mentee_visibility,
 				custom_entity_text::JSONB AS custom_entity_text,
 				meta::JSONB AS meta
 			`
@@ -458,6 +468,62 @@ module.exports = class MenteeExtensionQueries {
 				data: results,
 				count: Number(count[0].count),
 			}
+		} catch (error) {
+			throw error
+		}
+	}
+	static async getAllUsersByIds(ids) {
+		try {
+			const excludeUserIds = ids.length === 0
+			const userFilterClause = excludeUserIds ? '' : `user_id IN (${ids.map((id) => `'${id}'`).join(',')})`
+
+			const query = `
+				SELECT *
+				FROM ${common.materializedViewsPrefix + MenteeExtension.tableName}
+				WHERE
+					${userFilterClause}
+				`
+
+			const results = await Sequelize.query(query, {
+				type: QueryTypes.SELECT,
+			})
+			return results
+		} catch (error) {
+			throw error
+		}
+	}
+
+	/**
+	 * Retrieves users from the database based on the provided email IDs.
+	 *
+	 * This static method constructs and executes a SQL query to fetch users whose email
+	 * addresses are provided in the `emailIds` array. It returns an array of user records
+	 * matching the given email IDs.
+	 *
+	 * @param {Array<string>} emailIds - An array of email IDs to filter the users by.
+	 * @returns {Promise<Array<object>>} - A promise that resolves to an array of user objects.
+	 *
+	 * @example
+	 * const emailIds = ['user1@example.com', 'user2@example.com'];
+	 * const users = await getUsersByEmailIds(emailIds);
+	 * console.log(users); // Outputs an array of user records matching the provided email IDs.
+	 */
+	static async getUsersByEmailIds(emailIds) {
+		try {
+			const userFilterClause =
+				emailIds.length === 0 ? '' : `email IN (${emailIds.map((id) => `'${id}'`).join(',')})`
+
+			const query = `
+				SELECT *
+				FROM ${common.materializedViewsPrefix + MenteeExtension.tableName}
+				WHERE
+					${userFilterClause}
+				`
+
+			const results = await Sequelize.query(query, {
+				type: QueryTypes.SELECT,
+			})
+			return results
 		} catch (error) {
 			throw error
 		}

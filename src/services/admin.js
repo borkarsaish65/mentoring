@@ -11,7 +11,6 @@ const mentorQueries = require('@database/queries/mentorExtension')
 const menteeQueries = require('@database/queries/userExtension')
 const adminService = require('../generics/materializedViews')
 const responses = require('@helpers/responses')
-const emailEncryption = require('@utils/emailEncryption')
 
 module.exports = class AdminHelper {
 	/**
@@ -23,15 +22,8 @@ module.exports = class AdminHelper {
 	 * @returns {JSON} - List of users
 	 */
 
-	static async userDelete(decodedToken, userId) {
+	static async userDelete(userId) {
 		try {
-			if (!decodedToken.roles.some((role) => role.title === common.ADMIN_ROLE)) {
-				return responses.failureResponse({
-					message: 'UNAUTHORIZED_REQUEST',
-					statusCode: httpStatusCode.unauthorized,
-					responseCode: 'UNAUTHORIZED',
-				})
-			}
 			let result = {}
 
 			const mentor = await mentorQueries.getMentorExtension(userId)
@@ -93,7 +85,7 @@ module.exports = class AdminHelper {
 					const payload = {
 						type: 'email',
 						email: {
-							to: await emailEncryption.decrypt(attendee.email),
+							to: attendee.email,
 							subject: templateData.subject,
 							body: utils.composeEmailBody(templateData.body, {
 								name: attendee.name,

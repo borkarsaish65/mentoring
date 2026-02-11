@@ -5,8 +5,6 @@ const httpStatusCode = require('@generics/http-status')
 const feedbackHelper = require('./feedback')
 const utils = require('@generics/utils')
 
-const { successResponse } = require('@constants/common')
-const rolePermissionMappingQueries = require('@database/queries/role-permission-mapping')
 const { UniqueConstraintError } = require('sequelize')
 const menteeQueries = require('@database/queries/userExtension')
 const sessionAttendeesQueries = require('@database/queries/sessionAttendees')
@@ -21,15 +19,17 @@ const { getDefaultOrgId } = require('@helpers/getDefaultOrgId')
 const { Op } = require('sequelize')
 const { removeDefaultOrgEntityTypes } = require('@generics/utils')
 const entityTypeService = require('@services/entity-type')
-const entityType = require('@database/models/entityType')
 const { getEnrolledMentees } = require('@helpers/getEnrolledMentees')
 const responses = require('@helpers/responses')
 const permissions = require('@helpers/getPermissions')
 const { buildSearchFilter } = require('@helpers/search')
 const { defaultRulesFilter } = require('@helpers/defaultRules')
 
-const searchConfig = require('@configs/search.json')
+const defaultSearchConfig = require('@configs/search.json')
 const emailEncryption = require('@utils/emailEncryption')
+const menteeExtensionQueries = require('@database/queries/userExtension')
+const getOrgIdAndEntityTypes = require('@helpers/getOrgIdAndEntityTypewithEntitiesBasedOnPolicy')
+const searchConfig = require('@root/config.json')
 
 module.exports = class MenteesHelper {
 	/**
@@ -37,13 +37,16 @@ module.exports = class MenteesHelper {
 	 * @method
 	 * @name profile
 	 * @param {String} userId - user id.
+	 * @param {String} orgId - organization id.
+	 * @param {String} roles - user roles.
 	 * @returns {JSON} - profile details
 	 */
-	static async read(id, orgId) {
-		const menteeDetails = await userRequests.fetchUserDetails({ userId: id })
+	static async read(id, orgId, roles) {
+		const menteeDetails = await userRequests.getUserDetails(id)
 		const mentee = await menteeQueries.getMenteeExtension(id)
 		delete mentee.user_id
 		delete mentee.visible_to_organizations
+		delete mentee.image
 
 		const defaultOrgId = await getDefaultOrgId()
 		if (!defaultOrgId)
@@ -68,7 +71,7 @@ module.exports = class MenteesHelper {
 
 		const totalSession = await sessionAttendeesQueries.countEnrolledSessions(id)
 
-		const menteePermissions = await permissions.getPermissions(menteeDetails.data.result.user_roles)
+		const menteePermissions = await permissions.getPermissions(roles)
 		if (!Array.isArray(menteeDetails.data.result.permissions)) {
 			menteeDetails.data.result.permissions = []
 		}
@@ -77,6 +80,16 @@ module.exports = class MenteesHelper {
 		const profileMandatoryFields = await utils.validateProfileData(processDbResponse, validationData)
 		menteeDetails.data.result.profile_mandatory_fields = profileMandatoryFields
 
+		if (!menteeDetails.data.result.organization) {
+			const orgDetails = await organisationExtensionQueries.findOne(
+				{ organization_id: orgId },
+				{ attributes: ['name'] }
+			)
+			menteeDetails.data.result['organization'] = {
+				id: orgId,
+				name: orgDetails.name,
+			}
+		}
 		return responses.successResponse({
 			statusCode: httpStatusCode.ok,
 			message: 'PROFILE_FTECHED_SUCCESSFULLY',
@@ -240,15 +253,8 @@ module.exports = class MenteesHelper {
 
 	static async joinSession(sessionId, userId) {
 		try {
-			const mentee = await userRequests.fetchUserDetails({ userId })
-
-			if (mentee.data.responseCode !== 'OK') {
-				return responses.failureResponse({
-					message: 'USER_NOT_FOUND',
-					statusCode: httpStatusCode.bad_request,
-					responseCode: 'CLIENT_ERROR',
-				})
-			}
+			const mentee = await menteeExtensionQueries.getMenteeExtension(userId, ['name', 'user_id'])
+			if (!mentee) throw createUnauthorizedResponse('USER_NOT_FOUND')
 
 			const session = await sessionQueries.findById(sessionId)
 
@@ -275,9 +281,8 @@ module.exports = class MenteesHelper {
 				})
 			}
 
-			let menteeDetails = mentee.data.result
 			const sessionAttendee = await sessionAttendeesQueries.findAttendeeBySessionAndUserId(
-				menteeDetails.id,
+				mentee.user_id,
 				sessionId
 			)
 			if (!sessionAttendee) {
@@ -311,7 +316,7 @@ module.exports = class MenteesHelper {
 			} else {
 				const attendeeLink = await bigBlueButtonService.joinMeetingAsAttendee(
 					sessionId,
-					menteeDetails.name,
+					mentee.name,
 					session.mentee_password
 				)
 				meetingInfo = {
@@ -373,9 +378,13 @@ module.exports = class MenteesHelper {
 		// Create saas filter for view query
 		const saasFilter = await this.filterSessionsBasedOnSaasPolicy(userId, isAMentor)
 
+		let search_config = defaultSearchConfig
+		if (searchConfig.search) {
+			search_config = { search: searchConfig.search }
+		}
 		const searchFilter = await buildSearchFilter({
 			searchOn: searchOn ? searchOn.split(',') : false,
-			searchConfig: searchConfig.search.session,
+			searchConfig: search_config.search.session,
 			search,
 			modelName: sessionModelName,
 		})
@@ -451,8 +460,8 @@ module.exports = class MenteesHelper {
 				})
 			}
 			const organizationName = menteeExtension
-				? (await userRequests.fetchOrgDetails({ organizationId: menteeExtension.organization_id }))?.data
-						?.result?.name
+				? (await userRequests.getOrgDetails({ organizationId: menteeExtension.organization_id }))?.data?.result
+						?.name
 				: ''
 			if (!isAMentor && menteeExtension.is_mentor == true) {
 				throw responses.failureResponse({
@@ -595,13 +604,39 @@ module.exports = class MenteesHelper {
 			const mentorIds = [...new Set(sessions.map((session) => session.mentor_id))]
 
 			// Fetch mentor details
-			const mentorDetails = (await userRequests.getListOfUserDetails(mentorIds)).result
+			// const mentorDetails = (await userRequests.getListOfUserDetails(mentorIds)).result
+			const mentorDetails = await menteeQueries.getUsersByUserIds(
+				mentorIds,
+				{
+					attributes: ['user_id', 'organization_id'],
+				},
+				true
+			)
+
+			let organizationIds = []
+			mentorDetails.forEach((element) => {
+				organizationIds.push(element.organization_id)
+			})
+			const organizationDetails = await organisationExtensionQueries.findAll(
+				{
+					organization_id: {
+						[Op.in]: [...organizationIds],
+					},
+				},
+				{
+					attributes: ['name', 'organization_id'],
+				}
+			)
+
 			// Map mentor names to sessions
 			sessions.forEach((session) => {
-				const mentor = mentorDetails.find((mentorDetail) => mentorDetail.id === session.mentor_id)
+				const mentor = mentorDetails.find((mentorDetail) => mentorDetail.user_id === session.mentor_id)
 				if (mentor) {
+					const orgnization = organizationDetails.find(
+						(organizationDetail) => organizationDetail.organization_id === mentor.organization_id
+					)
 					session.mentor_name = mentor.name
-					session.organization = mentor.organization
+					session.organization = orgnization.name
 				}
 			})
 
@@ -640,6 +675,7 @@ module.exports = class MenteesHelper {
 			}
 			// Call user service to fetch organisation details --SAAS related changes
 			let userOrgDetails = await userRequests.fetchOrgDetails({ organizationId: orgId })
+
 			// Return error if user org does not exists
 			if (!userOrgDetails.success || !userOrgDetails.data || !userOrgDetails.data.result) {
 				return responses.failureResponse({
@@ -648,8 +684,14 @@ module.exports = class MenteesHelper {
 					responseCode: 'CLIENT_ERROR',
 				})
 			}
+
+			const organization_name = userOrgDetails.data.result.name
+
 			// Find organisation policy from organisation_extension table
-			let organisationPolicy = await organisationExtensionQueries.findOrInsertOrganizationExtension(orgId)
+			let organisationPolicy = await organisationExtensionQueries.findOrInsertOrganizationExtension(
+				orgId,
+				organization_name
+			)
 
 			data.user_id = userId
 
@@ -788,7 +830,8 @@ module.exports = class MenteesHelper {
 				//both both user data and organisation can change at the same time.
 				let userOrgDetails = await userRequests.fetchOrgDetails({ organizationId: data.organization.id })
 				const orgPolicies = await organisationExtensionQueries.findOrInsertOrganizationExtension(
-					data.organization.id
+					data.organization.id,
+					userOrgDetails.data.result.name
 				)
 				if (!orgPolicies?.organization_id) {
 					return responses.failureResponse({
@@ -931,7 +974,7 @@ module.exports = class MenteesHelper {
 			const filter_type = filterType !== '' ? filterType : common.MENTOR_ROLE
 
 			let organization_ids = []
-			const organizations = await this.getOrganizationIdBasedOnPolicy(
+			const organizations = await getOrgIdAndEntityTypes.getOrganizationIdBasedOnPolicy(
 				tokenInformation.id,
 				tokenInformation.organization_id,
 				filter_type
@@ -942,7 +985,7 @@ module.exports = class MenteesHelper {
 
 				if (organization_ids.length > 0) {
 					//get organization list
-					const organizationList = await userRequests.listOrganization(organization_ids)
+					const organizationList = await userRequests.organizationList(organization_ids)
 					if (organizationList.success && organizationList.data?.result?.length > 0) {
 						result.organizations = organizationList.data.result
 					}
@@ -962,7 +1005,7 @@ module.exports = class MenteesHelper {
 						modelName.push(modelNameResult)
 					}
 					// get entity type with entities list
-					const getEntityTypesWithEntities = await this.getEntityTypeWithEntitiesBasedOnOrg(
+					const getEntityTypesWithEntities = await getOrgIdAndEntityTypes.getEntityTypeWithEntitiesBasedOnOrg(
 						organization_ids,
 						entity_type,
 						defaultOrgId ? defaultOrgId : '',
@@ -972,12 +1015,12 @@ module.exports = class MenteesHelper {
 					if (getEntityTypesWithEntities.success && getEntityTypesWithEntities.result) {
 						let entityTypesWithEntities = getEntityTypesWithEntities.result
 						if (entityTypesWithEntities.length > 0) {
-							let convertedData = convertEntitiesForFilter(entityTypesWithEntities)
+							let convertedData = utils.convertEntitiesForFilter(entityTypesWithEntities)
 							let doNotRemoveDefaultOrg = false
 							if (organization_ids.includes(defaultOrgId)) {
 								doNotRemoveDefaultOrg = true
 							}
-							result.entity_types = filterEntitiesBasedOnParent(
+							result.entity_types = utils.filterEntitiesBasedOnParent(
 								convertedData,
 								defaultOrgId,
 								doNotRemoveDefaultOrg
@@ -998,215 +1041,6 @@ module.exports = class MenteesHelper {
 			})
 		} catch (error) {
 			return error
-		}
-	}
-
-	static async getOrganizationIdBasedOnPolicy(userId, organization_id, filterType) {
-		try {
-			let organizationIds = []
-			filterType = filterType.toLowerCase()
-
-			let visibilityPolicies = []
-			let orgVisibilityPolicies = []
-
-			const policyMap = {
-				[common.MENTEE_ROLE]: ['organization_id', 'external_mentee_visibility_policy'],
-				[common.SESSION]: ['organization_id', 'external_session_visibility_policy'],
-				[common.MENTOR_ROLE]: ['organization_id', 'external_mentor_visibility_policy'],
-			}
-			visibilityPolicies = policyMap[filterType] || []
-			const attributes = visibilityPolicies
-
-			const orgExtension = await organisationExtensionQueries.findOne(
-				{ organization_id },
-				{
-					attributes: attributes,
-				}
-			)
-
-			const orgPolicyMap = {
-				[common.MENTEE_ROLE]: orgExtension.external_mentee_visibility_policy,
-				[common.SESSION]: orgExtension.external_session_visibility_policy,
-				[common.MENTOR_ROLE]: orgExtension.external_mentor_visibility_policy,
-			}
-			orgVisibilityPolicies = orgPolicyMap[filterType] || []
-			const visibilityPolicy = orgVisibilityPolicies
-
-			if (orgExtension?.organization_id) {
-				if (visibilityPolicy === common.CURRENT) {
-					organizationIds.push(orgExtension.organization_id)
-				} else if (visibilityPolicy === common.ASSOCIATED || visibilityPolicy === common.ALL) {
-					organizationIds.push(orgExtension.organization_id)
-					let relatedOrgs = []
-					let userOrgDetails = await userRequests.fetchOrgDetails({
-						organizationId: orgExtension.organization_id,
-					})
-					if (userOrgDetails.success && userOrgDetails.data?.result?.related_orgs?.length > 0) {
-						relatedOrgs = userOrgDetails.data.result.related_orgs
-					}
-					if (visibilityPolicy === common.ASSOCIATED) {
-						const associatedAdditionalFilter =
-							filterType == common.MENTEE_ROLE
-								? {
-										mentee_visibility_policy: {
-											[Op.ne]: 'CURRENT',
-										},
-								  }
-								: filterType == common.SESSION
-								? {
-										session_visibility_policy: {
-											[Op.ne]: 'CURRENT',
-										},
-								  }
-								: {
-										mentor_visibility_policy: {
-											[Op.ne]: 'CURRENT',
-										},
-								  }
-
-						const organizationExtension = await organisationExtensionQueries.findAll(
-							{
-								[Op.and]: [
-									{
-										organization_id: {
-											[Op.in]: [...relatedOrgs],
-										},
-									},
-									associatedAdditionalFilter,
-								],
-							},
-							{
-								attributes: ['organization_id'],
-							}
-						)
-						organizationIds.push(orgExtension.organization_id)
-						if (organizationExtension) {
-							const organizationIdsFromOrgExtension = organizationExtension.map(
-								(orgExt) => orgExt.organization_id
-							)
-							organizationIds.push(...organizationIdsFromOrgExtension)
-						}
-					} else {
-						// filter out the organizations
-						// CASE 1 : in case of mentee listing filterout organizations with external_mentee_visibility_policy = ALL
-						// CASE 2 : in case of session listing filterout organizations with session_visibility_policy = ALL
-						// CASE 3 : in case of mentor listing filterout organizations with mentor_visibility_policy = ALL
-						const filterQuery =
-							filterType == common.MENTEE_ROLE
-								? {
-										mentee_visibility_policy: common.ALL, //1
-								  }
-								: filterType == common.SESSION
-								? {
-										session_visibility_policy: common.ALL, //2
-								  }
-								: {
-										mentor_visibility_policy: common.ALL, //3
-								  }
-
-						// this filter is applied for the below condition
-						// SM mentee_visibility_policy (in case of mentee list) or external_mentor_visibility policy (in case of mentor list) = ALL
-						//  and CASE 1 (mentee list) : Mentees is related to the SM org but external_mentee_visibility is CURRENT (exclude these mentees)
-						//  CASE 2 : (session list) : Sessions is related to the SM org but session_visibility is CURRENT (exclude these sessions)
-						//  CASE 3 : (mentor list) : Mentors is related to SM Org but mentor_visibility set to CURRENT  (exclude these mentors)
-						const additionalFilter =
-							filterType == common.MENTEE_ROLE
-								? {
-										mentee_visibility_policy: {
-											//1
-											[Op.ne]: 'CURRENT',
-										},
-								  }
-								: filterType == common.SESSION
-								? {
-										session_visibility_policy: {
-											//2
-											[Op.ne]: 'CURRENT',
-										},
-								  }
-								: {
-										mentor_visibility_policy: {
-											//3
-											[Op.ne]: 'CURRENT',
-										},
-								  }
-						const organizationExtension = await organisationExtensionQueries.findAll(
-							{
-								[Op.or]: [
-									filterQuery,
-									{
-										[Op.and]: [
-											{
-												organization_id: {
-													[Op.in]: [...relatedOrgs],
-												},
-											},
-											additionalFilter,
-										],
-									},
-								],
-							},
-							{
-								attributes: ['organization_id'],
-							}
-						)
-						organizationIds.push(orgExtension.organization_id)
-						if (organizationExtension) {
-							const organizationIdsFromOrgExtension = organizationExtension.map(
-								(orgExt) => orgExt.organization_id
-							)
-							organizationIds.push(...organizationIdsFromOrgExtension)
-						}
-					}
-				}
-			}
-
-			return {
-				success: true,
-				result: organizationIds,
-			}
-		} catch (error) {
-			return {
-				success: false,
-				message: error.message,
-			}
-		}
-	}
-
-	static async getEntityTypeWithEntitiesBasedOnOrg(organization_ids, entity_types, defaultOrgId = '', modelName) {
-		try {
-			let filter = {
-				status: common.ACTIVE_STATUS,
-				allow_filtering: true,
-				has_entities: true,
-				organization_id: {
-					[Op.in]: defaultOrgId ? [...organization_ids, defaultOrgId] : organization_ids,
-				},
-			}
-
-			let entityTypes = []
-			if (entity_types) {
-				entityTypes = entity_types.split(',')
-				filter.value = {
-					[Op.in]: entityTypes,
-				}
-			}
-
-			if (modelName) {
-				filter.model_names = { [Op.contains]: [modelName] }
-			}
-			//fetch entity types and entities
-			let entityTypesWithEntities = await entityTypeQueries.findUserEntityTypesAndEntities(filter)
-
-			return {
-				success: true,
-				result: entityTypesWithEntities,
-			}
-		} catch (error) {
-			return {
-				success: false,
-				message: error.message,
-			}
 		}
 	}
 
@@ -1285,44 +1119,55 @@ module.exports = class MenteesHelper {
 				})
 			}
 
-			const menteeIds = extensionDetails.data.map((item) => item.user_id)
-			const userDetails = await userRequests.getListOfUserDetails(menteeIds, true)
+			const organizationIds = [...new Set(extensionDetails.data.map((user) => user.organization_id))]
 
+			// Step 2: Query organization table (only if there are IDs to query)
+			let organizationDetails = []
+			if (organizationIds.length > 0) {
+				const orgFilter = {
+					organization_id: {
+						[Op.in]: organizationIds,
+					},
+				}
+				organizationDetails = await organisationExtensionQueries.findAll(orgFilter, {
+					attributes: ['name', 'organization_id'],
+					raw: true,
+				})
+			}
+
+			// Step 3: Create a map of organization_id to organization details
+			const orgMap = {}
+			organizationDetails.forEach((org) => {
+				orgMap[org.organization_id] = {
+					id: org.organization_id,
+					name: org.name,
+				}
+			})
+
+			//Attach organization details and decrypt email for each user
+			extensionDetails.data = await Promise.all(
+				extensionDetails.data.map(async (user) => ({
+					...user,
+					id: user.user_id, // Add 'id' key, to be removed later
+					email: user.email ? await emailEncryption.decrypt(user.email) : null, // Decrypt email
+					organization: orgMap[user.organization_id] || null,
+				}))
+			)
+
+			// Step 5: Process entity types (reuse organizationIds)
 			if (extensionDetails.data.length > 0) {
-				const uniqueOrgIds = [...new Set(extensionDetails.data.map((obj) => obj.organization_id))]
 				extensionDetails.data = await entityTypeService.processEntityTypesToAddValueLabels(
 					extensionDetails.data,
-					uniqueOrgIds,
+					organizationIds,
 					userExtensionModelName,
 					'organization_id'
 				)
 			}
-			const extensionDataMap = new Map(extensionDetails.data.map((newItem) => [newItem.user_id, newItem]))
-			userDetails.result = userDetails.result
-				.map((value) => {
-					// Map over each value in the values array of the current group
-					const user_id = value.id
-					// Check if extensionDataMap has an entry with the key equal to the user_id
-					if (extensionDataMap.has(user_id)) {
-						const newItem = extensionDataMap.get(user_id)
-						value = { ...value, ...newItem }
-						delete value.user_id
-						delete value.mentor_visibility
-						delete value.mentee_visibility
-						delete value.organization_id
-						delete value.meta
-						delete value.rating
-						delete value.permissions
-						return value
-					}
-					return null
-				})
-				.filter((value) => value !== null)
 
+			// Step 6: Handle session enrollment
 			if (queryParams.session_id) {
 				const enrolledMentees = await getEnrolledMentees(queryParams.session_id, '', userId)
-
-				userDetails.result.forEach((user) => {
+				extensionDetails.data.forEach((user) => {
 					user.is_enrolled = false
 					const enrolledUser = _.find(enrolledMentees, { id: user.id })
 					if (enrolledUser) {
@@ -1332,22 +1177,20 @@ module.exports = class MenteesHelper {
 				})
 			}
 
-			// Check if sortBy have values before applying sorting
+			// Step 7: Apply sorting if sortBy is provided
 			if (sortBy) {
-				userDetails.result = userDetails.result.sort((a, b) => {
-					// Determine the sorting order based on the 'order' value
+				extensionDetails.data = extensionDetails.data.sort((a, b) => {
 					const sortOrder = order.toLowerCase() === 'asc' ? 1 : order.toLowerCase() === 'desc' ? -1 : 1
-
-					// Customize the sorting based on the provided sortBy field
 					return sortOrder * a[sortBy].localeCompare(b[sortBy])
 				})
 			}
 
+			// Return enriched response
 			return responses.successResponse({
 				statusCode: httpStatusCode.ok,
-				message: userDetails.message,
+				message: 'MENTEE_LIST',
 				result: {
-					data: userDetails.result,
+					data: extensionDetails.data,
 					count: extensionDetails.count,
 				},
 			})
@@ -1504,50 +1347,4 @@ module.exports = class MenteesHelper {
 			return error
 		}
 	}
-}
-
-function convertEntitiesForFilter(entityTypes) {
-	const result = {}
-
-	entityTypes.forEach((entityType) => {
-		const key = entityType.value
-
-		if (!result[key]) {
-			result[key] = []
-		}
-
-		const newObj = {
-			id: entityType.id,
-			label: entityType.label,
-			value: entityType.value,
-			parent_id: entityType.parent_id,
-			organization_id: entityType.organization_id,
-			entities: entityType.entities || [],
-		}
-
-		result[key].push(newObj)
-	})
-	return result
-}
-
-function filterEntitiesBasedOnParent(data, defaultOrgId, doNotRemoveDefaultOrg) {
-	let result = {}
-
-	for (let key in data) {
-		let countWithParentId = 0
-		let countOfEachKey = data[key].length
-		data[key].forEach((obj) => {
-			if (obj.parent_id !== null && obj.organization_id != defaultOrgId) {
-				countWithParentId++
-			}
-		})
-
-		let outputArray = data[key]
-		if (countOfEachKey > 1 && countWithParentId == countOfEachKey - 1 && !doNotRemoveDefaultOrg) {
-			outputArray = data[key].filter((obj) => !(obj.organization_id === defaultOrgId && obj.parent_id === null))
-		}
-
-		result[key] = outputArray
-	}
-	return result
 }
