@@ -187,8 +187,8 @@ const triggerPeriodicViewRefresh = async () => {
 
 				// Encode tenant_code and model_name in the URL path using :id parameter
 				// Format: /mentoring/v1/admin/triggerPeriodicViewRefreshInternal/{tenantCode|modelName}
-				// The route pattern :version/:controller/:method/:id supports this
-				const encodedParams = `${encodeURIComponent(tenantCode)}|${encodeURIComponent(model)}`
+				// Encode the entire segment to make | URL-safe (%7C)
+				const encodedParams = encodeURIComponent(`${tenantCode}|${model}`)
 				const url = `${mentoringBaseurl}/mentoring/v1/admin/triggerPeriodicViewRefreshInternal/${encodedParams}`
 
 				createSchedulerJob(uniqueJobId, refreshInterval, jobName, true, url, globalOffset)

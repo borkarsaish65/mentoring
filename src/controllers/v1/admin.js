@@ -96,12 +96,12 @@ module.exports = class admin {
 			let modelName = null
 
 			// Check if tenant_code and model_name are encoded in path parameter (id)
-			// Format: {tenantCode|modelName}
+			// Format: {tenantCode|modelName} - Express auto-decodes URL params
 			if (req.params.id) {
 				const parts = req.params.id.split('|')
 				if (parts.length === 2) {
-					tenantCode = decodeURIComponent(parts[0])
-					modelName = decodeURIComponent(parts[1])
+					tenantCode = parts[0]
+					modelName = parts[1]
 				}
 			}
 
