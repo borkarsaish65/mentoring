@@ -2616,7 +2616,8 @@ module.exports = class SessionsHelper {
 					session.mentee_password,
 					session.mentor_password,
 					sessionDuration,
-					tenantDomain
+					tenantDomain,
+					tenantCode
 				)
 				if (!meetingDetails.success) {
 					return responses.failureResponse({
