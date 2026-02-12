@@ -126,7 +126,6 @@ module.exports = class Mentees {
 			const session = await menteesService.joinSession(
 				req.params.id,
 				req.decodedToken.id,
-				req.decodedToken.organization_code,
 				req.decodedToken.tenant_code
 			)
 			return session
