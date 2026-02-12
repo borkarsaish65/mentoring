@@ -104,60 +104,58 @@ module.exports = class admin {
 					modelName = decodeURIComponent(parts[1])
 				}
 			}
-			// Fallback to query params (for manual GET requests) or body (for POST requests)
-			if (!tenantCode) {
-				tenantCode = req.query.tenant_code || req.body?.tenant_code
-				modelName = req.query.model_name || req.body?.model_name
-			}
 
 			// If tenantCode is provided, refresh for that specific tenant
 			if (tenantCode) {
 				return await adminService.triggerPeriodicViewRefreshInternal(modelName, tenantCode)
-			}
+			} else {
+				// If no tenantCode provided, fetch all tenants dynamically and refresh for each
+				const tenants = await userExtensionQueries.getDistinctTenantCodes()
+				if (!tenants || tenants.length === 0) {
+					return responses.successResponse({
+						statusCode: httpStatusCode.ok,
+						message: 'NO_TENANTS_FOUND',
+						result: { tenantsProcessed: 0 },
+					})
+				}
 
-			// If no tenantCode provided, fetch all tenants dynamically and refresh for each
-			const tenants = await userExtensionQueries.getDistinctTenantCodes()
-			if (!tenants || tenants.length === 0) {
+				// Process each tenant
+				const results = []
+				for (const tenant of tenants) {
+					const tenantCodeToProcess = tenant.code
+					// Skip invalid tenant codes
+					if (!tenantCodeToProcess || tenantCodeToProcess === 'undefined') {
+						continue
+					}
+					try {
+						const result = await adminService.triggerPeriodicViewRefreshInternal(
+							modelName,
+							tenantCodeToProcess
+						)
+						results.push({
+							tenantCode: tenantCodeToProcess,
+							modelName: modelName || 'all models',
+							success: result.statusCode === httpStatusCode.ok,
+							result: result.result,
+						})
+					} catch (error) {
+						results.push({
+							tenantCode: tenantCodeToProcess,
+							modelName: modelName || 'all models',
+							success: false,
+							error: error.message || 'Unknown error',
+						})
+					}
+				}
 				return responses.successResponse({
 					statusCode: httpStatusCode.ok,
-					message: 'NO_TENANTS_FOUND',
-					result: { tenantsProcessed: 0 },
+					message: 'MATERIALIZED_VIEW_REFRESH_INITIATED_SUCCESSFULLY',
+					result: {
+						tenantsProcessed: results.length,
+						results: results,
+					},
 				})
 			}
-
-			// Process each tenant
-			const results = []
-			for (const tenant of tenants) {
-				const tenantCodeToProcess = tenant.code
-				// Skip invalid tenant codes
-				if (!tenantCodeToProcess || tenantCodeToProcess === 'undefined') {
-					continue
-				}
-				try {
-					const result = await adminService.triggerPeriodicViewRefreshInternal(modelName, tenantCodeToProcess)
-					results.push({
-						tenantCode: tenantCodeToProcess,
-						modelName: modelName || 'all models',
-						success: result.statusCode === httpStatusCode.ok,
-						result: result.result,
-					})
-				} catch (error) {
-					results.push({
-						tenantCode: tenantCodeToProcess,
-						modelName: modelName || 'all models',
-						success: false,
-						error: error.message || 'Unknown error',
-					})
-				}
-			}
-			return responses.successResponse({
-				statusCode: httpStatusCode.ok,
-				message: 'MATERIALIZED_VIEW_REFRESH_INITIATED_SUCCESSFULLY',
-				result: {
-					tenantsProcessed: results.length,
-					results: results,
-				},
-			})
 		} catch (err) {
 			console.error('❌ Error in triggerPeriodicViewRefreshInternal:', err)
 			return responses.failureResponse({
