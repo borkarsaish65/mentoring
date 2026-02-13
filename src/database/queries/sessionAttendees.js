@@ -278,9 +278,22 @@ exports.findPendingFeedbackSessions = async (menteeId, completedSessionIds, tena
 			raw: true,
 		})
 
+		// DEBUG: Log all attendees with their joined_at status
+		console.log(`🔍 [FEEDBACK_QUERY] menteeId=${menteeId}, total attendees: ${allSessionAttendees.length}`)
+		allSessionAttendees.forEach((att) => {
+			console.log(
+				`🔍 [FEEDBACK_QUERY] session_id=${att.session_id}, joined_at=${att.joined_at}, is_feedback_skipped=${att.is_feedback_skipped}`
+			)
+		})
+
 		// Get session IDs excluding those already with feedback
 		const allSessionIds = allSessionAttendees.map((attendee) => attendee.session_id)
 		const filteredSessionIds = allSessionIds.filter((sessionId) => !completedSessionIds.includes(sessionId))
+		console.log(
+			`🔍 [FEEDBACK_QUERY] filteredSessionIds (excluding completed feedback): ${JSON.stringify(
+				filteredSessionIds
+			)}`
+		)
 
 		// Find attendees who actually joined and haven't skipped feedback
 		const filter = {
@@ -293,10 +306,12 @@ exports.findPendingFeedbackSessions = async (menteeId, completedSessionIds, tena
 			tenant_code: tenantCode,
 		}
 
-		return await SessionAttendee.findAll({
+		const result = await SessionAttendee.findAll({
 			where: filter,
 			raw: true,
 		})
+		console.log(`🔍 [FEEDBACK_QUERY] Final result (joined_at NOT NULL): ${result.length} attendees`)
+		return result
 	} catch (error) {
 		return error
 	}
