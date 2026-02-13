@@ -470,8 +470,6 @@ module.exports = class MenteesHelper {
 						id: sessionWithAttendee.id, // Keep id for DB updates
 						attendee_id: sessionWithAttendee.id,
 						enrolled_type: sessionWithAttendee.type,
-						// Only use attendee's own meeting_info (not session's) to correctly track if attendee has joined
-						// For BBB: each attendee gets their own link; for non-BBB: link is set when they join
 						attendee_meeting_info: sessionWithAttendee.meeting_info || null,
 					}
 				}
@@ -489,6 +487,7 @@ module.exports = class MenteesHelper {
 					mentee.user_id,
 					tenantCode
 				)
+
 				if (sessionWithAttendee) {
 					// Use the same object as sessionData since it already contains full session fields
 					// (including mentee_password, meeting_info, etc.) and attendee fields via attendeeData DTO
@@ -540,15 +539,12 @@ module.exports = class MenteesHelper {
 				})
 			}
 			let meetingInfo
-
 			if (sessionData?.meeting_info?.value !== common.BBB_VALUE) {
 				meetingInfo = sessionData.meeting_info
 
-				// Use session_id + mentee_id for reliable filtering (cache may have user_id as 'id' instead of session_attendee primary key)
 				await sessionAttendeesQueries.updateOne(
 					{
-						session_id: sessionId,
-						mentee_id: userId,
+						id: sessionWithAttendee.attendee_id,
 					},
 					{
 						meeting_info: meetingInfo,
@@ -587,11 +583,9 @@ module.exports = class MenteesHelper {
 					platform: common.BBB_PLATFORM,
 					link: attendeeLink,
 				}
-				// Use session_id + mentee_id for reliable filtering (cache may have user_id as 'id' instead of session_attendee primary key)
 				await sessionAttendeesQueries.updateOne(
 					{
-						session_id: sessionId,
-						mentee_id: userId,
+						id: sessionWithAttendee.attendee_id,
 					},
 					{
 						meeting_info: meetingInfo,
