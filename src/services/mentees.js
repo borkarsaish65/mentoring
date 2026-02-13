@@ -462,14 +462,8 @@ module.exports = class MenteesHelper {
 			// Optimized: Single query with JOIN to get session and attendee data together
 			let sessionWithAttendee
 			let sessionData = await cacheHelper.sessions.get(tenantCode, sessionId)
-			console.log(`🔍 [JOIN_SESSION] Cache ${sessionData ? 'HIT' : 'MISS'} for sessionId=${sessionId}`)
 			if (sessionData) {
 				sessionWithAttendee = sessionData.mentees?.find((mentee) => String(mentee.id) === String(userId))
-				console.log(
-					`🔍 [JOIN_SESSION] From cache - mentee found: ${!!sessionWithAttendee}, mentee.meeting_info: ${JSON.stringify(
-						sessionWithAttendee?.meeting_info
-					)}, mentee.joined_at: ${sessionWithAttendee?.joined_at}`
-				)
 				if (sessionWithAttendee) {
 					sessionWithAttendee = {
 						...sessionWithAttendee,
@@ -480,11 +474,6 @@ module.exports = class MenteesHelper {
 						// For BBB: each attendee gets their own link; for non-BBB: link is set when they join
 						attendee_meeting_info: sessionWithAttendee.meeting_info || null,
 					}
-					console.log(
-						`🔍 [JOIN_SESSION] After transform - attendee_meeting_info: ${JSON.stringify(
-							sessionWithAttendee.attendee_meeting_info
-						)}`
-					)
 				}
 				// If mentee_password is missing from cache, fetch from database
 				if (!sessionData.mentee_password) {
@@ -500,13 +489,7 @@ module.exports = class MenteesHelper {
 					mentee.user_id,
 					tenantCode
 				)
-				console.log(`🔍 [JOIN_SESSION] From DB - sessionWithAttendee found: ${!!sessionWithAttendee}`)
 				if (sessionWithAttendee) {
-					console.log(
-						`🔍 [JOIN_SESSION] From DB - attendee_meeting_info: ${JSON.stringify(
-							sessionWithAttendee.attendee_meeting_info
-						)}, joined_at: ${sessionWithAttendee.joined_at}`
-					)
 					// Use the same object as sessionData since it already contains full session fields
 					// (including mentee_password, meeting_info, etc.) and attendee fields via attendeeData DTO
 					sessionData = { ...sessionWithAttendee }
@@ -557,24 +540,9 @@ module.exports = class MenteesHelper {
 				})
 			}
 			let meetingInfo
-			// DEBUG: Log join session flow
-			console.log(
-				`🔍 [JOIN_SESSION] userId=${userId}, sessionId=${sessionId}, isBBB=${
-					sessionData?.meeting_info?.value === common.BBB_VALUE
-				}`
-			)
-			console.log(
-				`🔍 [JOIN_SESSION] sessionAttendeeExist:`,
-				JSON.stringify({
-					id: sessionAttendeeExist?.id,
-					meeting_info: sessionAttendeeExist?.meeting_info,
-					joined_at: sessionAttendeeExist?.joined_at,
-				})
-			)
 
 			if (sessionData?.meeting_info?.value !== common.BBB_VALUE) {
 				meetingInfo = sessionData.meeting_info
-				console.log(`🔍 [JOIN_SESSION] Non-BBB session - updating joined_at`)
 
 				// Use session_id + mentee_id for reliable filtering (cache may have user_id as 'id' instead of session_attendee primary key)
 				await sessionAttendeesQueries.updateOne(
@@ -597,13 +565,9 @@ module.exports = class MenteesHelper {
 
 			if (sessionAttendeeExist?.meeting_info?.link) {
 				// Existing BBB attendee link present in DB – just reuse it
-				console.log(
-					`🔍 [JOIN_SESSION] BBB - Reusing existing attendee link, joined_at already set: ${sessionAttendeeExist?.joined_at}`
-				)
 				meetingInfo = sessionAttendeeExist.meeting_info
 			} else {
 				// No existing link – generate a fresh one from BBB and store it
-				console.log(`🔍 [JOIN_SESSION] BBB - No existing link, generating new one and setting joined_at`)
 				if (!sessionData.mentee_password) {
 					return responses.failureResponse({
 						message: 'MENTEE_PASSWORD_NOT_FOUND',
@@ -623,8 +587,6 @@ module.exports = class MenteesHelper {
 					platform: common.BBB_PLATFORM,
 					link: attendeeLink,
 				}
-				const joinedAtTime = utils.utcFormat()
-				console.log(`🔍 [JOIN_SESSION] BBB - Setting joined_at to: ${joinedAtTime}`)
 				// Use session_id + mentee_id for reliable filtering (cache may have user_id as 'id' instead of session_attendee primary key)
 				await sessionAttendeesQueries.updateOne(
 					{
@@ -633,12 +595,9 @@ module.exports = class MenteesHelper {
 					},
 					{
 						meeting_info: meetingInfo,
-						joined_at: joinedAtTime,
+						joined_at: utils.utcFormat(),
 					},
 					tenantCode
-				)
-				console.log(
-					`🔍 [JOIN_SESSION] BBB - DB update completed for session_id=${sessionId}, mentee_id=${userId}`
 				)
 			}
 
