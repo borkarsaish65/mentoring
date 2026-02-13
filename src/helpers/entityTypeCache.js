@@ -34,7 +34,10 @@ async function getEntityTypesAndEntitiesWithCache(originalFilter, tenantCode, or
 				...originalFilter,
 				organization_code: orgCode,
 			}
-			const userResults = await entityTypeQueries.findUserEntityTypesAndEntities(userFilter, [tenantCode])
+			const userResults = await entityTypeQueries.findUserEntityTypesAndEntities(
+				userFilter,
+				Array.isArray(tenantCode) ? tenantCode : [tenantCode]
+			)
 			let dbResult = userResults ? [...userResults] : []
 
 			// Step 2: ALSO ALWAYS fetch from default codes (if different from user codes)
@@ -136,7 +139,10 @@ async function getEntityTypesAndEntitiesWithCache(originalFilter, tenantCode, or
 				...originalFilter,
 				organization_code: orgCode,
 			}
-			dbResult = await entityTypeQueries.findUserEntityTypesAndEntities(userFilter, [tenantCode])
+			dbResult = await entityTypeQueries.findUserEntityTypesAndEntities(
+				userFilter,
+				Array.isArray(tenantCode) ? tenantCode : [tenantCode]
+			)
 
 			// If not found with user codes and defaults exist, try with default codes
 			if (
@@ -188,7 +194,10 @@ async function getEntityTypesAndEntitiesWithCache(originalFilter, tenantCode, or
 				...originalFilter,
 				organization_code: orgCode,
 			}
-			return await entityTypeQueries.findUserEntityTypesAndEntities(userFilter, [tenantCode])
+			return await entityTypeQueries.findUserEntityTypesAndEntities(
+				userFilter,
+				Array.isArray(tenantCode) ? tenantCode : [tenantCode]
+			)
 		} catch (fallbackError) {
 			console.error(`❌ Fallback database query also failed:`, fallbackError)
 			return []
@@ -284,7 +293,9 @@ async function getEntityTypesAndEntitiesForModel(modelName, tenantCode, orgCode,
 				organization_code: orgCode,
 				model_names: { [Op.contains]: [modelName] },
 			}
-			const userEntityTypes = await entityTypeQueries.findUserEntityTypesAndEntities(userFilter, tenantCode)
+			// Handle both array and single value for tenantCode
+			const tenantCodesArray = Array.isArray(tenantCode) ? tenantCode : [tenantCode]
+			const userEntityTypes = await entityTypeQueries.findUserEntityTypesAndEntities(userFilter, tenantCodesArray)
 			if (userEntityTypes && userEntityTypes.length > 0) {
 				allEntityTypes.push(...userEntityTypes)
 			}
@@ -300,10 +311,9 @@ async function getEntityTypesAndEntitiesForModel(modelName, tenantCode, orgCode,
 					organization_code: defaults.orgCode,
 					model_names: { [Op.contains]: [modelName] },
 				}
-				const defaultEntityTypes = await entityTypeQueries.findUserEntityTypesAndEntities(
-					defaultFilter,
-					defaults.tenantCode
-				)
+				const defaultEntityTypes = await entityTypeQueries.findUserEntityTypesAndEntities(defaultFilter, [
+					defaults.tenantCode,
+				])
 				if (defaultEntityTypes && defaultEntityTypes.length > 0) {
 					// Merge defaults, avoiding duplicates by ID
 					const existingIds = new Set(allEntityTypes.map((et) => et.id))
@@ -417,7 +427,10 @@ async function getEntityTypeByValue(modelName, entityValue, tenantCode, orgCode)
 			organization_code: orgCode,
 			model_names: { [Op.contains]: [modelName] },
 		}
-		let entityTypes = await entityTypeQueries.findUserEntityTypesAndEntities(userFilter, [tenantCode])
+		let entityTypes = await entityTypeQueries.findUserEntityTypesAndEntities(
+			userFilter,
+			Array.isArray(tenantCode) ? tenantCode : [tenantCode]
+		)
 		found = entityTypes.length > 0 ? entityTypes[0] : null
 
 		// If not found with user codes and defaults exist, try with default codes
