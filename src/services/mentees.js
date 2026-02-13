@@ -470,7 +470,7 @@ module.exports = class MenteesHelper {
 						id: sessionWithAttendee.id, // Keep id for DB updates
 						attendee_id: sessionWithAttendee.id,
 						enrolled_type: sessionWithAttendee.type,
-						attendee_meeting_info: sessionWithAttendee.meeting_info || null,
+						attendee_meeting_info: sessionWithAttendee.meeting_info ?? sessionData.meeting_info,
 					}
 				}
 				// If mentee_password is missing from cache, fetch from database
