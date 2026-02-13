@@ -544,7 +544,7 @@ module.exports = class MenteesHelper {
 
 				await sessionAttendeesQueries.updateOne(
 					{
-						id: sessionWithAttendee.id,
+						id: sessionWithAttendee.attendee_id,
 					},
 					{
 						meeting_info: meetingInfo,
@@ -585,7 +585,7 @@ module.exports = class MenteesHelper {
 				}
 				await sessionAttendeesQueries.updateOne(
 					{
-						id: sessionWithAttendee.id,
+						id: sessionWithAttendee.attendee_id,
 					},
 					{
 						meeting_info: meetingInfo,
