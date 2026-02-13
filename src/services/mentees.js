@@ -470,7 +470,9 @@ module.exports = class MenteesHelper {
 						id: sessionWithAttendee.id, // Keep id for DB updates
 						attendee_id: sessionWithAttendee.id,
 						enrolled_type: sessionWithAttendee.type,
-						attendee_meeting_info: sessionWithAttendee.meeting_info ?? sessionData.meeting_info,
+						// Only use attendee's own meeting_info (not session's) to correctly track if attendee has joined
+						// For BBB: each attendee gets their own link; for non-BBB: link is set when they join
+						attendee_meeting_info: sessionWithAttendee.meeting_info || null,
 					}
 				}
 				// If mentee_password is missing from cache, fetch from database
