@@ -155,8 +155,8 @@ chat_elevate_communications"
 
 | Item          | Value                                                |
 |---------------|------------------------------------------------------|
-| Git Branch    | `main`                                        |
-| Docker Image  | `shikshalokamqa/elevate-chat-communication-service:3.2`            |
+| Git Branch    | `release-3.2.0`                                        |
+| Docker Image  | `shikshalokamqa/elevate-chat-communications:1.0`            |
 
 #
 
@@ -187,7 +187,13 @@ EVENTS_TOPIC=qa.userCreate   # Ensure this matches the User Service configuratio
     npm run db:init
 ```
 
-### Step 4: Restart the Service
+### Step 4 : Run script to update the rocket chat settings
+```bash
+    cd src/scripts
+    node updateRCSettings.js
+```
+
+### Step 5: Restart the Service
    Restart the Mentoring Service to apply the latest configurations and updates.
 
 
@@ -195,8 +201,8 @@ EVENTS_TOPIC=qa.userCreate   # Ensure this matches the User Service configuratio
 
 | Item          | Value                                                |
 |---------------|------------------------------------------------------|
-| Git Branch    | `release-3.2.25`                                        |
-| Docker Image  | `shikshalokamqa/elevate-mentoring:3.2`            |
+| Git Branch    | `release-3.2.0`                                        |
+| Docker Image  | `shikshalokamqa/elevate-mentoring:3.3`            |
 
 # 
 <br><br>
@@ -206,8 +212,8 @@ EVENTS_TOPIC=qa.userCreate   # Ensure this matches the User Service configuratio
 
 ```env
 
-    "ROUTE_CONFIG_JSON_URLS_PATHS" = "https://raw.githubusercontent.com/ELEVATE-Project/utils/refs/heads/sass-qa/interface-routes/elevate-routes.json"
-    // update elevate-mentoring package version, keep other package version same as previous
+    "ROUTE_CONFIG_JSON_URLS_PATHS" = "https://raw.githubusercontent.com/ELEVATE-Project/utils/refs/heads/staging/interface-routes/elevate-routes.json"
+    // update elevate-mentoring package version
     "REQUIRED_PACKAGES" = "elevate-mentoring@1.2.93”
 ```
 
@@ -225,8 +231,8 @@ EVENTS_TOPIC=qa.userCreate   # Ensure this matches the User Service configuratio
 
 | Item          | Value                                                |
 |---------------|------------------------------------------------------|
-| Git Branch    | `main`                                        |
-| Docker Image  | `shikshalokamqa/elevate-interface:3.3.2`            |
+| Git Branch    | `release-3.2.0`                                        |
+| Docker Image  | `shikshalokamqa/elevate-interface:3.3`            |
 
 #
 <br><br>
@@ -264,8 +270,8 @@ Run the following query in the User Service database to disable the SCP feature:
 
 | Item          | Value                                                |
 |---------------|------------------------------------------------------|
-| Git Branch    | `master`                                        |
-| Docker Image  | `shikshalokamqa/elevate-user:3.3.24`            |
+| Git Branch    | `release-3.2.0`                                        |
+| Docker Image  | `shikshalokamqa/eleavte-user:3.3`            |
 
 
 
@@ -276,11 +282,11 @@ Run the following query in the User Service database to disable the SCP feature:
 ### Step 1: update .env
 
 ```env
-    "chatBaseUrl" = "https://rocket-chat-domain-url.com", 
-    "chatWebSocketUrl" = "wss://rocket-chat-domain-url.com/websocket", 
+    "chatBaseUrl" = "https://chat-dev-temp.elevate-apis.shikshalokam.org/",
+    "chatWebSocketUrl" = "wss://chat-dev-temp.elevate-apis.shikshalokam.org/websocket",
 
 ```
-### Step 2: Create / Update Forms  Using command
+### Step 2: Run form script
 
 > export AUTH_TOKEN= \< ADMIN_ACCESS_TOKEN \>
 >
@@ -297,24 +303,7 @@ Run the following query in the User Service database to disable the SCP feature:
 | Item          | Value                                                |
 |---------------|------------------------------------------------------|
 | Git Branch    | `release-3.2.0`                                        |
-| Docker Image  | `shikshalokamqa/mentoring-mobile-app:3.2.0.2`            |
-
-#
-
-<br><br>
-## **Deployment of the Elevate Portal**
-[Elevate Portal Repository](https://github.com/ELEVATE-Project/elevate-portal)
-
-### Step 1: Restart
-     Restart the Elevate Portal to apply the latest updates.
-
-
-**Version & Build Information**
-
-| Item          | Value                                                |
-|---------------|------------------------------------------------------|
-| Git Branch    | `release-1.1.0`                                        |
-| Docker Image  | `shikshalokamqa/elevate-portal:1.1.2`            |
+| Docker Image  | `shikshalokamqa/mentoring-mobile-app:3.3`            |
 
 #
 
@@ -341,7 +330,36 @@ Create an individual file for each script (under src/file-name.js) and execute t
     node file-name.js
 ```
 
-#
+
+**Version & Build Information**
+
+| Item          | Value                                                |
+|---------------|------------------------------------------------------|
+| Git Branch    | `release-3.2.0`                                        |
+| Docker Image  | `shikshalokamqa/mentoring-mobile-app:3.3`            |
+
+
+### Step 1: Execute Migrations
+     The latest User Service will no longer have orgCodes with spaces or uppercase characters. Since these changes will also reflect in the user token details, the current Project and Survey services need to work with the updated format. To ensure compatibility, we needed to normalize the orgIds in the collections by running these migrations
+
+    Project
+    https://github.com/ELEVATE-Project/project-service/tree/staging/migrations/correctOrgIdValuesInCollections
+
+    https://github.com/ELEVATE-Project/project-service/tree/staging/migrations/correctScopeOrgValues
+
+
+    Survey
+    https://github.com/ELEVATE-Project/samiksha-service/tree/staging/migrations/correctScopeOrgValues
+
+    https://github.com/ELEVATE-Project/samiksha-service/tree/staging/migrations/normalizeOrgidInCollections
+
+Create an individual file for each script (under src/file-name.js) and execute them one by one using:
+
+```bash 
+    node file-name.js
+```
+
+# 
 
 # **References**
 
