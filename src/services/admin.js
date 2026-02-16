@@ -177,8 +177,9 @@ module.exports = class AdminService {
 			// If regular user (self-deletion), use tenant code from token (1 query)
 			if (isAdmin) {
 				// Admin deleting any user - no tenant code restriction
-				getUserDetails = await menteeQueries.getMenteeExtensionById(userId, [], true)
-				userTenantCode = getUserDetails.tenant_code
+				const userDetail = await menteeQueries.getMenteeExtensionById(userId, [], true)
+				userTenantCode = userDetail?.tenant_code
+				getUserDetails = userDetail ? [userDetail] : []
 			} else {
 				// Regular user deleting themselves - use tenant code from token (optimized path)
 				getUserDetails = await menteeQueries.getUsersByUserIds([userId], {}, tenantCode)
