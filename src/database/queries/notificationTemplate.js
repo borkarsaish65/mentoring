@@ -222,4 +222,15 @@ module.exports = class NotificationTemplateData {
 			return null
 		}
 	}
+
+	static async bulkCreate(records, options = {}) {
+		try {
+			return await NotificationTemplate.bulkCreate(records, {
+				ignoreDuplicates: true,
+				...options,
+			})
+		} catch (error) {
+			throw error
+		}
+	}
 }

@@ -100,4 +100,15 @@ module.exports = class FormsData {
 			throw error
 		}
 	}
+
+	static async bulkCreate(records, options = {}) {
+		try {
+			return await Form.bulkCreate(records, {
+				ignoreDuplicates: true,
+				...options,
+			})
+		} catch (error) {
+			throw error
+		}
+	}
 }

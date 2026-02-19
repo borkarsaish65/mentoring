@@ -156,4 +156,15 @@ module.exports = class UserEntityData {
 			throw error
 		}
 	}
+
+	static async bulkCreate(records, options = {}) {
+		try {
+			return await Entity.bulkCreate(records, {
+				ignoreDuplicates: true,
+				...options,
+			})
+		} catch (error) {
+			throw error
+		}
+	}
 }

@@ -83,4 +83,15 @@ module.exports = class QuestionsData {
 			throw error
 		}
 	}
+
+	static async bulkCreate(records, options = {}) {
+		try {
+			return await Question.bulkCreate(records, {
+				ignoreDuplicates: true,
+				...options,
+			})
+		} catch (error) {
+			throw error
+		}
+	}
 }
