@@ -226,6 +226,7 @@ module.exports = class MenteesHelper {
 		// Remove sensitive fields from menteeDetails
 		const sanitizedMenteeData = utils.deleteProperties(menteeDetails.data.result, ['phone'])
 
+		const menteeImage = mentee.image ? await utils.getDownloadableUrl(mentee.image) : mentee.image
 		// Construct the final profile response (INCLUDE sessions_attended for read endpoint)
 		const finalProfile = {
 			user_id: id, // Add user_id to match mentor read response
@@ -233,7 +234,7 @@ module.exports = class MenteesHelper {
 			...processDbResponse,
 			visible_to_organizations: mentee.visible_to_organizations, // Add to match mentor read
 			settings: mentee.settings, // Add settings to match mentor read
-			image: mentee.image, // Keep original image (may already be downloadable URL)
+			image: menteeImage, // Keep original image (may already be downloadable URL)
 			displayProperties,
 		}
 
@@ -2313,6 +2314,9 @@ module.exports = class MenteesHelper {
 
 			// Get permissions for the details response
 			const userPermissions = await permissions.getPermissions(roles, tenantCode, organizationCode)
+			const requestedUserExtensionImage = requestedUserExtension.image
+				? await utils.getDownloadableUrl(requestedUserExtension.image)
+				: requestedUserExtension.image
 
 			// Construct the final details response
 			const finalDetailsResponse = {
@@ -2320,7 +2324,7 @@ module.exports = class MenteesHelper {
 				...processDbResponse,
 				visible_to_organizations: requestedUserExtension.visible_to_organizations, // Add to match mentor read
 				settings: requestedUserExtension.settings, // Add settings to match mentor read
-				image: requestedUserExtension.image, // Keep original image (may already be downloadable URL)
+				image: requestedUserExtensionImage, // Keep original image (may already be downloadable URL)
 				displayProperties,
 				Permissions: userPermissions,
 			}
