@@ -8,6 +8,11 @@ const EntityTypeQueries = require('@database/queries/entityType')
 const EntityQueries = require('@database/queries/entity')
 const QuestionQueries = require('@database/queries/questions')
 const QuestionSetQueries = require('@database/queries/question-set')
+const ReportTypeQueries = require('@database/queries/reportTypes')
+const ReportQueries = require('@database/queries/reports')
+const ReportQueryQueries = require('@database/queries/reportQueries')
+const ReportRoleMappingQueries = require('@database/queries/reportRoleMapping')
+const RoleExtensionQueries = require('@database/queries/roleExtentions')
 
 module.exports = class TenantService {
 	static async replicateConfigFromDefaultTenant(newTenantCode, newOrgId, newOrgCode, options = {}) {
@@ -258,6 +263,146 @@ module.exports = class TenantService {
 					}))
 					await QuestionSetQueries.bulkCreate(newQuestionSets, newTenantCode, { transaction })
 					console.log(`[TENANT REPLICATION] Question sets copied: ${newQuestionSets.length}`)
+				}
+			}
+
+			// ── 7. Report Types ──────────────────────────────────────────────────
+			const reportTypes = await ReportTypeQueries.findAllByFilter(
+				{ organization_code: defaultOrgCode },
+				defaultTenantCode
+			)
+			if (reportTypes.length) {
+				let skipReportTypes = false
+				if (options.backfill) {
+					const existing = await ReportTypeQueries.findAllByFilter({}, newTenantCode)
+					if (existing.length > 0 && existing.some((r) => r.organization_code !== defaultOrgCode)) {
+						skipReportTypes = true
+						console.log(
+							`[TENANT REPLICATION] Skipping report types — tenant ${newTenantCode} already has data with a different organization_code`
+						)
+					}
+				}
+
+				if (!skipReportTypes) {
+					const newReportTypes = reportTypes.map((rt) => ({
+						...stripMeta(rt),
+						tenant_code: newTenantCode,
+						organization_code: newOrgCode || defaultOrgCode,
+					}))
+					await ReportTypeQueries.bulkCreate(newReportTypes, newTenantCode, { transaction })
+					console.log(`[TENANT REPLICATION] Report types copied: ${newReportTypes.length}`)
+				}
+			}
+
+			// ── 8. Reports ───────────────────────────────────────────────────────
+			const reports = await ReportQueries.findAllReports({ organization_code: defaultOrgCode }, defaultTenantCode)
+			if (reports.length) {
+				let skipReports = false
+				if (options.backfill) {
+					const existing = await ReportQueries.findAllReports({}, newTenantCode)
+					if (existing.length > 0 && existing.some((r) => r.organization_code !== defaultOrgCode)) {
+						skipReports = true
+						console.log(
+							`[TENANT REPLICATION] Skipping reports — tenant ${newTenantCode} already has data with a different organization_code`
+						)
+					}
+				}
+
+				if (!skipReports) {
+					const newReports = reports.map((r) => ({
+						...stripMeta(r),
+						tenant_code: newTenantCode,
+						organization_id: newOrgIdStr,
+						organization_code: newOrgCode || defaultOrgCode,
+					}))
+					await ReportQueries.bulkCreate(newReports, newTenantCode, { transaction })
+					console.log(`[TENANT REPLICATION] Reports copied: ${newReports.length}`)
+				}
+			}
+
+			// ── 9. Report Queries ────────────────────────────────────────────────
+			const reportQueries = await ReportQueryQueries.findReportQueries(
+				{ organization_code: defaultOrgCode },
+				defaultTenantCode
+			)
+			if (reportQueries.length) {
+				let skipReportQueries = false
+				if (options.backfill) {
+					const existing = await ReportQueryQueries.findReportQueries({}, newTenantCode)
+					if (existing.length > 0 && existing.some((r) => r.organization_code !== defaultOrgCode)) {
+						skipReportQueries = true
+						console.log(
+							`[TENANT REPLICATION] Skipping report queries — tenant ${newTenantCode} already has data with a different organization_code`
+						)
+					}
+				}
+
+				if (!skipReportQueries) {
+					const newReportQueries = reportQueries.map((rq) => ({
+						...stripMeta(rq),
+						tenant_code: newTenantCode,
+						organization_id: newOrgIdStr,
+						organization_code: newOrgCode || defaultOrgCode,
+					}))
+					await ReportQueryQueries.bulkCreate(newReportQueries, newTenantCode, { transaction })
+					console.log(`[TENANT REPLICATION] Report queries copied: ${newReportQueries.length}`)
+				}
+			}
+
+			// ── 10. Report Role Mappings ─────────────────────────────────────────
+			const reportRoleMappings = await ReportRoleMappingQueries.findAllByFilter(
+				{ organization_code: defaultOrgCode },
+				defaultTenantCode
+			)
+			if (reportRoleMappings.length) {
+				let skipReportRoleMappings = false
+				if (options.backfill) {
+					const existing = await ReportRoleMappingQueries.findAllByFilter({}, newTenantCode)
+					if (existing.length > 0 && existing.some((r) => r.organization_code !== defaultOrgCode)) {
+						skipReportRoleMappings = true
+						console.log(
+							`[TENANT REPLICATION] Skipping report role mappings — tenant ${newTenantCode} already has data with a different organization_code`
+						)
+					}
+				}
+
+				if (!skipReportRoleMappings) {
+					const newMappings = reportRoleMappings.map((rm) => ({
+						...stripMeta(rm),
+						tenant_code: newTenantCode,
+						organization_code: newOrgCode || defaultOrgCode,
+					}))
+					await ReportRoleMappingQueries.bulkCreate(newMappings, newTenantCode, { transaction })
+					console.log(`[TENANT REPLICATION] Report role mappings copied: ${newMappings.length}`)
+				}
+			}
+
+			// ── 11. Role Extensions ──────────────────────────────────────────────
+			const roleExtensions = await RoleExtensionQueries.findAllByFilter(
+				{ organization_code: defaultOrgCode },
+				defaultTenantCode
+			)
+			if (roleExtensions.length) {
+				let skipRoleExtensions = false
+				if (options.backfill) {
+					const existing = await RoleExtensionQueries.findAllByFilter({}, newTenantCode)
+					if (existing.length > 0 && existing.some((r) => r.organization_code !== defaultOrgCode)) {
+						skipRoleExtensions = true
+						console.log(
+							`[TENANT REPLICATION] Skipping role extensions — tenant ${newTenantCode} already has data with a different organization_code`
+						)
+					}
+				}
+
+				if (!skipRoleExtensions) {
+					const newRoleExtensions = roleExtensions.map((re) => ({
+						...stripMeta(re),
+						tenant_code: newTenantCode,
+						organization_id: newOrgIdStr,
+						organization_code: newOrgCode || defaultOrgCode,
+					}))
+					await RoleExtensionQueries.bulkCreate(newRoleExtensions, newTenantCode, { transaction })
+					console.log(`[TENANT REPLICATION] Role extensions copied: ${newRoleExtensions.length}`)
 				}
 			}
 
