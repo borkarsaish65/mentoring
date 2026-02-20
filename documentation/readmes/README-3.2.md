@@ -236,6 +236,7 @@ EVENTS_TOPIC=qa.userCreate   # Ensure this matches the User Service configuratio
 
 ```env
     "EVENT_USER_KAFKA_TOPIC": "qa.userCreate" // Make sure topic is same as mentoring 
+    "TENANT_CODE_HEADER_NAME" : "tenantid" // only if this version of the user service is deployed and the project service (below 3.4) is using the same user service; otherwise, ignore.
 ```
 ### Step 2 : Install Dependencies
 
