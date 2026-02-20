@@ -250,9 +250,13 @@ module.exports = class UserEntityData {
 		}
 	}
 
-	static async bulkCreate(records, options = {}) {
+	static async bulkCreate(records, tenantCode, options = {}) {
 		try {
-			return await EntityType.bulkCreate(records, {
+			const dataWithTenant = records.map((item) => ({
+				...item,
+				tenant_code: tenantCode,
+			}))
+			return await EntityType.bulkCreate(dataWithTenant, {
 				returning: true,
 				ignoreDuplicates: true,
 				...options,

@@ -44,17 +44,21 @@ var messageReceived = function (message) {
 					const { created } = await tenantQueries.upsert(tenantData)
 					if (created) {
 						console.log(`✅ [TENANT] Created new tenant: ${code}`)
-						const replicationOptions = { backfill: backfill === true }
-						await tenantService.replicateConfigFromDefaultTenant(code, org_id, org_code, replicationOptions)
 					} else {
-						console.log(`ℹ️ [TENANT] Tenant already exists, skipping: ${code}`)
+						console.log(`ℹ️ [TENANT] Tenant already exists: ${code}`)
 					}
+					const replicationOptions = { backfill: backfill === true }
+					await tenantService.replicateConfigFromDefaultTenant(code, org_id, org_code, replicationOptions)
 					break
 				}
 
 				case 'update': {
 					const { newValues = {} } = message
 					const updateData = {}
+					if (!message.entityId) {
+						console.warn(`[TENANT] Update event missing entityId, skipping`)
+						return resolve(`Skipped update: missing entityId`)
+					}
 
 					if (newValues.name !== undefined) updateData.name = newValues.name
 					if (newValues.status !== undefined) updateData.status = newValues.status

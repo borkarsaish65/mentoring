@@ -600,7 +600,7 @@ let enviromentVariables = {
 	EVENT_TENANT_KAFKA_TOPIC: {
 		message: 'Required kafka topic for tenant events',
 		optional: true,
-		default: 'dev.tenantEvent',
+		default: 'tenantEvent',
 	},
 	SERVICE_NAME: {
 		message: 'Required SERVICE_NAME to handling health check',

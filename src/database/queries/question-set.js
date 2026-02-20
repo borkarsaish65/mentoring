@@ -48,9 +48,13 @@ module.exports = class QuestionsData {
 		}
 	}
 
-	static async bulkCreate(records, options = {}) {
+	static async bulkCreate(records, tenantCode, options = {}) {
 		try {
-			return await QuestionSet.bulkCreate(records, {
+			const dataWithTenant = records.map((item) => ({
+				...item,
+				tenant_code: tenantCode,
+			}))
+			return await QuestionSet.bulkCreate(dataWithTenant, {
 				ignoreDuplicates: true,
 				...options,
 			})

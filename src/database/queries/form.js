@@ -101,9 +101,13 @@ module.exports = class FormsData {
 		}
 	}
 
-	static async bulkCreate(records, options = {}) {
+	static async bulkCreate(records, tenantCode, options = {}) {
 		try {
-			return await Form.bulkCreate(records, {
+			const dataWithTenant = records.map((item) => ({
+				...item,
+				tenant_code: tenantCode,
+			}))
+			return await Form.bulkCreate(dataWithTenant, {
 				ignoreDuplicates: true,
 				...options,
 			})

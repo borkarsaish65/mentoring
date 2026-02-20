@@ -223,9 +223,13 @@ module.exports = class NotificationTemplateData {
 		}
 	}
 
-	static async bulkCreate(records, options = {}) {
+	static async bulkCreate(records, tenantCode, options = {}) {
 		try {
-			return await NotificationTemplate.bulkCreate(records, {
+			const dataWithTenant = records.map((item) => ({
+				...item,
+				tenant_code: tenantCode,
+			}))
+			return await NotificationTemplate.bulkCreate(dataWithTenant, {
 				ignoreDuplicates: true,
 				...options,
 			})

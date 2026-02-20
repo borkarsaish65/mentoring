@@ -25,6 +25,10 @@ module.exports = class TenantService {
 
 		const newOrgIdStr = newOrgId ? newOrgId.toString() : process.env.DEFAULT_ORG_ID
 
+		if (!newOrgIdStr) {
+			throw new Error('newOrgId is required when DEFAULT_ORG_ID env var is not set')
+		}
+
 		const keysToStrip = ['id', 'created_at', 'updated_at', 'deleted_at', 'created_by', 'updated_by']
 		const stripMeta = (record) => {
 			const copy = { ...record }
@@ -62,7 +66,7 @@ module.exports = class TenantService {
 						tenant_code: newTenantCode,
 						organization_id: newOrgIdStr,
 					}))
-					await NotificationTemplateQueries.bulkCreate(newTemplates, { transaction })
+					await NotificationTemplateQueries.bulkCreate(newTemplates, newTenantCode, { transaction })
 					console.log(`[TENANT REPLICATION] Notification templates copied: ${newTemplates.length}`)
 				}
 			}
@@ -90,7 +94,7 @@ module.exports = class TenantService {
 						organization_id: newOrgIdStr,
 						version: 0,
 					}))
-					await FormQueries.bulkCreate(newForms, { transaction })
+					await FormQueries.bulkCreate(newForms, newTenantCode, { transaction })
 					console.log(`[TENANT REPLICATION] Forms copied: ${newForms.length}`)
 				}
 			}
@@ -119,10 +123,22 @@ module.exports = class TenantService {
 						organization_id: newOrgIdStr,
 						parent_id: null,
 					}))
-					const createdEntityTypes = await EntityTypeQueries.bulkCreate(newEntityTypes, { transaction })
+					const createdEntityTypes = await EntityTypeQueries.bulkCreate(newEntityTypes, newTenantCode, {
+						transaction,
+					})
+
+					let typesToMap = createdEntityTypes
+					if (createdEntityTypes.length < newEntityTypes.length) {
+						console.log(
+							`[TENANT REPLICATION] Entity types: ${
+								newEntityTypes.length - createdEntityTypes.length
+							} duplicate(s) skipped — fetching existing records to complete ID mapping`
+						)
+						typesToMap = await EntityTypeQueries.findAllEntityTypes([defaultOrgCode], [newTenantCode], null)
+					}
 
 					for (const oldET of entityTypes) {
-						const newET = createdEntityTypes.find(
+						const newET = typesToMap.find(
 							(c) => c.value === oldET.value && c.organization_code === oldET.organization_code
 						)
 						if (newET) entityTypeIdMap[oldET.id] = newET.id
@@ -147,7 +163,7 @@ module.exports = class TenantService {
 							tenant_code: newTenantCode,
 							entity_type_id: entityTypeIdMap[e.entity_type_id],
 						}))
-					await EntityQueries.bulkCreate(newEntities, { transaction })
+					await EntityQueries.bulkCreate(newEntities, newTenantCode, { transaction })
 					console.log(`[TENANT REPLICATION] Entities copied: ${newEntities.length}`)
 				}
 			}
@@ -179,13 +195,23 @@ module.exports = class TenantService {
 						...stripMeta(q),
 						tenant_code: newTenantCode,
 					}))
-					const createdQuestions = await QuestionQueries.bulkCreate(newQuestions, {
+					const createdQuestions = await QuestionQueries.bulkCreate(newQuestions, newTenantCode, {
 						transaction,
 						returning: true,
 					})
 
+					let questionsToMap = createdQuestions
+					if (createdQuestions.length < newQuestions.length) {
+						console.log(
+							`[TENANT REPLICATION] Questions: ${
+								newQuestions.length - createdQuestions.length
+							} duplicate(s) skipped — fetching existing records to complete ID mapping`
+						)
+						questionsToMap = await QuestionQueries.find({ tenant_code: newTenantCode })
+					}
+
 					for (const oldQ of questions) {
-						const newQ = createdQuestions.find(
+						const newQ = questionsToMap.find(
 							(c) => c.name === oldQ.name && c.organization_code === oldQ.organization_code
 						)
 						if (newQ) questionIdMap[oldQ.id] = newQ.id
@@ -225,7 +251,7 @@ module.exports = class TenantService {
 							return questionIdMap[numericId] !== undefined ? questionIdMap[numericId] : qId
 						}),
 					}))
-					await QuestionSetQueries.bulkCreate(newQuestionSets, { transaction })
+					await QuestionSetQueries.bulkCreate(newQuestionSets, newTenantCode, { transaction })
 					console.log(`[TENANT REPLICATION] Question sets copied: ${newQuestionSets.length}`)
 				}
 			}

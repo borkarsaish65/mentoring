@@ -56,7 +56,7 @@ function parseCsv(filePath) {
  * @param {Array<object>} tenants - Array of { code, name, org_id, org_code, status?, description?, logo? }
  * @param {object} options
  * @param {boolean} options.dryRun - If true, only logs what would happen
- * @returns {Promise<{ success: number, failed: number, skipped: number }>}
+ * @returns` {Promise<{ success: number, failed: number, total: number }>}
  */
 async function backfillTenants(tenants, options = {}) {
 	const { dryRun = false } = options
