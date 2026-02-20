@@ -242,6 +242,11 @@ module.exports = class TenantService {
 					}
 				}
 
+				if (questions.length > 0 && Object.keys(questionIdMap).length === 0) {
+					skipQuestionSets = true
+					console.log('[TENANT REPLICATION] Skipping question sets — questions were skipped, ID map is empty')
+				}
+
 				if (!skipQuestionSets) {
 					const newQuestionSets = questionSets.map((qs) => ({
 						...stripMeta(qs),
