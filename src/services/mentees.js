@@ -89,6 +89,7 @@ module.exports = class MenteesHelper {
 			})
 		}
 
+		const rawMenteeImage = mentee.image
 		delete mentee.user_id
 		delete mentee.visible_to_organizations
 		delete mentee.image
@@ -226,7 +227,7 @@ module.exports = class MenteesHelper {
 		// Remove sensitive fields from menteeDetails
 		const sanitizedMenteeData = utils.deleteProperties(menteeDetails.data.result, ['phone'])
 
-		const menteeImage = mentee.image ? await utils.getDownloadableUrl(mentee.image) : mentee.image
+		const menteeImage = rawMenteeImage ? await utils.getDownloadableUrl(rawMenteeImage) : null
 		// Construct the final profile response (INCLUDE sessions_attended for read endpoint)
 		const finalProfile = {
 			user_id: id, // Add user_id to match mentor read response
@@ -2316,7 +2317,7 @@ module.exports = class MenteesHelper {
 			const userPermissions = await permissions.getPermissions(roles, tenantCode, organizationCode)
 			const requestedUserExtensionImage = requestedUserExtension.image
 				? await utils.getDownloadableUrl(requestedUserExtension.image)
-				: requestedUserExtension.image
+				: null
 
 			// Construct the final details response
 			const finalDetailsResponse = {

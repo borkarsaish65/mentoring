@@ -1099,9 +1099,7 @@ module.exports = class MentorsHelper {
 			// Construct the final profile response (INCLUDE sessions_attended for read endpoint)
 			const totalSessionsAttended = await sessionAttendeesQueries.countEnrolledSessions(id, tenantCode)
 
-			const mentorImage = mentorExtension.image
-				? await utils.getDownloadableUrl(mentorExtension.image)
-				: mentorExtension.image
+			const mentorImage = mentorExtension.image ? await utils.getDownloadableUrl(mentorExtension.image) : null
 			const finalProfile = {
 				user_id: id, // Add user_id to match mentee read response
 				...mentorExtension,
