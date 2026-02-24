@@ -89,10 +89,8 @@ module.exports = class MenteesHelper {
 			})
 		}
 
-		const rawMenteeImage = mentee.image
 		delete mentee.user_id
 		delete mentee.visible_to_organizations
-		delete mentee.image
 
 		const defaults = await getDefaults()
 		if (!defaults.orgCode)
@@ -227,7 +225,6 @@ module.exports = class MenteesHelper {
 		// Remove sensitive fields from menteeDetails
 		const sanitizedMenteeData = utils.deleteProperties(menteeDetails.data.result, ['phone'])
 
-		const menteeImage = rawMenteeImage ? await utils.getDownloadableUrl(rawMenteeImage) : null
 		// Construct the final profile response (INCLUDE sessions_attended for read endpoint)
 		const finalProfile = {
 			user_id: id, // Add user_id to match mentor read response
@@ -235,7 +232,6 @@ module.exports = class MenteesHelper {
 			...processDbResponse,
 			visible_to_organizations: mentee.visible_to_organizations, // Add to match mentor read
 			settings: mentee.settings, // Add settings to match mentor read
-			image: menteeImage, // Keep original image (may already be downloadable URL)
 			displayProperties,
 		}
 
