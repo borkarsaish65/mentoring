@@ -573,7 +573,7 @@ module.exports = class ConnectionHelper {
 				})
 			}
 
-			const tenantCodes = [tenantCode, defaults.tenantCode]
+			const tenantCodes = [tenantCode]
 			const orgCodes = [orgCode, defaults.orgCode]
 
 			// Get email template
@@ -655,7 +655,7 @@ module.exports = class ConnectionHelper {
 				})
 			}
 
-			const tenantCodes = [tenantCode, defaults.tenantCode]
+			const tenantCodes = [tenantCode]
 			const orgCodes = [orgCode, defaults.orgCode]
 
 			// Get email template

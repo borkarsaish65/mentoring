@@ -107,7 +107,7 @@ module.exports = class MentorsHelper {
 				requesterId: menteeUserId,
 				roles: roles,
 				requesterOrganizationCode: orgCode,
-				tenantCode: { [Op.in]: [tenantCode, defaults.tenantCode] },
+				tenantCode: tenantCode,
 			})
 
 			if (defaultRuleFilter.error && defaultRuleFilter.error.missingField) {
@@ -1375,7 +1375,7 @@ module.exports = class MentorsHelper {
 				requesterId: queryParams.menteeId ? queryParams.menteeId : userId,
 				roles: roles,
 				requesterOrganizationCode: orgCode,
-				tenantCode: { [Op.in]: [tenantCode, defaults.tenantCode] },
+				tenantCode: tenantCode,
 			})
 
 			if (defaultRuleFilter.error && defaultRuleFilter.error.missingField) {

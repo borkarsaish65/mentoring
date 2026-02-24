@@ -698,7 +698,7 @@ module.exports = class MenteesHelper {
 			requesterId: userId,
 			roles: roles,
 			requesterOrganizationCode: organizationCode,
-			tenantCode: { [Op.in]: [tenantCode, defaults.tenantCode] },
+			tenantCode: tenantCode,
 		})
 
 		if (defaultRuleFilter.error && defaultRuleFilter.error.missingField) {
@@ -1458,7 +1458,7 @@ module.exports = class MenteesHelper {
 					modelName,
 					{},
 					tenantCodes,
-					defaults.tenantCode ? defaults.tenantCode : ''
+					''
 				)
 				if (getEntityTypesWithEntities.success && getEntityTypesWithEntities.result) {
 					let entityTypesWithEntities = getEntityTypesWithEntities.result

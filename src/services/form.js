@@ -173,8 +173,8 @@ module.exports = class FormsHelper {
 				filter.organization_code = { [Op.in]: [orgCode, defaults.orgCode] }
 			}
 
-			// Business logic: Try both current tenant and default tenant
-			const tenantCodes = [tenantCode, defaults.tenantCode]
+			// Tenant isolation: only use the current tenant
+			const tenantCodes = [tenantCode]
 			const forms = await formQueries.findFormsByFilter(filter, tenantCodes)
 
 			if (!forms || forms.length === 0) {
@@ -219,8 +219,7 @@ module.exports = class FormsHelper {
 				})
 
 			// Fetch all forms from database (no "all forms" cache to avoid duplication)
-			const formsVersionData =
-				(await form.getAllFormsVersion({ [Op.in]: [defaults.tenantCode, tenantCode] })) || {}
+			const formsVersionData = (await form.getAllFormsVersion(tenantCode)) || {}
 
 			// Cache each individual form for future individual reads
 			try {

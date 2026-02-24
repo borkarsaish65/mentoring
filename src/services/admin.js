@@ -316,7 +316,7 @@ module.exports = class AdminService {
 
 					if (connectedMentees.length > 0) {
 						const orgCodes = [userInfo.organization_code, defaults.orgCode].filter(Boolean)
-						const tenantCodes = [userTenantCode, defaults.tenantCode].filter(Boolean)
+						const tenantCodes = [userTenantCode].filter(Boolean)
 						result.isMenteeNotifiedAboutMentorDeletion = await this.notifyMenteesAboutMentorDeletion(
 							connectedMentees,
 							userInfo.name || 'Mentor',
@@ -340,7 +340,7 @@ module.exports = class AdminService {
 				// Notify connected mentors about mentee deletion
 				if (connectedMentors.length > 0 && !isMentor) {
 					const orgCodes = [userInfo.organization_code, defaults.orgCode].filter(Boolean)
-					const tenantCodes = [userTenantCode, defaults.tenantCode].filter(Boolean)
+					const tenantCodes = [userTenantCode].filter(Boolean)
 
 					result.isMentorNotifiedAboutMenteeDeletion = await this.notifyMentorsAboutMenteeDeletion(
 						connectedMentors,
@@ -400,7 +400,7 @@ module.exports = class AdminService {
 
 				// Use both user's codes and defaults for notification templates
 				const orgCodes = [organizationCode, defaults.orgCode].filter(Boolean)
-				const tenantCodes = [userTenantCode, defaults.tenantCode].filter(Boolean)
+				const tenantCodes = [userTenantCode].filter(Boolean)
 
 				if (requestedSessions.length > 0) {
 					result.isRequestedSessionMentorNotified = await this.NotifySessionRequestedUsers(
@@ -490,7 +490,7 @@ module.exports = class AdminService {
 			try {
 				if (privateSessions.length > 0) {
 					const orgCodes = [userInfo.organization_code, defaults.orgCode].filter(Boolean)
-					const tenantCodes = [userTenantCode, defaults.tenantCode].filter(Boolean)
+					const tenantCodes = [userTenantCode].filter(Boolean)
 
 					result.isPrivateSessionsCancelled = await this.notifyAndCancelPrivateSessions(
 						privateSessions,
@@ -1204,7 +1204,7 @@ module.exports = class AdminService {
 			const defaults = await getDefaults()
 			const userOrgCode = userInfo.organization_code || ''
 			const orgCodes = [userOrgCode, defaults.orgCode].filter(Boolean)
-			const tenantCodes = [tenantCode, defaults.tenantCode].filter(Boolean)
+			const tenantCodes = [tenantCode].filter(Boolean)
 
 			// 1. Get upcoming private sessions where deleted mentee was enrolled
 			const upcomingSessions = await sessionQueries.getUpcomingSessionsOfMentee(
@@ -1236,7 +1236,7 @@ module.exports = class AdminService {
 			const defaults = await getDefaults()
 			const userOrgCode = mentorInfo.organization_code
 			const orgCodes = [userOrgCode, defaults.orgCode].filter(Boolean)
-			const tenantCodes = [tenantCode, defaults.tenantCode].filter(Boolean)
+			const tenantCodes = [tenantCode].filter(Boolean)
 
 			// 2. Handle session requests - auto-reject pending requests
 			const pendingSessionRequests = await this.getPendingSessionRequestsForMentor(mentorUserId, tenantCode)

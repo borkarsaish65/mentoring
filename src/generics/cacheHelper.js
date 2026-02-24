@@ -581,39 +581,7 @@ const entityTypes = {
 					)
 				}
 
-				// Step 2: ALSO fetch from default codes (if different from user codes)
-				if (
-					defaults &&
-					defaults.orgCode &&
-					defaults.tenantCode &&
-					(defaults.tenantCode !== tenantCode || defaults.orgCode !== orgCode)
-				) {
-					console.log(
-						`💾 EntityType ${modelName}:${entityValue} also fetching from defaults: tenant:${defaults.tenantCode}:org:${defaults.orgCode}`
-					)
-
-					const defaultFilter = {
-						status: 'ACTIVE',
-						organization_code: defaults.orgCode,
-						model_names: { [Op.contains]: modelName },
-					}
-					if (entityValue) {
-						defaultFilter.value = entityValue
-					}
-					const defaultEntityTypes = await entityTypeQueries.findUserEntityTypesAndEntities(
-						defaultFilter,
-						defaults.tenantCode
-					)
-					if (defaultEntityTypes && defaultEntityTypes.length > 0) {
-						// Merge defaults, avoiding duplicates by ID
-						const existingIds = new Set(entityTypeFromDb.map((et) => et.id))
-						const newEntityTypes = defaultEntityTypes.filter((et) => !existingIds.has(et.id))
-						entityTypeFromDb.push(...newEntityTypes)
-						console.log(
-							`💾 EntityType ${modelName}:${entityValue} found in defaults: ${defaultEntityTypes.length} results, ${newEntityTypes.length} unique added`
-						)
-					}
-				}
+				// Tenant isolation: no default tenant fallback
 			} catch (dbError) {
 				console.error(`Failed to fetch entityType ${modelName}:${entityValue} from database:`, dbError.message)
 				return null
@@ -701,35 +669,7 @@ const entityTypes = {
 					)
 				}
 
-				// Step 2: ALSO fetch from default codes (if different from user codes)
-				if (
-					defaults &&
-					defaults.orgCode &&
-					defaults.tenantCode &&
-					(defaults.tenantCode !== tenantCode || defaults.orgCode !== orgCode)
-				) {
-					console.log(
-						`💾 Entity types for model ${modelName} also fetching from defaults: tenant:${defaults.tenantCode}:org:${defaults.orgCode}`
-					)
-
-					const defaultFilter = {
-						status: 'ACTIVE',
-						organization_code: defaults.orgCode,
-						model_names: { [Op.contains]: [modelName] },
-					}
-					const defaultEntityTypes = await entityTypeQueries.findUserEntityTypesAndEntities(defaultFilter, [
-						defaults.tenantCode,
-					])
-					if (defaultEntityTypes && defaultEntityTypes.length > 0) {
-						// Merge defaults, avoiding duplicates by ID
-						const existingIds = new Set(entityTypes.map((et) => et.id))
-						const newEntityTypes = defaultEntityTypes.filter((et) => !existingIds.has(et.id))
-						entityTypes.push(...newEntityTypes)
-						console.log(
-							`💾 Entity types for model ${modelName} found in defaults: ${defaultEntityTypes.length} results, ${newEntityTypes.length} unique added`
-						)
-					}
-				}
+				// Tenant isolation: no default tenant fallback
 			} catch (dbError) {
 				console.error(`Failed to fetch entity types for model ${modelName} from database:`, dbError.message)
 				return []
@@ -855,26 +795,7 @@ const forms = {
 				)
 
 				// Step 4: If not found with user codes and defaults exist, try with default codes
-				if (
-					!formFromDb &&
-					defaults &&
-					defaults.orgCode &&
-					defaults.tenantCode &&
-					(defaults.tenantCode !== tenantCode || defaults.orgCode !== orgCode)
-				) {
-					console.log(
-						`💾 Form ${type}:${subtype} not found with user codes, trying defaults: tenant:${defaults.tenantCode}:org:${defaults.orgCode}`
-					)
-
-					formFromDb = await formQueries.findOne(
-						{
-							type: type,
-							sub_type: subtype,
-							organization_code: defaults.orgCode,
-						},
-						defaults.tenantCode
-					)
-				}
+				// Tenant isolation: no default tenant fallback
 			} catch (dbError) {
 				console.error(`Failed to fetch form ${type}:${subtype} from database:`, dbError.message)
 				return null
@@ -1554,23 +1475,7 @@ const notificationTemplates = {
 				)
 
 				// If not found and defaults are different, try defaults
-				if (
-					!templateFromDb &&
-					defaults &&
-					defaults.orgCode &&
-					defaults.tenantCode &&
-					(defaults.tenantCode !== tenantCode || defaults.orgCode !== orgCode)
-				) {
-					templateFromDb = await notificationTemplateQueries.findOne(
-						{
-							code: templateCode,
-							organization_code: defaults.orgCode,
-							type: 'email',
-							status: 'active',
-						},
-						defaults.tenantCode
-					)
-				}
+				// Tenant isolation: no default tenant fallback
 
 				if (templateFromDb) {
 					console.log(

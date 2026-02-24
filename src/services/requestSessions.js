@@ -859,7 +859,7 @@ async function emailForAcceptAndReject(
 		})
 
 	const orgCodes = [orgCode, defaults.orgCode]
-	const tenantCodes = [tenantCode, defaults.tenantCode]
+	const tenantCodes = [tenantCode]
 	// send mail to mentors on session creation if session created by manager
 	const templateData = await cacheHelper.notificationTemplates.get(tenantCode, orgCode, emailTemplateCode)
 
