@@ -261,6 +261,7 @@ module.exports = class OrganizationAndEntityTypePolicyHelper {
 				}
 			}
 			if (modelName) {
+				const modelName = Array.isArray(modelName) ? modelName : [modelName]
 				filter.model_names = { [Op.contains]: modelName }
 			}
 			//fetch entity types and entities
