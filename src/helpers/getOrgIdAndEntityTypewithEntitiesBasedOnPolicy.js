@@ -238,14 +238,6 @@ module.exports = class OrganizationAndEntityTypePolicyHelper {
 		tenantCodes,
 		defaultTenantCode = ''
 	) {
-		console.log('[getEntityTypeWithEntitiesBasedOnOrg] called with:', {
-			organization_codes,
-			entity_types,
-			defaultOrgCode,
-			modelName,
-			tenantCodes,
-			defaultTenantCode,
-		})
 		try {
 			filter.status = common.ACTIVE_STATUS
 			filter.allow_filtering = true
@@ -276,16 +268,6 @@ module.exports = class OrganizationAndEntityTypePolicyHelper {
 			const tenantCodeArray = Array.isArray(tenantCodes) ? tenantCodes : [tenantCodes]
 			const finalTenantCodes = defaultTenantCode ? [...tenantCodeArray, defaultTenantCode] : tenantCodeArray
 
-			console.log(
-				'[getEntityTypeWithEntitiesBasedOnOrg] filter:',
-				JSON.stringify(filter, (key, val) => (typeof val === 'symbol' ? val.toString() : val))
-			)
-			console.log('[getEntityTypeWithEntitiesBasedOnOrg] finalTenantCodes:', finalTenantCodes)
-			console.log(
-				'[getEntityTypeWithEntitiesBasedOnOrg] branch:',
-				modelName && !entity_types ? 'CACHE' : 'DIRECT_DB'
-			)
-
 			// Use cache for model-based queries since this query has core fields only
 			let entityTypesWithEntities
 			if (modelName && !entity_types) {
@@ -301,63 +283,25 @@ module.exports = class OrganizationAndEntityTypePolicyHelper {
 							has_entities: filter.has_entities,
 						}
 					)
-					console.log(
-						'[getEntityTypeWithEntitiesBasedOnOrg] cache result count:',
-						Array.isArray(entityTypesWithEntities)
-							? entityTypesWithEntities.length
-							: typeof entityTypesWithEntities
-					)
 				} catch (cacheError) {
-					console.error(
-						'[getEntityTypeWithEntitiesBasedOnOrg] cache error, falling back to DB:',
-						cacheError.message
-					)
 					// Fallback to direct database query
 					entityTypesWithEntities = await entityTypeQueries.findUserEntityTypesAndEntities(
 						filter,
 						finalTenantCodes
 					)
-					console.log(
-						'[getEntityTypeWithEntitiesBasedOnOrg] fallback DB result count:',
-						Array.isArray(entityTypesWithEntities)
-							? entityTypesWithEntities.length
-							: typeof entityTypesWithEntities
-					)
 				}
 			} else {
 				// Query has specific entity values or other non-core filters - use direct query
-				console.log(
-					'[getEntityTypeWithEntitiesBasedOnOrg] calling findUserEntityTypesAndEntities with filter:',
-					JSON.stringify(filter, (key, val) => (typeof val === 'symbol' ? val.toString() : val))
+				entityTypesWithEntities = await entityTypeQueries.findUserEntityTypesAndEntities(
+					filter,
+					finalTenantCodes
 				)
-				try {
-					entityTypesWithEntities = await entityTypeQueries.findUserEntityTypesAndEntities(
-						filter,
-						finalTenantCodes
-					)
-					console.log(
-						'[getEntityTypeWithEntitiesBasedOnOrg] direct DB result count:',
-						Array.isArray(entityTypesWithEntities)
-							? entityTypesWithEntities.length
-							: typeof entityTypesWithEntities
-					)
-				} catch (dbError) {
-					console.error('[getEntityTypeWithEntitiesBasedOnOrg] direct DB error:', dbError.message)
-					throw dbError
-				}
 			}
-			console.log(
-				'[getEntityTypeWithEntitiesBasedOnOrg] returning result, type:',
-				typeof entityTypesWithEntities,
-				'isArray:',
-				Array.isArray(entityTypesWithEntities)
-			)
 			return {
 				success: true,
 				result: entityTypesWithEntities,
 			}
 		} catch (error) {
-			console.error('[getEntityTypeWithEntitiesBasedOnOrg] outer catch error:', error.message, error.stack)
 			return {
 				success: false,
 				message: error.message,
