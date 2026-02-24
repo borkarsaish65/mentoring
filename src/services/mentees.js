@@ -2098,7 +2098,7 @@ module.exports = class MenteesHelper {
 						roles: roles,
 						requesterOrganizationCode: organizationCode,
 						data: cacheProfileDetails,
-						tenant_code: tenantCode,
+						tenantCode: tenantCode,
 					})
 					if (validateDefaultRules.error && validateDefaultRules.error.missingField) {
 						return responses.failureResponse({
@@ -2178,7 +2178,7 @@ module.exports = class MenteesHelper {
 					roles: roles,
 					requesterOrganizationCode: organizationCode,
 					data: requestedUserExtension,
-					tenant_code: tenantCode,
+					tenantCode: tenantCode,
 				})
 				if (validateDefaultRules.error && validateDefaultRules.error.missingField) {
 					return responses.failureResponse({
