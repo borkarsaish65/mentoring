@@ -918,7 +918,12 @@ module.exports = class SessionsHelper {
 					mentorUpdated = true
 					const newMentor =
 						(await cacheHelper.mentor.getCacheOnly(tenantCode, bodyData.mentor_id)) ??
-						(await mentorExtensionQueries.getMentorExtension(bodyData.mentor_id, ['name'], true))
+						(await mentorExtensionQueries.getMentorExtension(
+							bodyData.mentor_id,
+							['name'],
+							false,
+							tenantCode
+						))
 					if (newMentor?.name) {
 						bodyData.mentor_name = newMentor.name
 					}
@@ -4148,7 +4153,7 @@ module.exports = class SessionsHelper {
 				}
 
 				if (!mentor) {
-					mentor = await mentorQueries.getMentorExtension(mentorId, ['organization_code'], tenantCode)
+					mentor = await mentorQueries.getMentorExtension(mentorId, ['organization_code'], false, tenantCode)
 				}
 				if (!mentor) throw new MentorError('Invalid Mentor Id', { mentorId })
 
