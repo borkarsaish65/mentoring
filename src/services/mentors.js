@@ -832,7 +832,7 @@ module.exports = class MentorsHelper {
 						roles: roles,
 						requesterOrganizationCode: orgCode,
 						data: requestedMentorExtension,
-						tenant_code: tenantCode,
+						tenantCode: tenantCode,
 					})
 					if (validateDefaultRules.error && validateDefaultRules.error.missingField) {
 						return responses.failureResponse({
@@ -926,7 +926,7 @@ module.exports = class MentorsHelper {
 					roles: roles,
 					requesterOrganizationCode: orgCode,
 					data: mentorExtension,
-					tenant_code: tenantCode,
+					tenantCode: tenantCode,
 				})
 				if (validateDefaultRules.error && validateDefaultRules.error.missingField) {
 					return responses.failureResponse({

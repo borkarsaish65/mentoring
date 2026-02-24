@@ -180,7 +180,7 @@ module.exports = class DefaultRuleHelper {
 								roles: roles,
 								requesterOrganizationCode: orgCode,
 								data: requestedUserExtension,
-								tenant_code: tenantCode,
+								tenantCode: tenantCode,
 							})
 
 							if (!validateDefaultRules) {
@@ -212,7 +212,7 @@ module.exports = class DefaultRuleHelper {
 									roles: roles,
 									requesterOrganizationCode: orgCode,
 									data: requestedUserExtension,
-									tenant_code: tenantCode,
+									tenantCode: tenantCode,
 								})
 
 								if (!validateDefaultRules) {
