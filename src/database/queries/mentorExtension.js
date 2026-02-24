@@ -57,6 +57,9 @@ module.exports = class MentorExtensionQueries {
 			if (data.user_id) {
 				delete data['user_id']
 			}
+			if (data.tenant_code) {
+				delete data['tenant_code']
+			}
 
 			let whereClause
 			if (_.isEmpty(customFilter)) {

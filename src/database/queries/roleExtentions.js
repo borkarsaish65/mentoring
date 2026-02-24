@@ -76,6 +76,9 @@ module.exports = class RoleExtensionService {
 
 	static async updateRoleExtension(title, updateData, tenantCode) {
 		try {
+			if (updateData.tenant_code) {
+				delete updateData['tenant_code']
+			}
 			const filter = { title: title, tenant_code: tenantCode }
 
 			const [rowsUpdated, updatedExtension] = await RoleExtension.update(updateData, {
