@@ -52,26 +52,26 @@ module.exports = {
 				'report_queries',
 				{
 					query: `SELECT
-                TO_CHAR(
+                COALESCE(TO_CHAR(
                     INTERVAL '1 hour' * FLOOR(SUM(duration) / 3600) +
                     INTERVAL '1 minute' * FLOOR((SUM(duration) / 60)::BIGINT % 60) +
                     INTERVAL '1 second' * FLOOR(SUM(duration)::BIGINT % 60),
                     'HH24:MI:SS'
-                ) AS total_hours,  -- Total duration of all sessions
-            
-                TO_CHAR(
+                ), '00:00:00') AS total_hours,
+
+                COALESCE(TO_CHAR(
                     INTERVAL '1 hour' * FLOOR(SUM(CASE WHEN type = 'PUBLIC' THEN duration ELSE 0 END) / 3600) +
                     INTERVAL '1 minute' * FLOOR((SUM(CASE WHEN type = 'PUBLIC' THEN duration ELSE 0 END) / 60)::BIGINT % 60) +
                     INTERVAL '1 second' * FLOOR(SUM(CASE WHEN type = 'PUBLIC' THEN duration ELSE 0 END)::BIGINT % 60),
                     'HH24:MI:SS'
-                ) AS public_hours,  -- Total duration of public sessions
-            
-                TO_CHAR(
+                ), '00:00:00') AS public_hours,
+
+                COALESCE(TO_CHAR(
                     INTERVAL '1 hour' * FLOOR(SUM(CASE WHEN type = 'PRIVATE' THEN duration ELSE 0 END) / 3600) +
                     INTERVAL '1 minute' * FLOOR((SUM(CASE WHEN type = 'PRIVATE' THEN duration ELSE 0 END) / 60)::BIGINT % 60) +
                     INTERVAL '1 second' * FLOOR(SUM(CASE WHEN type = 'PRIVATE' THEN duration ELSE 0 END)::BIGINT % 60),
                     'HH24:MI:SS'
-                ) AS private_hours  -- Total duration of private sessions
+                ), '00:00:00') AS private_hours
             
                 FROM (
                     SELECT
