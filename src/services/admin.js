@@ -36,8 +36,7 @@ class NotificationHelper {
 		orgCode,
 		templateData = {},
 		subjectData = {},
-		tenantCode,
-		tenantCodes, // accept plural form used by many callers
+		tenantCodes,
 	}) {
 		try {
 			if (!templateCode || !recipients?.length) {
@@ -45,10 +44,8 @@ class NotificationHelper {
 				return true
 			}
 
-			// Support both tenantCode (singular) and tenantCodes (plural) from callers
-			const effectiveTenantCode = tenantCode || tenantCodes
 			// Handle arrays: extract first value (user codes), cacheHelper will fallback to defaults if not found
-			const userTenantCode = Array.isArray(effectiveTenantCode) ? effectiveTenantCode[0] : effectiveTenantCode
+			const userTenantCode = Array.isArray(tenantCodes) ? tenantCodes[0] : tenantCodes
 			const userOrgCode = Array.isArray(orgCode) ? orgCode[0] : orgCode
 
 			// cacheHelper.get will automatically search user codes first, then defaults when cache is disabled
@@ -765,7 +762,6 @@ module.exports = class AdminService {
 			const sentRequestsData = sentRequests.rows || []
 
 			// Get requests where user is requestee (received requests)
-			// Correct arg order: (userId, status, tenantCode) — pass null to get all statuses
 			const sessionRequestMapping = await sessionRequestMappingQueries.getSessionsMapping(
 				userId,
 				null,
@@ -1426,7 +1422,6 @@ module.exports = class AdminService {
 
 	static async getPendingSessionRequestsForMentor(mentorUserId, tenantCode) {
 		try {
-			// request_session_mapping table no longer exists; requestee_id is directly on session_request
 			const pendingRequests = await RequestSession.findAll({
 				where: {
 					requestee_id: mentorUserId,
