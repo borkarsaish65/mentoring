@@ -199,8 +199,8 @@ module.exports = {
                     AND (:end_date IS NULL OR s.end_date < :end_date)
                     AND (
                         (:session_type = 'All' AND s.type IN ('PUBLIC', 'PRIVATE'))
-                        OR (:session_type = 'PUBLIC' AND s.type = 'PUBLIC')
-                        OR (:session_type = 'PRIVATE' AND s.type = 'PRIVATE')
+                        OR (:session_type = 'Public' AND s.type = 'PUBLIC')
+                        OR (:session_type = 'Private' AND s.type = 'PRIVATE')
                     )
                     AND s.deleted_at IS NULL
                     DYNAMIC_AND_CLAUSE;`,
@@ -224,13 +224,13 @@ module.exports = {
                     Session.tenant_code = :tenantCode
                     AND Session.mentor_id = :userId
                     AND Session.status = 'COMPLETED'
-                    AND Session.start_date > :start_date
-                    AND Session.end_date < :end_date
+                    AND (:start_date IS NULL OR Session.start_date > :start_date)
+                    AND (:end_date IS NULL OR Session.end_date < :end_date)
                     AND (
                         CASE
                             WHEN :session_type = 'All' THEN Session.type IN ('PUBLIC', 'PRIVATE')
-                            WHEN :session_type = 'PUBLIC' THEN Session.type = 'PUBLIC'
-                            WHEN :session_type = 'PRIVATE' THEN Session.type = 'PRIVATE'
+                            WHEN :session_type = 'Public' THEN Session.type = 'PUBLIC'
+                            WHEN :session_type = 'Private' THEN Session.type = 'PRIVATE'
                             ELSE TRUE
                         END
                     )
@@ -337,15 +337,15 @@ module.exports = {
             
                 FROM public.sessions Session
                 WHERE Session.tenant_code = :tenantCode
-                    AND Session.mentor_id = :userId 
+                    AND Session.mentor_id = :userId
                     AND Session.status = 'COMPLETED'
-                    AND Session.start_date > :start_date
-                    AND Session.end_date < :end_date
+                    AND (:start_date IS NULL OR Session.start_date > :start_date)
+                    AND (:end_date IS NULL OR Session.end_date < :end_date)
                     AND (
                         CASE 
                             WHEN :session_type = 'All' THEN Session.type IN ('PUBLIC', 'PRIVATE')
-                            WHEN :session_type = 'PUBLIC' THEN Session.type = 'PUBLIC'
-                            WHEN :session_type = 'PRIVATE' THEN Session.type = 'PRIVATE'
+                            WHEN :session_type = 'Public' THEN Session.type = 'PUBLIC'
+                            WHEN :session_type = 'Private' THEN Session.type = 'PRIVATE'
                             ELSE TRUE
                         END
                     )
@@ -440,7 +440,6 @@ module.exports = {
                     session.tenant_code = :tenantCode
                     AND (session.start_date > :start_date OR :start_date IS NULL)
                     AND (session.end_date < :end_date OR :end_date IS NULL)
-                    AND (:userId IS NOT NULL)
                     AND session.deleted_at IS NULL
                     DYNAMIC_AND_CLAUSE;`,
 					updated_at: Sequelize.literal('CURRENT_TIMESTAMP'),
@@ -468,13 +467,13 @@ module.exports = {
                 WHERE
                     session.tenant_code = :tenantCode
                     AND session.mentor_id = :userId
-                    AND session.start_date > :start_date 
-                    AND session.end_date < :end_date
+                    AND (:start_date IS NULL OR session.start_date > :start_date)
+                    AND (:end_date IS NULL OR session.end_date < :end_date)
                     AND (
                         CASE
                             WHEN :session_type = 'All' THEN session.type IN ('PUBLIC', 'PRIVATE')
-                            WHEN :session_type = 'PUBLIC' THEN session.type = 'PUBLIC'
-                            WHEN :session_type = 'PRIVATE' THEN session.type = 'PRIVATE'
+                            WHEN :session_type = 'Public' THEN session.type = 'PUBLIC'
+                            WHEN :session_type = 'Private' THEN session.type = 'PRIVATE'
                             ELSE TRUE
                         END
                     )
@@ -509,16 +508,16 @@ module.exports = {
             
                 FROM public.sessions AS Session
                 WHERE
-                    Session.tenant_code = :tenantCode 
-                    AND Session.created_by = :userId 
-                    AND Session.status = 'COMPLETED' 
-                    AND Session.start_date > :start_date 
-                    AND Session.end_date < :end_date
+                    Session.tenant_code = :tenantCode
+                    AND Session.created_by = :userId
+                    AND Session.status = 'COMPLETED'
+                    AND (:start_date IS NULL OR Session.start_date > :start_date)
+                    AND (:end_date IS NULL OR Session.end_date < :end_date)
                     AND (
                         CASE 
                             WHEN :session_type = 'All' THEN TRUE
-                            WHEN :session_type = 'PUBLIC' THEN Session.type = 'PUBLIC'
-                            WHEN :session_type = 'PRIVATE' THEN Session.type = 'PRIVATE'
+                            WHEN :session_type = 'Public' THEN Session.type = 'PUBLIC'
+                            WHEN :session_type = 'Private' THEN Session.type = 'PRIVATE'
                             ELSE TRUE
                         END
                     )
@@ -553,16 +552,16 @@ module.exports = {
             
                 FROM public.sessions AS Session
                 WHERE
-                    Session.tenant_code = :tenantCode 
-                    AND Session.mentor_id = :userId 
-                    AND Session.status = 'COMPLETED' 
-                    AND Session.start_date > :start_date 
-                    AND Session.end_date < :end_date
+                    Session.tenant_code = :tenantCode
+                    AND Session.mentor_id = :userId
+                    AND Session.status = 'COMPLETED'
+                    AND (:start_date IS NULL OR Session.start_date > :start_date)
+                    AND (:end_date IS NULL OR Session.end_date < :end_date)
                     AND (
                         CASE 
                             WHEN :session_type = 'All' THEN TRUE
-                            WHEN :session_type = 'PUBLIC' THEN Session.type = 'PUBLIC'
-                            WHEN :session_type = 'PRIVATE' THEN Session.type = 'PRIVATE'
+                            WHEN :session_type = 'Public' THEN Session.type = 'PUBLIC'
+                            WHEN :session_type = 'Private' THEN Session.type = 'PRIVATE'
                             ELSE TRUE
                         END
                     )
@@ -670,11 +669,11 @@ module.exports = {
                         ) AS "hours_of_mentoring_sessions"
                     FROM public.sessions AS session 
                     WHERE session.tenant_code = :tenantCode
-                        AND session.created_by = :userId 
-                        AND session.started_at IS NOT NULL 
-                        AND session.completed_at IS NOT NULL 
-                        AND session.start_date > :start_date 
-                        AND session.end_date < :end_date 
+                        AND session.created_by = :userId
+                        AND session.started_at IS NOT NULL
+                        AND session.completed_at IS NOT NULL
+                        AND (:start_date IS NULL OR session.start_date > :start_date)
+                        AND (:end_date IS NULL OR session.end_date < :end_date)
                         AND (
                             CASE
                                 WHEN :session_type = 'All' THEN session.type IN ('PUBLIC', 'PRIVATE')
