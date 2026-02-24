@@ -491,21 +491,21 @@ module.exports = {
 				'report_queries',
 				{
 					query: `SELECT
-                TO_CHAR(
+                COALESCE(TO_CHAR(
                     INTERVAL '1 second' * FLOOR(SUM(EXTRACT(EPOCH FROM (completed_at - started_at)))),
                     'HH24:MI:SS'
-                ) AS total_hours,
-            
-                TO_CHAR(
+                ), '00:00:00') AS total_hours,
+
+                COALESCE(TO_CHAR(
                     INTERVAL '1 second' * FLOOR(SUM(CASE WHEN Session.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END)),
                     'HH24:MI:SS'
-                ) AS total_public_hours,
-            
-                TO_CHAR(
+                ), '00:00:00') AS total_public_hours,
+
+                COALESCE(TO_CHAR(
                     INTERVAL '1 second' * FLOOR(SUM(CASE WHEN Session.type = 'PRIVATE' THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END)),
                     'HH24:MI:SS'
-                ) AS total_private_hours
-            
+                ), '00:00:00') AS total_private_hours
+
                 FROM public.sessions AS Session
                 WHERE
                     Session.tenant_code = :tenantCode
@@ -535,21 +535,21 @@ module.exports = {
 				'report_queries',
 				{
 					query: `SELECT
-                TO_CHAR(
+                COALESCE(TO_CHAR(
                     INTERVAL '1 second' * FLOOR(SUM(EXTRACT(EPOCH FROM (completed_at - started_at)))),
                     'HH24:MI:SS'
-                ) AS total_hours,
-            
-                TO_CHAR(
+                ), '00:00:00') AS total_hours,
+
+                COALESCE(TO_CHAR(
                     INTERVAL '1 second' * FLOOR(SUM(CASE WHEN Session.type = 'PUBLIC' THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END)),
                     'HH24:MI:SS'
-                ) AS public_hours,
-            
-                TO_CHAR(
+                ), '00:00:00') AS public_hours,
+
+                COALESCE(TO_CHAR(
                     INTERVAL '1 second' * FLOOR(SUM(CASE WHEN Session.type = 'PRIVATE' THEN EXTRACT(EPOCH FROM (completed_at - started_at)) ELSE 0 END)),
                     'HH24:MI:SS'
-                ) AS private_hours
-            
+                ), '00:00:00') AS private_hours
+
                 FROM public.sessions AS Session
                 WHERE
                     Session.tenant_code = :tenantCode
@@ -692,7 +692,7 @@ module.exports = {
                     sc.hours_of_mentoring_sessions as hours_of_mentoring_sessions,
                     COALESCE(CAST(ue.rating ->>'average' AS NUMERIC),0) AS avg_mentor_rating
                 FROM session_count AS sc
-                JOIN public.user_extensions AS ue ON sc.mentor_id = ue.user_id AND sc.tenant_code = ue.tenant_code 
+                LEFT JOIN public.user_extensions AS ue ON sc.mentor_id = ue.user_id AND sc.tenant_code = ue.tenant_code
                 DYNAMIC_WHERE_CLAUSE
                 ORDER BY sc.mentor_name;`,
 					updated_at: Sequelize.literal('CURRENT_TIMESTAMP'),
