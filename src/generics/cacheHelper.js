@@ -13,7 +13,6 @@ const notificationTemplateQueries = require('@database/queries/notificationTempl
 const sessionQueries = require('@database/queries/sessions')
 const permissionQueries = require('@database/queries/permissions')
 const rolePermissionMappingQueries = require('@database/queries/role-permission-mapping')
-const { getDefaults } = require('@helpers/getDefaultOrgId')
 const kafkaCommunication = require('@generics/kafka-communication')
 // Removed SessionsHelper import to avoid circular dependency
 const formQueries = require('@database/queries/form')
@@ -544,20 +543,7 @@ const entityTypes = {
 				return cachedEntityType
 			}
 
-			// Step 2: Get defaults internally for database query
-			let defaults = null
-			try {
-				defaults = await getDefaults()
-			} catch (error) {
-				console.error('Failed to get defaults for entityType cache:', error.message)
-				// Fallback defaults from environment variables
-				defaults = {
-					orgCode: process.env.DEFAULT_ORGANISATION_CODE || 'default_code',
-					tenantCode: process.env.DEFAULT_TENANT_CODE || 'default',
-				}
-			}
-
-			// Step 3: Cache miss - query database with user codes first
+			// Step 2: Cache miss - query database with user codes
 			console.log(
 				`💾 EntityType ${modelName}:${entityValue} cache miss, querying database with user codes: tenant:${tenantCode}:org:${orgCode}`
 			)
@@ -581,39 +567,7 @@ const entityTypes = {
 					)
 				}
 
-				// Step 2: ALSO fetch from default codes (if different from user codes)
-				if (
-					defaults &&
-					defaults.orgCode &&
-					defaults.tenantCode &&
-					(defaults.tenantCode !== tenantCode || defaults.orgCode !== orgCode)
-				) {
-					console.log(
-						`💾 EntityType ${modelName}:${entityValue} also fetching from defaults: tenant:${defaults.tenantCode}:org:${defaults.orgCode}`
-					)
-
-					const defaultFilter = {
-						status: 'ACTIVE',
-						organization_code: defaults.orgCode,
-						model_names: { [Op.contains]: modelName },
-					}
-					if (entityValue) {
-						defaultFilter.value = entityValue
-					}
-					const defaultEntityTypes = await entityTypeQueries.findUserEntityTypesAndEntities(
-						defaultFilter,
-						defaults.tenantCode
-					)
-					if (defaultEntityTypes && defaultEntityTypes.length > 0) {
-						// Merge defaults, avoiding duplicates by ID
-						const existingIds = new Set(entityTypeFromDb.map((et) => et.id))
-						const newEntityTypes = defaultEntityTypes.filter((et) => !existingIds.has(et.id))
-						entityTypeFromDb.push(...newEntityTypes)
-						console.log(
-							`💾 EntityType ${modelName}:${entityValue} found in defaults: ${defaultEntityTypes.length} results, ${newEntityTypes.length} unique added`
-						)
-					}
-				}
+				// Tenant isolation: no default tenant fallback
 			} catch (dbError) {
 				console.error(`Failed to fetch entityType ${modelName}:${entityValue} from database:`, dbError.message)
 				return null
@@ -673,18 +627,6 @@ const entityTypes = {
 	async getAllEntityTypesForModel(tenantCode, orgCode, modelName) {
 		try {
 			// Get defaults internally for database query
-			let defaults = null
-			try {
-				defaults = await getDefaults()
-			} catch (error) {
-				console.error('Failed to get defaults for getAllEntityTypesForModel:', error.message)
-				// Fallback defaults from environment variables
-				defaults = {
-					orgCode: process.env.DEFAULT_ORGANISATION_CODE || 'default_code',
-					tenantCode: process.env.DEFAULT_TENANT_CODE || 'default',
-				}
-			}
-
 			let entityTypes = []
 			try {
 				// Step 1: Fetch from user tenant and org codes
@@ -701,35 +643,7 @@ const entityTypes = {
 					)
 				}
 
-				// Step 2: ALSO fetch from default codes (if different from user codes)
-				if (
-					defaults &&
-					defaults.orgCode &&
-					defaults.tenantCode &&
-					(defaults.tenantCode !== tenantCode || defaults.orgCode !== orgCode)
-				) {
-					console.log(
-						`💾 Entity types for model ${modelName} also fetching from defaults: tenant:${defaults.tenantCode}:org:${defaults.orgCode}`
-					)
-
-					const defaultFilter = {
-						status: 'ACTIVE',
-						organization_code: defaults.orgCode,
-						model_names: { [Op.contains]: [modelName] },
-					}
-					const defaultEntityTypes = await entityTypeQueries.findUserEntityTypesAndEntities(defaultFilter, [
-						defaults.tenantCode,
-					])
-					if (defaultEntityTypes && defaultEntityTypes.length > 0) {
-						// Merge defaults, avoiding duplicates by ID
-						const existingIds = new Set(entityTypes.map((et) => et.id))
-						const newEntityTypes = defaultEntityTypes.filter((et) => !existingIds.has(et.id))
-						entityTypes.push(...newEntityTypes)
-						console.log(
-							`💾 Entity types for model ${modelName} found in defaults: ${defaultEntityTypes.length} results, ${newEntityTypes.length} unique added`
-						)
-					}
-				}
+				// Tenant isolation: no default tenant fallback
 			} catch (dbError) {
 				console.error(`Failed to fetch entity types for model ${modelName} from database:`, dbError.message)
 				return []
@@ -824,20 +738,7 @@ const forms = {
 				return cachedForm
 			}
 
-			// Step 2: Get defaults internally for database query
-			let defaults = null
-			try {
-				defaults = await getDefaults()
-			} catch (error) {
-				console.error('Failed to get defaults for form cache:', error.message)
-				// Fallback defaults from environment variables
-				defaults = {
-					orgCode: process.env.DEFAULT_ORGANISATION_CODE || 'default_code',
-					tenantCode: process.env.DEFAULT_TENANT_CODE || 'default',
-				}
-			}
-
-			// Step 3: Cache miss - query database with user codes first
+			// Step 2: Cache miss - query database with user codes
 			console.log(
 				`💾 Form ${type}:${subtype} cache miss, querying database with user codes: tenant:${tenantCode}:org:${orgCode}`
 			)
@@ -855,26 +756,7 @@ const forms = {
 				)
 
 				// Step 4: If not found with user codes and defaults exist, try with default codes
-				if (
-					!formFromDb &&
-					defaults &&
-					defaults.orgCode &&
-					defaults.tenantCode &&
-					(defaults.tenantCode !== tenantCode || defaults.orgCode !== orgCode)
-				) {
-					console.log(
-						`💾 Form ${type}:${subtype} not found with user codes, trying defaults: tenant:${defaults.tenantCode}:org:${defaults.orgCode}`
-					)
-
-					formFromDb = await formQueries.findOne(
-						{
-							type: type,
-							sub_type: subtype,
-							organization_code: defaults.orgCode,
-						},
-						defaults.tenantCode
-					)
-				}
+				// Tenant isolation: no default tenant fallback
 			} catch (dbError) {
 				console.error(`Failed to fetch form ${type}:${subtype} from database:`, dbError.message)
 				return null
@@ -1525,20 +1407,7 @@ const notificationTemplates = {
 				return cachedTemplate
 			}
 
-			// Step 2: Get defaults internally for database query
-			let defaults = null
-			try {
-				defaults = await getDefaults()
-			} catch (error) {
-				console.error('Failed to get defaults for notification template cache:', error.message)
-				// Fallback defaults from environment variables
-				defaults = {
-					orgCode: process.env.DEFAULT_ORGANISATION_CODE || 'default_code',
-					tenantCode: process.env.DEFAULT_TENANT_CODE || 'default',
-				}
-			}
-
-			// Step 3: Cache miss - query database with prioritized fallback logic
+			// Step 2: Cache miss - query database with user codes
 
 			let templateFromDb = null
 			try {
@@ -1554,23 +1423,7 @@ const notificationTemplates = {
 				)
 
 				// If not found and defaults are different, try defaults
-				if (
-					!templateFromDb &&
-					defaults &&
-					defaults.orgCode &&
-					defaults.tenantCode &&
-					(defaults.tenantCode !== tenantCode || defaults.orgCode !== orgCode)
-				) {
-					templateFromDb = await notificationTemplateQueries.findOne(
-						{
-							code: templateCode,
-							organization_code: defaults.orgCode,
-							type: 'email',
-							status: 'active',
-						},
-						defaults.tenantCode
-					)
-				}
+				// Tenant isolation: no default tenant fallback
 
 				if (templateFromDb) {
 					console.log(

@@ -152,10 +152,9 @@ module.exports = class NotificationTemplateHelper {
 				})
 			}
 
-			// Business logic: Build filter for both current and default org/tenant
 			let filter = {
 				organization_code: organizationCode ? [organizationCode, defaults.orgCode] : [defaults.orgCode],
-				tenant_code: [tenantCode, defaults.tenantCode],
+				tenant_code: tenantCode,
 			}
 
 			if (id) {
@@ -219,10 +218,9 @@ module.exports = class NotificationTemplateHelper {
 				})
 			}
 
-			// Business logic: Build filter for both current and default org/tenant
 			const filter = {
 				organization_code: organizationCode ? [organizationCode, defaults.orgCode] : [defaults.orgCode],
-				tenant_code: [tenantCode, defaults.tenantCode],
+				tenant_code: tenantCode,
 			}
 
 			const notificationTemplates = await notificationTemplateQueries.findTemplatesByFilter(filter)
@@ -294,13 +292,12 @@ module.exports = class NotificationTemplateHelper {
 				})
 			}
 
-			// Business logic: Build filter for both current and default org/tenant
 			const filter = {
 				code: code,
 				type: 'email',
 				status: 'active',
 				organization_code: orgCode ? [orgCode, defaults.orgCode] : [defaults.orgCode],
-				tenant_code: [tenantCode, defaults.tenantCode],
+				tenant_code: tenantCode,
 			}
 
 			const templateData = await notificationTemplateQueries.findTemplatesByFilter(filter)
@@ -369,13 +366,12 @@ module.exports = class NotificationTemplateHelper {
 				})
 			}
 
-			// Business logic: Build filter for header template
 			const filter = {
 				code: header,
 				type: 'emailHeader',
 				status: 'active',
 				organization_code: orgCode ? [orgCode, defaults.orgCode] : [defaults.orgCode],
-				tenant_code: [tenantCode, defaults.tenantCode],
+				tenant_code: tenantCode,
 			}
 
 			const headerData = await notificationTemplateQueries.findTemplatesByFilter(filter)
@@ -423,13 +419,12 @@ module.exports = class NotificationTemplateHelper {
 				})
 			}
 
-			// Business logic: Build filter for footer template
 			const filter = {
 				code: footer,
 				type: 'emailFooter',
 				status: 'active',
 				organization_code: orgCode ? [orgCode, defaults.orgCode] : [defaults.orgCode],
-				tenant_code: [tenantCode, defaults.tenantCode],
+				tenant_code: tenantCode,
 			}
 
 			const footerData = await notificationTemplateQueries.findTemplatesByFilter(filter)

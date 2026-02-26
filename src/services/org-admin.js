@@ -152,7 +152,7 @@ module.exports = class OrgAdminService {
 				removedSessionsDetail,
 				mentorDetails.organization_id ? mentorDetails.organization_id : '',
 				{ [Op.in]: [bodyData.organization_code, defaults.orgCode] },
-				{ [Op.in]: [tenantCode, defaults.tenantCode] },
+				tenantCode,
 				tenantCode,
 				mentorDetails.organization_code
 			)
@@ -441,9 +441,7 @@ module.exports = class OrgAdminService {
 					responseCode: 'CLIENT_ERROR',
 				})
 
-			let entityTypeDetails = await entityTypeQueries.findOneEntityType(filter, {
-				[Op.in]: [defaults.tenantCode, tenantCode],
-			})
+			let entityTypeDetails = await entityTypeQueries.findOneEntityType(filter, tenantCode)
 
 			// If no matching data found return failure response
 			if (!entityTypeDetails) {
@@ -609,7 +607,7 @@ module.exports = class OrgAdminService {
 					await adminService.unenrollAndNotifySessionAttendees(
 						removedSessionsDetail,
 						{ [Op.in]: [orgCode, defaults.orgCode] },
-						{ [Op.in]: [tenantCode, defaults.tenantCode] },
+						tenantCode,
 						tenantCode,
 						orgCode
 					)
@@ -732,7 +730,7 @@ module.exports = class OrgAdminService {
 			const questionSets = await questionSetQueries.findQuestionSets(
 				{
 					code: { [Op.in]: [bodyData.mentee_feedback_question_set, bodyData.mentor_feedback_question_set] },
-					tenant_code: defaults.tenantCode,
+					tenant_code: tenantCode,
 				},
 				['id', 'code']
 			)
@@ -901,7 +899,7 @@ module.exports = class OrgAdminService {
 		// If not in cache, fetch from database
 		organizationDetails = await organisationExtensionQueries.getById(
 			{ [Op.in]: [defaults.orgCode, orgCode] },
-			{ [Op.in]: [defaults.tenantCode, tenantCode] }
+			tenantCode
 		)
 
 		if (!organizationDetails) {

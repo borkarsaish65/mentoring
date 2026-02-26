@@ -3907,7 +3907,7 @@ module.exports = class SessionsHelper {
 				organization_code: organizationCode,
 				created_by: userId,
 				tenant_code: tenantCode,
-				defaultTenantCode: defaults.tenantCode,
+				defaultTenantCode: '',
 				defaultOrganizationCode: defaults.orgCode,
 			}
 
@@ -4171,7 +4171,7 @@ module.exports = class SessionsHelper {
 				await adminService.unenrollAndNotifySessionAttendees(
 					removedSessionsDetail,
 					{ [Op.in]: [mentor.organization_code, defaults.orgCode] },
-					{ [Op.in]: [tenantCode, defaults.tenantCode] },
+					tenantCode,
 					tenantCode,
 					mentor.organization_code
 				)
@@ -4210,7 +4210,7 @@ module.exports = class SessionsHelper {
 				await adminService.unenrollAndNotifySessionAttendees(
 					removedSessionsDetail,
 					{ [Op.in]: [mentor.organization_code] },
-					{ [Op.in]: [tenantCode] },
+					tenantCode,
 					tenantCode,
 					mentor.organization_code
 				)

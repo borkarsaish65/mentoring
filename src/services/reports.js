@@ -59,7 +59,7 @@ module.exports = class ReportsHelper {
 				tokenInformation.id,
 				tokenInformation.organization_code,
 				filter_type,
-				{ [Op.in]: [tenantCode, defaults.tenantCode] }
+				tenantCode
 			)
 
 			if (organizations.success && organizations.result) {
@@ -86,7 +86,7 @@ module.exports = class ReportsHelper {
 						modelName,
 						report_filter,
 						tenantCodes,
-						defaults.tenantCode ? defaults.tenantCode : ''
+						''
 					)
 
 					if (getEntityTypesWithEntities.success && getEntityTypesWithEntities.result) {
@@ -196,7 +196,7 @@ module.exports = class ReportsHelper {
 			// Validate report permissions
 			const reportPermission = await reportMappingQueries.findReportRoleMappingByReportCode(
 				reportCode,
-				[tenantCode, defaults.tenantCode],
+				[tenantCode],
 				[defaults.orgCode, orgCode]
 			)
 			if (!reportPermission || reportPermission.dataValues.role_title !== reportRole) {
@@ -215,7 +215,7 @@ module.exports = class ReportsHelper {
 					code: reportCode,
 					organization_code: { [Op.in]: [orgCode, defaults.orgCode] },
 				},
-				{ [Op.in]: [tenantCode, defaults.tenantCode] }
+				tenantCode
 			)
 			if (reportConfigWithOrgId.length > 0) {
 				reportConfig = reportConfigWithOrgId
@@ -226,7 +226,7 @@ module.exports = class ReportsHelper {
 						code: reportCode,
 						organization_code: { [Op.in]: [orgCode, defaults.orgCode] },
 					},
-					{ [Op.in]: [tenantCode, defaults.tenantCode] }
+					tenantCode
 				)
 				reportConfig = reportConfigWithDefaultOrgId
 			}
@@ -238,7 +238,7 @@ module.exports = class ReportsHelper {
 					report_code: reportCode,
 					organization_code: { [Op.in]: [orgCode, defaults.orgCode] },
 				},
-				{ [Op.in]: [tenantCode, defaults.tenantCode] }
+				tenantCode
 			)
 
 			if (reportQueryWithOrgId.length > 0) {
@@ -249,7 +249,7 @@ module.exports = class ReportsHelper {
 						report_code: reportCode,
 						organization_code: { [Op.in]: [orgCode, defaults.orgCode] },
 					},
-					{ [Op.in]: [tenantCode, defaults.tenantCode] }
+					tenantCode
 				)
 				reportQuery = reportQueryWithDefaultOrgId
 			}
@@ -452,7 +452,7 @@ module.exports = class ReportsHelper {
 					sessionModelName,
 					{},
 					tenantCode,
-					defaults.tenantCode
+					''
 				)
 
 				if (reportDataResult.report_type === common.REPORT_TABLE && resultWithoutPagination) {
@@ -487,7 +487,7 @@ module.exports = class ReportsHelper {
 							sessionModelName,
 							{},
 							tenantCode,
-							defaults.tenantCode
+							''
 						)
 
 						const filtersEntity = entityTypeFilters.result.reduce((acc, item) => {
@@ -517,7 +517,7 @@ module.exports = class ReportsHelper {
 							sessionModelName,
 							{},
 							tenantCode,
-							defaults.tenantCode
+							''
 						)
 
 						// Process the data

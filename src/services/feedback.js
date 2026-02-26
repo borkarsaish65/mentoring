@@ -372,14 +372,14 @@ const getFeedbackQuestions = async function (formCode, tenantCode) {
 
 		let questionSet = await questionSetQueries.findOneQuestionSet({
 			code: formCode,
-			tenant_code: { [Op.in]: [tenantCode, defaults.tenantCode] },
+			tenant_code: tenantCode,
 		})
 
 		let result = {}
 		if (questionSet && questionSet.questions) {
 			let questions = await questionsQueries.find({
 				id: questionSet.questions,
-				tenant_code: { [Op.in]: [tenantCode, defaults.tenantCode] },
+				tenant_code: tenantCode,
 			})
 			const questionIndexMap = new Map()
 			questionSet.questions.forEach((id, index) => {

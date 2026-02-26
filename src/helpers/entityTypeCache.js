@@ -40,28 +40,7 @@ async function getEntityTypesAndEntitiesWithCache(originalFilter, tenantCode, or
 			)
 			let dbResult = userResults ? [...userResults] : []
 
-			// Step 2: ALSO ALWAYS fetch from default codes (if different from user codes)
-			if (
-				defaults &&
-				defaults.orgCode &&
-				defaults.tenantCode &&
-				(defaults.tenantCode !== tenantCode || defaults.orgCode !== orgCode)
-			) {
-				let defaultFilter = {
-					...originalFilter,
-					organization_code: defaults.orgCode,
-				}
-				const defaultResults = await entityTypeQueries.findUserEntityTypesAndEntities(defaultFilter, [
-					defaults.tenantCode,
-				])
-				if (defaultResults && defaultResults.length > 0) {
-					// Merge defaults, avoiding duplicates by ID
-					const existingIds = new Set(dbResult.map((et) => et.id))
-					const newEntityTypes = defaultResults.filter((et) => !existingIds.has(et.id))
-					dbResult.push(...newEntityTypes)
-				}
-			}
-
+			// Tenant isolation: no default tenant fallback
 			return dbResult || []
 		}
 
@@ -144,24 +123,7 @@ async function getEntityTypesAndEntitiesWithCache(originalFilter, tenantCode, or
 				Array.isArray(tenantCode) ? tenantCode : [tenantCode]
 			)
 
-			// If not found with user codes and defaults exist, try with default codes
-			if (
-				(!dbResult || dbResult.length === 0) &&
-				defaults &&
-				defaults.orgCode &&
-				defaults.tenantCode &&
-				(defaults.tenantCode !== tenantCode || defaults.orgCode !== orgCode)
-			) {
-				console.log(
-					`💾 EntityTypes not found with user codes, trying defaults: tenant:${defaults.tenantCode}:org:${defaults.orgCode}`
-				)
-
-				let defaultFilter = {
-					...originalFilter,
-					organization_code: defaults.orgCode,
-				}
-				dbResult = await entityTypeQueries.findUserEntityTypesAndEntities(defaultFilter, [defaults.tenantCode])
-			}
+			// Tenant isolation: no default tenant fallback
 		} catch (dbError) {
 			console.error(`Failed to fetch entity types from database:`, dbError.message)
 			return []
@@ -300,27 +262,7 @@ async function getEntityTypesAndEntitiesForModel(modelName, tenantCode, orgCode,
 				allEntityTypes.push(...userEntityTypes)
 			}
 
-			// Step 2: ALSO ALWAYS fetch from default codes (if different from user codes)
-			if (
-				defaults.orgCode &&
-				defaults.tenantCode &&
-				(defaults.tenantCode !== tenantCode || defaults.orgCode !== orgCode)
-			) {
-				const defaultFilter = {
-					status: 'ACTIVE',
-					organization_code: defaults.orgCode,
-					model_names: { [Op.contains]: [modelName] },
-				}
-				const defaultEntityTypes = await entityTypeQueries.findUserEntityTypesAndEntities(defaultFilter, [
-					defaults.tenantCode,
-				])
-				if (defaultEntityTypes && defaultEntityTypes.length > 0) {
-					// Merge defaults, avoiding duplicates by ID
-					const existingIds = new Set(allEntityTypes.map((et) => et.id))
-					const newEntityTypes = defaultEntityTypes.filter((et) => !existingIds.has(et.id))
-					allEntityTypes.push(...newEntityTypes)
-				}
-			}
+			// Tenant isolation: no default tenant fallback
 		} catch (dbError) {
 			console.error(`Failed to fetch entity types for model ${modelName} from database:`, dbError.message)
 			return []
@@ -433,23 +375,7 @@ async function getEntityTypeByValue(modelName, entityValue, tenantCode, orgCode)
 		)
 		found = entityTypes.length > 0 ? entityTypes[0] : null
 
-		// If not found with user codes and defaults exist, try with default codes
-		if (
-			!found &&
-			defaults &&
-			defaults.orgCode &&
-			defaults.tenantCode &&
-			(defaults.tenantCode !== tenantCode || defaults.orgCode !== orgCode)
-		) {
-			const defaultFilter = {
-				status: 'ACTIVE',
-				value: entityValue,
-				organization_code: defaults.orgCode,
-				model_names: { [Op.contains]: [modelName] },
-			}
-			entityTypes = await entityTypeQueries.findUserEntityTypesAndEntities(defaultFilter, [defaults.tenantCode])
-			found = entityTypes.length > 0 ? entityTypes[0] : null
-		}
+		// Tenant isolation: no default tenant fallback
 	} catch (dbError) {
 		console.error(`Failed to fetch entity type ${modelName}:${entityValue} from database:`, dbError.message)
 		return null
