@@ -1179,6 +1179,8 @@ module.exports = class SessionsHelper {
 					const needsTemplateData =
 						method == common.DELETE_METHOD || isSessionReschedule || (isSessionDataChanged && notifyUser)
 					if (needsTemplateData && !templateData) return
+					if ((preResourceSendEmail || postResourceSendEmail) && !preOrPostEmailTemplate) return
+					if (mentorUpdated && !mentorChangedTemplate) return
 
 					if (method == common.DELETE_METHOD) {
 						let duration = moment.duration(
