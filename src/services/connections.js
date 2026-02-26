@@ -541,8 +541,8 @@ module.exports = class ConnectionHelper {
 				{
 					attributes: ['name', 'email', 'user_id'],
 				},
-				false,
-				tenantCode
+				tenantCode,
+				false
 			)
 
 			// Get mentor details using getCacheOnly first, then fallback to database query
@@ -624,8 +624,8 @@ module.exports = class ConnectionHelper {
 				{
 					attributes: ['name', 'email', 'user_id'],
 				},
-				false,
-				tenantCode
+				tenantCode,
+				false
 			)
 
 			// Get mentor details using getCacheOnly first, then fallback to database query
