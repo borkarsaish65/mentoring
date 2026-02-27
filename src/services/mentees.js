@@ -91,7 +91,6 @@ module.exports = class MenteesHelper {
 
 		delete mentee.user_id
 		delete mentee.visible_to_organizations
-		delete mentee.image
 
 		const defaults = await getDefaults()
 		if (!defaults.orgCode)
@@ -233,7 +232,6 @@ module.exports = class MenteesHelper {
 			...processDbResponse,
 			visible_to_organizations: mentee.visible_to_organizations, // Add to match mentor read
 			settings: mentee.settings, // Add settings to match mentor read
-			image: mentee.image, // Keep original image (may already be downloadable URL)
 			displayProperties,
 		}
 
@@ -272,7 +270,7 @@ module.exports = class MenteesHelper {
 	 * @returns {JSON} - List of sessions
 	 */
 
-	static async sessions(userId, page, limit, search = '', organizationId, tenantCode) {
+	static async sessions(userId, page, limit, search = '', tenantCode) {
 		try {
 			/** Upcoming user's enrolled sessions {My sessions}*/
 			/* Fetch sessions if it is not expired or if expired then either status is live or if mentor 
@@ -448,7 +446,7 @@ module.exports = class MenteesHelper {
 	 * @returns {JSON} - Mentees join session link.
 	 */
 
-	static async joinSession(sessionId, userId, organizationCode, tenantCode) {
+	static async joinSession(sessionId, userId, tenantCode) {
 		try {
 			const mentee = await cacheHelper.mentee.get(tenantCode, userId)
 			if (!mentee) {
@@ -473,19 +471,27 @@ module.exports = class MenteesHelper {
 						attendee_meeting_info: sessionWithAttendee.meeting_info ?? sessionData.meeting_info,
 					}
 				}
+				// If mentee_password is missing from cache, fetch from database
+				if (!sessionData.mentee_password) {
+					const fullSessionData = await sessionQueries.findOne({ id: sessionId }, tenantCode)
+					if (fullSessionData?.mentee_password) {
+						sessionData.mentee_password = fullSessionData.mentee_password
+					}
+				}
 			} else {
+				// Cache miss: fetch session with attendee in a single query
 				sessionWithAttendee = await sessionQueries.findSessionWithAttendee(
 					sessionId,
 					mentee.user_id,
 					tenantCode
 				)
 
-				sessionData = { ...sessionWithAttendee }
-				// Normalize DB result to match cache structure
 				if (sessionWithAttendee) {
-					sessionWithAttendee.attendee_id = sessionWithAttendee.id
-					sessionWithAttendee.enrolled_type = sessionWithAttendee.enrolled_type || sessionWithAttendee.type
-					sessionWithAttendee.attendee_meeting_info = sessionWithAttendee.meeting_info
+					// Use the same object as sessionData since it already contains full session fields
+					// (including mentee_password, meeting_info, etc.) and attendee fields via attendeeData DTO
+					sessionData = { ...sessionWithAttendee }
+				} else {
+					sessionData = null
 				}
 			}
 
@@ -536,7 +542,7 @@ module.exports = class MenteesHelper {
 
 				await sessionAttendeesQueries.updateOne(
 					{
-						id: sessionWithAttendee.id,
+						id: sessionWithAttendee.attendee_id,
 					},
 					{
 						meeting_info: meetingInfo,
@@ -550,12 +556,24 @@ module.exports = class MenteesHelper {
 					result: meetingInfo,
 				})
 			}
+
 			if (sessionAttendeeExist?.meeting_info?.link) {
-				meetingInfo = sessionWithAttendee.meeting_info
+				// Existing BBB attendee link present in DB – just reuse it
+				meetingInfo = sessionAttendeeExist.meeting_info
 			} else {
+				// No existing link – generate a fresh one from BBB and store it
+				if (!sessionData.mentee_password) {
+					return responses.failureResponse({
+						message: 'MENTEE_PASSWORD_NOT_FOUND',
+						statusCode: httpStatusCode.bad_request,
+						responseCode: 'CLIENT_ERROR',
+					})
+				}
+
+				const menteeName = mentee.name || 'Attendee'
 				const attendeeLink = await bigBlueButtonService.joinMeetingAsAttendee(
 					sessionId,
-					mentee.name,
+					menteeName,
 					sessionData.mentee_password
 				)
 				meetingInfo = {
@@ -565,7 +583,7 @@ module.exports = class MenteesHelper {
 				}
 				await sessionAttendeesQueries.updateOne(
 					{
-						id: sessionWithAttendee.id,
+						id: sessionWithAttendee.attendee_id,
 					},
 					{
 						meeting_info: meetingInfo,
@@ -2080,7 +2098,7 @@ module.exports = class MenteesHelper {
 						roles: roles,
 						requesterOrganizationCode: organizationCode,
 						data: cacheProfileDetails,
-						tenant_code: tenantCode,
+						tenantCode: tenantCode,
 					})
 					if (validateDefaultRules.error && validateDefaultRules.error.missingField) {
 						return responses.failureResponse({
@@ -2160,7 +2178,7 @@ module.exports = class MenteesHelper {
 					roles: roles,
 					requesterOrganizationCode: organizationCode,
 					data: requestedUserExtension,
-					tenant_code: tenantCode,
+					tenantCode: tenantCode,
 				})
 				if (validateDefaultRules.error && validateDefaultRules.error.missingField) {
 					return responses.failureResponse({
@@ -2293,6 +2311,9 @@ module.exports = class MenteesHelper {
 
 			// Get permissions for the details response
 			const userPermissions = await permissions.getPermissions(roles, tenantCode, organizationCode)
+			const requestedUserExtensionImage = requestedUserExtension.image
+				? await utils.getDownloadableUrl(requestedUserExtension.image)
+				: null
 
 			// Construct the final details response
 			const finalDetailsResponse = {
@@ -2300,7 +2321,7 @@ module.exports = class MenteesHelper {
 				...processDbResponse,
 				visible_to_organizations: requestedUserExtension.visible_to_organizations, // Add to match mentor read
 				settings: requestedUserExtension.settings, // Add settings to match mentor read
-				image: requestedUserExtension.image, // Keep original image (may already be downloadable URL)
+				image: requestedUserExtensionImage, // Keep original image (may already be downloadable URL)
 				displayProperties,
 				Permissions: userPermissions,
 			}
