@@ -15,7 +15,6 @@ module.exports = {
 			status: {
 				type: Sequelize.STRING(50),
 				allowNull: false,
-				defaultValue: 'ACTIVE',
 			},
 			description: {
 				type: Sequelize.TEXT,
@@ -30,7 +29,7 @@ module.exports = {
 				allowNull: true,
 			},
 			theming: {
-				type: Sequelize.JSONB,
+				type: Sequelize.JSON,
 				allowNull: true,
 			},
 			created_by: {

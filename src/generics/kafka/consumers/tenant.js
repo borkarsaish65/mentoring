@@ -20,7 +20,6 @@ var messageReceived = function (message) {
 				updated_by,
 				org_id,
 				org_code,
-				backfill,
 			} = message
 
 			if (entity !== 'tenant') {
@@ -47,25 +46,22 @@ var messageReceived = function (message) {
 					} else {
 						console.log(`ℹ️ [TENANT] Tenant already exists: ${code}`)
 					}
-					const replicationOptions = { backfill: backfill === true }
-					await tenantService.replicateConfigFromDefaultTenant(code, org_id, org_code, replicationOptions)
+					await tenantService.replicateConfigFromDefaultTenant(code, org_id, org_code)
 					break
 				}
 
 				case 'update': {
 					const { newValues = {} } = message
-					const updateData = {}
 					if (!message.entityId) {
 						console.warn(`[TENANT] Update event missing entityId, skipping`)
 						return resolve(`Skipped update: missing entityId`)
 					}
 
-					if (newValues.name !== undefined) updateData.name = newValues.name
-					if (newValues.status !== undefined) updateData.status = newValues.status
-					if (newValues.description !== undefined) updateData.description = newValues.description
-					if (newValues.logo !== undefined) updateData.logo = newValues.logo
-					if (newValues.meta !== undefined) updateData.meta = newValues.meta
-					if (newValues.theming !== undefined) updateData.theming = newValues.theming
+					const allowedFields = ['name', 'status', 'description', 'logo', 'meta', 'theming']
+					const updateData = allowedFields.reduce((acc, field) => {
+						if (newValues[field] !== undefined) acc[field] = newValues[field]
+						return acc
+					}, {})
 					if (updated_by !== undefined) updateData.updated_by = updated_by ? updated_by.toString() : null
 
 					if (Object.keys(updateData).length > 0) {

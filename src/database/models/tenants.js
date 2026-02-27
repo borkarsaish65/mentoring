@@ -1,4 +1,5 @@
 'use strict'
+const common = require('@constants/common')
 module.exports = (sequelize, DataTypes) => {
 	const Tenant = sequelize.define(
 		'Tenant',
@@ -15,7 +16,7 @@ module.exports = (sequelize, DataTypes) => {
 			status: {
 				type: DataTypes.STRING(50),
 				allowNull: false,
-				defaultValue: 'ACTIVE',
+				defaultValue: common.ACTIVE_STATUS,
 			},
 			description: {
 				type: DataTypes.TEXT,
@@ -30,7 +31,7 @@ module.exports = (sequelize, DataTypes) => {
 				allowNull: true,
 			},
 			theming: {
-				type: DataTypes.JSONB,
+				type: DataTypes.JSON,
 				allowNull: true,
 			},
 			created_by: {

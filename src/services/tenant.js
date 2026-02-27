@@ -14,8 +14,60 @@ const ReportQueryQueries = require('@database/queries/reportQueries')
 const ReportRoleMappingQueries = require('@database/queries/reportRoleMapping')
 const RoleExtensionQueries = require('@database/queries/roleExtentions')
 
+const KEYS_TO_STRIP = ['id', 'created_at', 'updated_at', 'deleted_at', 'created_by', 'updated_by']
+
+function stripMeta(record) {
+	const copy = { ...record }
+	KEYS_TO_STRIP.forEach((key) => delete copy[key])
+	return copy
+}
+
+async function replicateResource({ label, fetchSource, filter, transform, bulkCreate, transaction }) {
+	const items = await fetchSource()
+	const eligible = filter ? items.filter(filter) : items
+	if (!eligible.length) return
+	const newItems = eligible.map(transform)
+	await bulkCreate(newItems, { transaction })
+	console.log(`[TENANT REPLICATION] ${label} copied: ${newItems.length}`)
+}
+
+async function replicateWithIdMap({ label, fetchSource, transform, bulkCreate, fetchExisting, matchKey, transaction }) {
+	const sourceItems = await fetchSource()
+	if (!sourceItems.length) return {}
+
+	const newItems = sourceItems.map(transform)
+	const created = await bulkCreate(newItems, { transaction })
+
+	let toMap = created
+	if (created.length < newItems.length) {
+		console.log(
+			`[TENANT REPLICATION] ${label}: ${
+				newItems.length - created.length
+			} duplicate(s) skipped — fetching existing records to complete ID mapping`
+		)
+		toMap = await fetchExisting()
+	}
+
+	const idMap = {}
+	if (created.length === newItems.length) {
+		// All items inserted in order — index-based mapping is exact and avoids
+		// false matches when multiple items share the same field values
+		for (let i = 0; i < sourceItems.length; i++) {
+			idMap[sourceItems[i].id] = created[i].id
+		}
+	} else {
+		// Some duplicates were skipped — fall back to field-based matching
+		for (const oldItem of sourceItems) {
+			const newItem = toMap.find(matchKey(oldItem))
+			if (newItem) idMap[oldItem.id] = newItem.id
+		}
+	}
+	console.log(`[TENANT REPLICATION] ${label} copied: ${created.length}`)
+	return idMap
+}
+
 module.exports = class TenantService {
-	static async replicateConfigFromDefaultTenant(newTenantCode, newOrgId, newOrgCode, options = {}) {
+	static async replicateConfigFromDefaultTenant(newTenantCode, newOrgId, newOrgCode) {
 		const defaultTenantCode = process.env.DEFAULT_TENANT_CODE
 		const defaultOrgCode = process.env.DEFAULT_ORGANISATION_CODE
 
@@ -28,383 +80,159 @@ module.exports = class TenantService {
 			return
 		}
 
-		const newOrgIdStr = newOrgId ? newOrgId.toString() : process.env.DEFAULT_ORG_ID
-
-		if (!newOrgIdStr) {
-			throw new Error('newOrgId is required when DEFAULT_ORG_ID env var is not set')
+		if (!newOrgId) {
+			throw new Error('newOrgId is required for tenant config replication')
 		}
+		const newOrgIdStr = newOrgId.toString()
+		const resolvedOrgCode = newOrgCode || defaultOrgCode
 
-		const keysToStrip = ['id', 'created_at', 'updated_at', 'deleted_at', 'created_by', 'updated_by']
-		const stripMeta = (record) => {
-			const copy = { ...record }
-			keysToStrip.forEach((key) => delete copy[key])
-			return copy
-		}
+		const baseTransform =
+			(extra = {}) =>
+			(record) => ({
+				...stripMeta(record),
+				tenant_code: newTenantCode,
+				organization_code: resolvedOrgCode,
+				...extra,
+			})
 
 		const transaction = await db.sequelize.transaction()
 		try {
 			// ── 1. Notification Templates ────────────────────────────────────────
-			const notifTemplates = await NotificationTemplateQueries.findTemplatesByFilter({
-				organization_code: defaultOrgCode,
-				tenant_code: defaultTenantCode,
+			await replicateResource({
+				label: 'Notification templates',
+				fetchSource: () =>
+					NotificationTemplateQueries.findTemplatesByFilter({
+						organization_code: defaultOrgCode,
+						tenant_code: defaultTenantCode,
+					}),
+				transform: baseTransform({ organization_id: newOrgIdStr }),
+				bulkCreate: (items, opts) => NotificationTemplateQueries.bulkCreate(items, newTenantCode, opts),
+				transaction,
 			})
-			if (notifTemplates.length) {
-				let skipNotifTemplates = false
-				if (options.backfill) {
-					const existingTemplates = await NotificationTemplateQueries.findTemplatesByFilter({
-						tenant_code: newTenantCode,
-					})
-					if (
-						existingTemplates.length > 0 &&
-						existingTemplates.some((t) => t.organization_code !== defaultOrgCode)
-					) {
-						skipNotifTemplates = true
-						console.log(
-							`[TENANT REPLICATION] Skipping notification templates — tenant ${newTenantCode} already has data with a different organization_code`
-						)
-					}
-				}
-
-				if (!skipNotifTemplates) {
-					const newTemplates = notifTemplates.map((t) => ({
-						...stripMeta(t),
-						tenant_code: newTenantCode,
-						organization_id: newOrgIdStr,
-					}))
-					await NotificationTemplateQueries.bulkCreate(newTemplates, newTenantCode, { transaction })
-					console.log(`[TENANT REPLICATION] Notification templates copied: ${newTemplates.length}`)
-				}
-			}
 
 			// ── 2. Forms ─────────────────────────────────────────────────────────
-			const forms = await FormQueries.findFormsByFilter({ organization_code: defaultOrgCode }, [
-				defaultTenantCode,
-			])
-			if (forms.length) {
-				let skipForms = false
-				if (options.backfill) {
-					const existingForms = await FormQueries.findFormsByFilter({}, [newTenantCode])
-					if (existingForms.length > 0 && existingForms.some((f) => f.organization_code !== defaultOrgCode)) {
-						skipForms = true
-						console.log(
-							`[TENANT REPLICATION] Skipping forms — tenant ${newTenantCode} already has data with a different organization_code`
-						)
-					}
-				}
-
-				if (!skipForms) {
-					const newForms = forms.map((f) => ({
-						...stripMeta(f),
-						tenant_code: newTenantCode,
-						organization_id: newOrgIdStr,
-						version: 0,
-					}))
-					await FormQueries.bulkCreate(newForms, newTenantCode, { transaction })
-					console.log(`[TENANT REPLICATION] Forms copied: ${newForms.length}`)
-				}
-			}
+			await replicateResource({
+				label: 'Forms',
+				fetchSource: () =>
+					FormQueries.findFormsByFilter({ organization_code: defaultOrgCode }, [defaultTenantCode]),
+				transform: baseTransform({ organization_id: newOrgIdStr, version: 0 }),
+				bulkCreate: (items, opts) => FormQueries.bulkCreate(items, newTenantCode, opts),
+				transaction,
+			})
 
 			// ── 3. Entity Types ───────────────────────────────────────────────────
-			const entityTypes = await EntityTypeQueries.findAllEntityTypes([defaultOrgCode], [defaultTenantCode], null)
-
-			const entityTypeIdMap = {}
-
-			if (entityTypes.length) {
-				let skipEntityTypes = false
-				if (options.backfill) {
-					const existingEntityType = await EntityTypeQueries.findOneEntityType({}, newTenantCode)
-					if (existingEntityType && existingEntityType.organization_code !== defaultOrgCode) {
-						skipEntityTypes = true
-						console.log(
-							`[TENANT REPLICATION] Skipping entity types — tenant ${newTenantCode} already has data with a different organization_code`
-						)
-					}
-				}
-
-				if (!skipEntityTypes) {
-					const newEntityTypes = entityTypes.map((et) => ({
-						...stripMeta(et),
-						tenant_code: newTenantCode,
-						organization_id: newOrgIdStr,
-						parent_id: null,
-					}))
-					const createdEntityTypes = await EntityTypeQueries.bulkCreate(newEntityTypes, newTenantCode, {
-						transaction,
-					})
-
-					let typesToMap = createdEntityTypes
-					if (createdEntityTypes.length < newEntityTypes.length) {
-						console.log(
-							`[TENANT REPLICATION] Entity types: ${
-								newEntityTypes.length - createdEntityTypes.length
-							} duplicate(s) skipped — fetching existing records to complete ID mapping`
-						)
-						typesToMap = await EntityTypeQueries.findAllEntityTypes([defaultOrgCode], [newTenantCode], null)
-					}
-
-					for (const oldET of entityTypes) {
-						const newET = typesToMap.find(
-							(c) => c.value === oldET.value && c.organization_code === oldET.organization_code
-						)
-						if (newET) entityTypeIdMap[oldET.id] = newET.id
-					}
-					console.log(`[TENANT REPLICATION] Entity types copied: ${createdEntityTypes.length}`)
-				}
-			}
+			const entityTypeIdMap = await replicateWithIdMap({
+				label: 'Entity types',
+				fetchSource: () => EntityTypeQueries.findAllEntityTypes([defaultOrgCode], [defaultTenantCode], null),
+				transform: baseTransform({ organization_id: newOrgIdStr, parent_id: null }),
+				bulkCreate: (items, opts) => EntityTypeQueries.bulkCreate(items, newTenantCode, opts),
+				fetchExisting: () => EntityTypeQueries.findAllEntityTypes([defaultOrgCode], [newTenantCode], null),
+				matchKey: (oldET) => (c) => c.value === oldET.value && c.organization_code === oldET.organization_code,
+				transaction,
+			})
 
 			// ── 4. Entities ───────────────────────────────────────────────────────
 			// Skipped automatically when entity types are skipped (entityTypeIdMap stays empty)
 			const oldEntityTypeIds = Object.keys(entityTypeIdMap).map(Number)
 			if (oldEntityTypeIds.length) {
-				const entities = await EntityQueries.findAllEntities(
-					{ entity_type_id: { [Op.in]: oldEntityTypeIds } },
-					defaultTenantCode
-				)
-				if (entities.length) {
-					const newEntities = entities
-						.filter((e) => entityTypeIdMap[e.entity_type_id] !== undefined)
-						.map((e) => ({
-							...stripMeta(e),
-							tenant_code: newTenantCode,
-							entity_type_id: entityTypeIdMap[e.entity_type_id],
-						}))
-					await EntityQueries.bulkCreate(newEntities, newTenantCode, { transaction })
-					console.log(`[TENANT REPLICATION] Entities copied: ${newEntities.length}`)
-				}
+				await replicateResource({
+					label: 'Entities',
+					fetchSource: () =>
+						EntityQueries.findAllEntities(
+							{ entity_type_id: { [Op.in]: oldEntityTypeIds } },
+							defaultTenantCode
+						),
+					filter: (e) => entityTypeIdMap[e.entity_type_id] !== undefined,
+					transform: (e) => ({
+						...baseTransform()(e),
+						entity_type_id: entityTypeIdMap[e.entity_type_id],
+					}),
+					bulkCreate: (items, opts) => EntityQueries.bulkCreate(items, newTenantCode, opts),
+					transaction,
+				})
 			}
 
 			// ── 5. Questions ──────────────────────────────────────────────────────
-			const questions = await QuestionQueries.find({
-				organization_code: defaultOrgCode,
-				tenant_code: defaultTenantCode,
+			const questionIdMap = await replicateWithIdMap({
+				label: 'Questions',
+				fetchSource: () =>
+					QuestionQueries.find({ organization_code: defaultOrgCode, tenant_code: defaultTenantCode }),
+				transform: baseTransform(),
+				bulkCreate: (items, opts) =>
+					QuestionQueries.bulkCreate(items, newTenantCode, { ...opts, returning: true }),
+				fetchExisting: () => QuestionQueries.find({ tenant_code: newTenantCode }),
+				matchKey: (oldQ) => (c) => c.name === oldQ.name && c.organization_code === oldQ.organization_code,
+				transaction,
 			})
-			const questionIdMap = {}
-
-			if (questions.length) {
-				let skipQuestions = false
-				if (options.backfill) {
-					const existingQuestions = await QuestionQueries.find({ tenant_code: newTenantCode })
-					if (
-						existingQuestions.length > 0 &&
-						existingQuestions.some((q) => q.organization_code !== defaultOrgCode)
-					) {
-						skipQuestions = true
-						console.log(
-							`[TENANT REPLICATION] Skipping questions — tenant ${newTenantCode} already has data with a different organization_code`
-						)
-					}
-				}
-
-				if (!skipQuestions) {
-					const newQuestions = questions.map((q) => ({
-						...stripMeta(q),
-						tenant_code: newTenantCode,
-					}))
-					const createdQuestions = await QuestionQueries.bulkCreate(newQuestions, newTenantCode, {
-						transaction,
-						returning: true,
-					})
-
-					let questionsToMap = createdQuestions
-					if (createdQuestions.length < newQuestions.length) {
-						console.log(
-							`[TENANT REPLICATION] Questions: ${
-								newQuestions.length - createdQuestions.length
-							} duplicate(s) skipped — fetching existing records to complete ID mapping`
-						)
-						questionsToMap = await QuestionQueries.find({ tenant_code: newTenantCode })
-					}
-
-					for (const oldQ of questions) {
-						const newQ = questionsToMap.find(
-							(c) => c.name === oldQ.name && c.organization_code === oldQ.organization_code
-						)
-						if (newQ) questionIdMap[oldQ.id] = newQ.id
-					}
-					console.log(`[TENANT REPLICATION] Questions copied: ${createdQuestions.length}`)
-				}
-			}
 
 			// ── 6. Question Sets ──────────────────────────────────────────────────
-			const questionSets = await QuestionSetQueries.findQuestionSets({
-				organization_code: defaultOrgCode,
-				tenant_code: defaultTenantCode,
+			await replicateResource({
+				label: 'Question sets',
+				fetchSource: () =>
+					QuestionSetQueries.findQuestionSets({
+						organization_code: defaultOrgCode,
+						tenant_code: defaultTenantCode,
+					}),
+				transform: (qs) => ({
+					...baseTransform()(qs),
+					questions: (qs.questions || []).map((qId) => {
+						const numericId = typeof qId === 'string' ? parseInt(qId, 10) : qId
+						return questionIdMap[numericId] !== undefined ? questionIdMap[numericId] : qId
+					}),
+				}),
+				bulkCreate: (items, opts) => QuestionSetQueries.bulkCreate(items, newTenantCode, opts),
+				transaction,
 			})
-			if (questionSets.length) {
-				let skipQuestionSets = false
-				if (options.backfill) {
-					const existingQuestionSets = await QuestionSetQueries.findQuestionSets({
-						tenant_code: newTenantCode,
-					})
-					if (
-						existingQuestionSets.length > 0 &&
-						existingQuestionSets.some((qs) => qs.organization_code !== defaultOrgCode)
-					) {
-						skipQuestionSets = true
-						console.log(
-							`[TENANT REPLICATION] Skipping question sets — tenant ${newTenantCode} already has data with a different organization_code`
-						)
-					}
-				}
 
-				if (questions.length > 0 && Object.keys(questionIdMap).length === 0) {
-					skipQuestionSets = true
-					console.log('[TENANT REPLICATION] Skipping question sets — questions were skipped, ID map is empty')
-				}
+			// ── 7. Report Types ───────────────────────────────────────────────────
+			await replicateResource({
+				label: 'Report types',
+				fetchSource: () =>
+					ReportTypeQueries.findAllByFilter({ organization_code: defaultOrgCode }, defaultTenantCode),
+				transform: baseTransform(),
+				bulkCreate: (items, opts) => ReportTypeQueries.bulkCreate(items, newTenantCode, opts),
+				transaction,
+			})
 
-				if (!skipQuestionSets) {
-					const newQuestionSets = questionSets.map((qs) => ({
-						...stripMeta(qs),
-						tenant_code: newTenantCode,
-						questions: (qs.questions || []).map((qId) => {
-							const numericId = typeof qId === 'string' ? parseInt(qId, 10) : qId
-							return questionIdMap[numericId] !== undefined ? questionIdMap[numericId] : qId
-						}),
-					}))
-					await QuestionSetQueries.bulkCreate(newQuestionSets, newTenantCode, { transaction })
-					console.log(`[TENANT REPLICATION] Question sets copied: ${newQuestionSets.length}`)
-				}
-			}
+			// ── 8. Reports ────────────────────────────────────────────────────────
+			await replicateResource({
+				label: 'Reports',
+				fetchSource: () =>
+					ReportQueries.findAllReports({ organization_code: defaultOrgCode }, defaultTenantCode),
+				transform: baseTransform({ organization_id: newOrgIdStr }),
+				bulkCreate: (items, opts) => ReportQueries.bulkCreate(items, newTenantCode, opts),
+				transaction,
+			})
 
-			// ── 7. Report Types ──────────────────────────────────────────────────
-			const reportTypes = await ReportTypeQueries.findAllByFilter(
-				{ organization_code: defaultOrgCode },
-				defaultTenantCode
-			)
-			if (reportTypes.length) {
-				let skipReportTypes = false
-				if (options.backfill) {
-					const existing = await ReportTypeQueries.findAllByFilter({}, newTenantCode)
-					if (existing.length > 0 && existing.some((r) => r.organization_code !== defaultOrgCode)) {
-						skipReportTypes = true
-						console.log(
-							`[TENANT REPLICATION] Skipping report types — tenant ${newTenantCode} already has data with a different organization_code`
-						)
-					}
-				}
+			// ── 9. Report Queries ─────────────────────────────────────────────────
+			await replicateResource({
+				label: 'Report queries',
+				fetchSource: () =>
+					ReportQueryQueries.findReportQueries({ organization_code: defaultOrgCode }, defaultTenantCode),
+				transform: baseTransform({ organization_id: newOrgIdStr }),
+				bulkCreate: (items, opts) => ReportQueryQueries.bulkCreate(items, newTenantCode, opts),
+				transaction,
+			})
 
-				if (!skipReportTypes) {
-					const newReportTypes = reportTypes.map((rt) => ({
-						...stripMeta(rt),
-						tenant_code: newTenantCode,
-						organization_code: newOrgCode || defaultOrgCode,
-					}))
-					await ReportTypeQueries.bulkCreate(newReportTypes, newTenantCode, { transaction })
-					console.log(`[TENANT REPLICATION] Report types copied: ${newReportTypes.length}`)
-				}
-			}
+			// ── 10. Report Role Mappings ──────────────────────────────────────────
+			await replicateResource({
+				label: 'Report role mappings',
+				fetchSource: () =>
+					ReportRoleMappingQueries.findAllByFilter({ organization_code: defaultOrgCode }, defaultTenantCode),
+				transform: baseTransform(),
+				bulkCreate: (items, opts) => ReportRoleMappingQueries.bulkCreate(items, newTenantCode, opts),
+				transaction,
+			})
 
-			// ── 8. Reports ───────────────────────────────────────────────────────
-			const reports = await ReportQueries.findAllReports({ organization_code: defaultOrgCode }, defaultTenantCode)
-			if (reports.length) {
-				let skipReports = false
-				if (options.backfill) {
-					const existing = await ReportQueries.findAllReports({}, newTenantCode)
-					if (existing.length > 0 && existing.some((r) => r.organization_code !== defaultOrgCode)) {
-						skipReports = true
-						console.log(
-							`[TENANT REPLICATION] Skipping reports — tenant ${newTenantCode} already has data with a different organization_code`
-						)
-					}
-				}
-
-				if (!skipReports) {
-					const newReports = reports.map((r) => ({
-						...stripMeta(r),
-						tenant_code: newTenantCode,
-						organization_id: newOrgIdStr,
-						organization_code: newOrgCode || defaultOrgCode,
-					}))
-					await ReportQueries.bulkCreate(newReports, newTenantCode, { transaction })
-					console.log(`[TENANT REPLICATION] Reports copied: ${newReports.length}`)
-				}
-			}
-
-			// ── 9. Report Queries ────────────────────────────────────────────────
-			const reportQueries = await ReportQueryQueries.findReportQueries(
-				{ organization_code: defaultOrgCode },
-				defaultTenantCode
-			)
-			if (reportQueries.length) {
-				let skipReportQueries = false
-				if (options.backfill) {
-					const existing = await ReportQueryQueries.findReportQueries({}, newTenantCode)
-					if (existing.length > 0 && existing.some((r) => r.organization_code !== defaultOrgCode)) {
-						skipReportQueries = true
-						console.log(
-							`[TENANT REPLICATION] Skipping report queries — tenant ${newTenantCode} already has data with a different organization_code`
-						)
-					}
-				}
-
-				if (!skipReportQueries) {
-					const newReportQueries = reportQueries.map((rq) => ({
-						...stripMeta(rq),
-						tenant_code: newTenantCode,
-						organization_id: newOrgIdStr,
-						organization_code: newOrgCode || defaultOrgCode,
-					}))
-					await ReportQueryQueries.bulkCreate(newReportQueries, newTenantCode, { transaction })
-					console.log(`[TENANT REPLICATION] Report queries copied: ${newReportQueries.length}`)
-				}
-			}
-
-			// ── 10. Report Role Mappings ─────────────────────────────────────────
-			const reportRoleMappings = await ReportRoleMappingQueries.findAllByFilter(
-				{ organization_code: defaultOrgCode },
-				defaultTenantCode
-			)
-			if (reportRoleMappings.length) {
-				let skipReportRoleMappings = false
-				if (options.backfill) {
-					const existing = await ReportRoleMappingQueries.findAllByFilter({}, newTenantCode)
-					if (existing.length > 0 && existing.some((r) => r.organization_code !== defaultOrgCode)) {
-						skipReportRoleMappings = true
-						console.log(
-							`[TENANT REPLICATION] Skipping report role mappings — tenant ${newTenantCode} already has data with a different organization_code`
-						)
-					}
-				}
-
-				if (!skipReportRoleMappings) {
-					const newMappings = reportRoleMappings.map((rm) => ({
-						...stripMeta(rm),
-						tenant_code: newTenantCode,
-						organization_code: newOrgCode || defaultOrgCode,
-					}))
-					await ReportRoleMappingQueries.bulkCreate(newMappings, newTenantCode, { transaction })
-					console.log(`[TENANT REPLICATION] Report role mappings copied: ${newMappings.length}`)
-				}
-			}
-
-			// ── 11. Role Extensions ──────────────────────────────────────────────
-			const roleExtensions = await RoleExtensionQueries.findAllByFilter(
-				{ organization_code: defaultOrgCode },
-				defaultTenantCode
-			)
-			if (roleExtensions.length) {
-				let skipRoleExtensions = false
-				if (options.backfill) {
-					const existing = await RoleExtensionQueries.findAllByFilter({}, newTenantCode)
-					if (existing.length > 0 && existing.some((r) => r.organization_code !== defaultOrgCode)) {
-						skipRoleExtensions = true
-						console.log(
-							`[TENANT REPLICATION] Skipping role extensions — tenant ${newTenantCode} already has data with a different organization_code`
-						)
-					}
-				}
-
-				if (!skipRoleExtensions) {
-					const newRoleExtensions = roleExtensions.map((re) => ({
-						...stripMeta(re),
-						tenant_code: newTenantCode,
-						organization_id: newOrgIdStr,
-						organization_code: newOrgCode || defaultOrgCode,
-					}))
-					await RoleExtensionQueries.bulkCreate(newRoleExtensions, newTenantCode, { transaction })
-					console.log(`[TENANT REPLICATION] Role extensions copied: ${newRoleExtensions.length}`)
-				}
-			}
+			// ── 11. Role Extensions ───────────────────────────────────────────────
+			await replicateResource({
+				label: 'Role extensions',
+				fetchSource: () =>
+					RoleExtensionQueries.findAllByFilter({ organization_code: defaultOrgCode }, defaultTenantCode),
+				transform: baseTransform({ organization_id: newOrgIdStr }),
+				bulkCreate: (items, opts) => RoleExtensionQueries.bulkCreate(items, newTenantCode, opts),
+				transaction,
+			})
 
 			await transaction.commit()
 			console.log(`[TENANT REPLICATION] Complete for tenant: ${newTenantCode}`)
