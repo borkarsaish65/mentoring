@@ -1176,11 +1176,13 @@ module.exports = class SessionsHelper {
 
 				// send mail associated with action to session mentees
 				sessionAttendees.forEach(async (attendee) => {
-					const needsTemplateData =
-						method == common.DELETE_METHOD || isSessionReschedule || (isSessionDataChanged && notifyUser)
-					if (needsTemplateData && !templateData) return
-					if ((preResourceSendEmail || postResourceSendEmail) && !preOrPostEmailTemplate) return
-					if (mentorUpdated && !mentorChangedTemplate) return
+					if (
+						!templateData &&
+						(method == common.DELETE_METHOD || isSessionReschedule || (isSessionDataChanged && notifyUser))
+					)
+						return
+					if (!preOrPostEmailTemplate && (preResourceSendEmail || postResourceSendEmail)) return
+					if (!mentorChangedTemplate && mentorUpdated) return
 
 					if (method == common.DELETE_METHOD) {
 						let duration = moment.duration(

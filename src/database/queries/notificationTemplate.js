@@ -210,19 +210,12 @@ module.exports = class NotificationTemplateData {
 			if (!results || results.length === 0) return null
 			const preferredOrg = normalizedOrgCodes[0]
 			const preferredTenant = normalizedTenantCodes[0]
-			const score = (r) => {
-				if (
-					preferredOrg &&
-					preferredTenant &&
-					r.organization_code === preferredOrg &&
-					r.tenant_code === preferredTenant
-				)
-					return 3
-				if (preferredOrg && r.organization_code === preferredOrg) return 2
-				if (preferredTenant && r.tenant_code === preferredTenant) return 1
-				return 0
-			}
-			return [...results].sort((a, b) => score(b) - score(a))[0]
+			return (
+				results.find((r) => r.organization_code === preferredOrg && r.tenant_code === preferredTenant) ||
+				results.find((r) => r.organization_code === preferredOrg) ||
+				results.find((r) => r.tenant_code === preferredTenant) ||
+				results[0]
+			)
 		} catch (error) {
 			return null
 		}
@@ -245,19 +238,12 @@ module.exports = class NotificationTemplateData {
 			if (!results || results.length === 0) return null
 			const preferredOrg = normalizedOrgCodes[0]
 			const preferredTenant = normalizedTenantCodes[0]
-			const score = (r) => {
-				if (
-					preferredOrg &&
-					preferredTenant &&
-					r.organization_code === preferredOrg &&
-					r.tenant_code === preferredTenant
-				)
-					return 3
-				if (preferredOrg && r.organization_code === preferredOrg) return 2
-				if (preferredTenant && r.tenant_code === preferredTenant) return 1
-				return 0
-			}
-			return [...results].sort((a, b) => score(b) - score(a))[0]
+			return (
+				results.find((r) => r.organization_code === preferredOrg && r.tenant_code === preferredTenant) ||
+				results.find((r) => r.organization_code === preferredOrg) ||
+				results.find((r) => r.tenant_code === preferredTenant) ||
+				results[0]
+			)
 		} catch (error) {
 			return null
 		}
