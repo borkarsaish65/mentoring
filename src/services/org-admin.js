@@ -133,7 +133,10 @@ module.exports = class OrgAdminService {
 					responseCode: 'CLIENT_ERROR',
 				})
 			// Delete upcoming sessions of user as mentor
-			const removedSessionsDetail = await sessionQueries.removeAndReturnMentorSessions(bodyData.user_id)
+			const removedSessionsDetail = await sessionQueries.removeAndReturnMentorSessions(
+				bodyData.user_id,
+				tenantCode
+			)
 
 			if (removedSessionsDetail && removedSessionsDetail.length > 0) {
 				for (const userSession of removedSessionsDetail) {

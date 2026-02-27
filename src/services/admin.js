@@ -36,7 +36,7 @@ class NotificationHelper {
 		orgCode,
 		templateData = {},
 		subjectData = {},
-		tenantCode,
+		tenantCodes,
 	}) {
 		try {
 			if (!templateCode || !recipients?.length) {
@@ -45,7 +45,7 @@ class NotificationHelper {
 			}
 
 			// Handle arrays: extract first value (user codes), cacheHelper will fallback to defaults if not found
-			const userTenantCode = Array.isArray(tenantCode) ? tenantCode[0] : tenantCode
+			const userTenantCode = Array.isArray(tenantCodes) ? tenantCodes[0] : tenantCodes
 			const userOrgCode = Array.isArray(orgCode) ? orgCode[0] : orgCode
 
 			// cacheHelper.get will automatically search user codes first, then defaults when cache is disabled
@@ -170,7 +170,7 @@ module.exports = class AdminService {
 			let result = {}
 
 			// Step 1: Fetch user details
-			let getUserDetails = []
+			let userInfo = null
 			let userTenantCode = tenantCode
 
 			// Optimization: If admin, query directly without tenant restriction (1 query)
@@ -179,21 +179,20 @@ module.exports = class AdminService {
 				// Admin deleting any user - no tenant code restriction
 				const userDetail = await menteeQueries.getMenteeExtensionById(userId, [], true)
 				userTenantCode = userDetail?.tenant_code
-				getUserDetails = userDetail ? [userDetail] : []
+				userInfo = userDetail || null
 			} else {
 				// Regular user deleting themselves - use tenant code from token (optimized path)
-				getUserDetails = await menteeQueries.getUsersByUserIds([userId], {}, tenantCode)
+				const getUserDetails = await menteeQueries.getUsersByUserIds([userId], {}, tenantCode)
+				userInfo = getUserDetails?.[0]
 			}
 
-			if (!getUserDetails || getUserDetails.length === 0) {
+			if (!userInfo) {
 				return responses.failureResponse({
 					statusCode: httpStatusCode.bad_request,
 					message: 'USER_NOT_FOUND',
 					result,
 				})
 			}
-
-			const userInfo = getUserDetails[0]
 			const isMentor = userInfo.is_mentor === true
 
 			// Step 2: Check if user is a session manager
@@ -763,10 +762,12 @@ module.exports = class AdminService {
 			const sentRequestsData = sentRequests.rows || []
 
 			// Get requests where user is requestee (received requests)
-			const sessionRequestMapping = await sessionRequestMappingQueries.getSessionsMapping(userId, tenantCode)
-			const sessionRequestIds = Array.isArray(sessionRequestMapping)
-				? sessionRequestMapping.map((s) => s.request_session_id)
-				: []
+			const sessionRequestMapping = await sessionRequestMappingQueries.getSessionsMapping(
+				userId,
+				null,
+				tenantCode
+			)
+			const sessionRequestIds = Array.isArray(sessionRequestMapping) ? sessionRequestMapping.map((s) => s.id) : []
 
 			const receivedRequests = await requestSessionQueries.getSessionMappingDetails(
 				sessionRequestIds,
@@ -1421,24 +1422,13 @@ module.exports = class AdminService {
 
 	static async getPendingSessionRequestsForMentor(mentorUserId, tenantCode) {
 		try {
-			const query = `
-				SELECT rs.*, rm.requestee_id
-				FROM ${RequestSession.tableName} rs
-				INNER JOIN request_session_mapping rm ON rs.id = rm.request_session_id
-				WHERE rm.requestee_id = :mentorUserId 
-				AND rs.status = :requestedStatus
-				AND rs.deleted_at IS NULL
-				AND rs.tenant_code = :tenantCode
-				AND rm.tenant_code = :tenantCode
-			`
-
-			const pendingRequests = await sequelize.query(query, {
-				type: QueryTypes.SELECT,
-				replacements: {
-					mentorUserId,
-					requestedStatus: common.CONNECTIONS_STATUS.REQUESTED,
-					tenantCode,
+			const pendingRequests = await RequestSession.findAll({
+				where: {
+					requestee_id: mentorUserId,
+					status: common.CONNECTIONS_STATUS.REQUESTED,
+					tenant_code: tenantCode,
 				},
+				raw: true,
 			})
 
 			return pendingRequests || []

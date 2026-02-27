@@ -261,7 +261,7 @@ module.exports = class OrganizationAndEntityTypePolicyHelper {
 				}
 			}
 			if (modelName) {
-				filter.model_names = { [Op.contains]: modelName }
+				filter.model_names = { [Op.contains]: Array.isArray(modelName) ? modelName : [modelName] }
 			}
 			//fetch entity types and entities
 			// Handle both array and string cases for tenantCodes

@@ -832,7 +832,7 @@ module.exports = class MentorsHelper {
 						roles: roles,
 						requesterOrganizationCode: orgCode,
 						data: requestedMentorExtension,
-						tenant_code: tenantCode,
+						tenantCode: tenantCode,
 					})
 					if (validateDefaultRules.error && validateDefaultRules.error.missingField) {
 						return responses.failureResponse({
@@ -926,7 +926,7 @@ module.exports = class MentorsHelper {
 					roles: roles,
 					requesterOrganizationCode: orgCode,
 					data: mentorExtension,
-					tenant_code: tenantCode,
+					tenantCode: tenantCode,
 				})
 				if (validateDefaultRules.error && validateDefaultRules.error.missingField) {
 					return responses.failureResponse({
@@ -1098,6 +1098,8 @@ module.exports = class MentorsHelper {
 
 			// Construct the final profile response (INCLUDE sessions_attended for read endpoint)
 			const totalSessionsAttended = await sessionAttendeesQueries.countEnrolledSessions(id, tenantCode)
+
+			const mentorImage = mentorExtension.image ? await utils.getDownloadableUrl(mentorExtension.image) : null
 			const finalProfile = {
 				user_id: id, // Add user_id to match mentee read response
 				...mentorExtension,
@@ -1108,7 +1110,7 @@ module.exports = class MentorsHelper {
 				sessions_hosted: totalSessionHosted,
 				visible_to_organizations: mentorExtension.visible_to_organizations, // Add to match mentee read
 				settings: mentorExtension.settings, // Add settings to match mentee read
-				image: mentorExtension.image, // Keep original image (may already be downloadable URL)
+				image: mentorImage, // Keep original image (may already be downloadable URL)
 				sessions_attended: totalSessionsAttended, // Add sessions_attended
 				profile_mandatory_fields: processDbResponse.profile_mandatory_fields, // Ensure not overwritten
 				organization: mentorExtension.organization, // Ensure not overwritten
