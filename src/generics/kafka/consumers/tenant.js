@@ -2,6 +2,7 @@
 
 const tenantQueries = require('@database/queries/tenants')
 const tenantService = require('@services/tenant')
+const materializedViewsService = require('@generics/materializedViews')
 
 var messageReceived = function (message) {
 	return new Promise(async function (resolve, reject) {
@@ -47,6 +48,11 @@ var messageReceived = function (message) {
 						console.log(`ℹ️ [TENANT] Tenant already exists: ${code}`)
 					}
 					await tenantService.replicateConfigFromDefaultTenant(code, org_id, org_code)
+
+					// Build materialized views for the new tenant
+					console.log(`[TENANT] Building materialized views for tenant: ${code}`)
+					await materializedViewsService.triggerViewBuild(code)
+					console.log(`[TENANT] Materialized views built for tenant: ${code}`)
 					break
 				}
 

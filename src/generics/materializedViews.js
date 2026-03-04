@@ -371,7 +371,7 @@ const getAllowFilteringEntityTypes = async (tenantCode) => {
 		// but support tenant-specific customizations through tenant code combination
 		const entities = await entityTypeQueries.findAllEntityTypes(
 			defaults.orgCode, // Use default org code (global configurations)
-			{ [Op.in]: [tenantCode, defaults.tenantCode] }, // Combination of tenant codes
+			tenantCode, // Tenant isolation: only current tenant
 			['id', 'value', 'label', 'data_type', 'organization_id', 'has_entities', 'model_names'],
 			{
 				allow_filtering: true,
