@@ -64,6 +64,11 @@ module.exports = class OrganizationAndEntityTypePolicyHelper {
 					organizationInfo.push(orgExtension)
 					tenantCodes.push(orgExtension.tenant_code)
 				} else if (visibilityPolicy === common.ASSOCIATED || visibilityPolicy === common.ALL) {
+					// Always include the current org (same as CURRENT branch does on lines 63-65)
+					organizationCodes.push(orgExtension.organization_code)
+					organizationInfo.push(orgExtension)
+					tenantCodes.push(orgExtension.tenant_code)
+
 					let relatedOrgs = []
 					let userOrgDetails = await userRequests.fetchOrgDetails({
 						organizationCode: orgExtension.organization_code,
@@ -191,15 +196,19 @@ module.exports = class OrganizationAndEntityTypePolicyHelper {
 						)
 
 						if (organizationExtension) {
-							const organizationCodesFromOrgExtension = organizationExtension.map(
+							// Exclude current org from findAll results to prevent duplication
+							// (current org was already added explicitly above)
+							const filteredOrgExtension = organizationExtension.filter(
+								(org) => org.organization_code !== orgExtension.organization_code
+							)
+
+							const organizationCodesFromOrgExtension = filteredOrgExtension.map(
 								(orgExt) => orgExt.organization_code
 							)
 
-							const tenantCodesFromOrgExtension = organizationExtension.map(
-								(orgExt) => orgExt.tenant_code
-							)
+							const tenantCodesFromOrgExtension = filteredOrgExtension.map((orgExt) => orgExt.tenant_code)
 
-							organizationInfo.push(...organizationExtension)
+							organizationInfo.push(...filteredOrgExtension)
 							organizationCodes.push(...organizationCodesFromOrgExtension)
 							tenantCodes.push(...tenantCodesFromOrgExtension)
 						}
