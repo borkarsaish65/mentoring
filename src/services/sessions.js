@@ -1176,14 +1176,6 @@ module.exports = class SessionsHelper {
 
 				// send mail associated with action to session mentees
 				sessionAttendees.forEach(async (attendee) => {
-					if (
-						!templateData &&
-						(method == common.DELETE_METHOD || isSessionReschedule || (isSessionDataChanged && notifyUser))
-					)
-						return
-					if (!preOrPostEmailTemplate && (preResourceSendEmail || postResourceSendEmail)) return
-					if (!mentorChangedTemplate && mentorUpdated) return
-
 					if (method == common.DELETE_METHOD) {
 						let duration = moment.duration(
 							moment.unix(sessionDetail.end_date).diff(moment.unix(sessionDetail.start_date))
