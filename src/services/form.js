@@ -1,7 +1,7 @@
 const httpStatusCode = require('@generics/http-status')
 const utils = require('@generics/utils')
 const form = require('@generics/form')
-//const KafkaProducer = require('@generics/kafka-communication')
+const KafkaProducer = require('@generics/kafka-communication')
 
 const formQueries = require('../database/queries/form')
 const { UniqueConstraintError } = require('sequelize')
@@ -29,7 +29,7 @@ module.exports = class FormsHelper {
 			bodyData['organization_code'] = orgCode
 			const form = await formQueries.createForm(bodyData, tenantCode, orgCode)
 
-			//	await KafkaProducer.clearInternalCache('formVersion')
+			//			await KafkaProducer.clearInternalCache('formVersion')
 
 			return responses.successResponse({
 				statusCode: httpStatusCode.created,
