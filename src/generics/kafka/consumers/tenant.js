@@ -53,6 +53,10 @@ var messageReceived = function (message) {
 					console.log(`[TENANT] Building materialized views for tenant: ${code}`)
 					await materializedViewsService.triggerViewBuild(code)
 					console.log(`[TENANT] Materialized views built for tenant: ${code}`)
+
+					// Start periodic view refresh for the new tenant
+					await materializedViewsService.triggerPeriodicViewRefresh(code)
+					console.log(`[TENANT] Periodic view refresh started for tenant: ${code}`)
 					break
 				}
 
