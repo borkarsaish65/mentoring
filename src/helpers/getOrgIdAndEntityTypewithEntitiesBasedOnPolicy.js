@@ -196,19 +196,15 @@ module.exports = class OrganizationAndEntityTypePolicyHelper {
 						)
 
 						if (organizationExtension) {
-							// Exclude current org from findAll results to prevent duplication
-							// (current org was already added explicitly above)
-							const filteredOrgExtension = organizationExtension.filter(
-								(org) => org.organization_code !== orgExtension.organization_code
-							)
-
-							const organizationCodesFromOrgExtension = filteredOrgExtension.map(
+							const organizationCodesFromOrgExtension = organizationExtension.map(
 								(orgExt) => orgExt.organization_code
 							)
 
-							const tenantCodesFromOrgExtension = filteredOrgExtension.map((orgExt) => orgExt.tenant_code)
+							const tenantCodesFromOrgExtension = organizationExtension.map(
+								(orgExt) => orgExt.tenant_code
+							)
 
-							organizationInfo.push(...filteredOrgExtension)
+							organizationInfo.push(...organizationExtension)
 							organizationCodes.push(...organizationCodesFromOrgExtension)
 							tenantCodes.push(...tenantCodesFromOrgExtension)
 						}
