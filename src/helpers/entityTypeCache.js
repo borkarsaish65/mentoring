@@ -146,6 +146,7 @@ async function getEntityTypesAndEntitiesWithCache(originalFilter, tenantCode, or
 
 			// If not found with user codes and defaults exist, try with default codes
 			if (
+				(!dbResult || dbResult.length === 0) &&
 				defaults &&
 				defaults.orgCode &&
 				defaults.tenantCode &&
@@ -155,14 +156,7 @@ async function getEntityTypesAndEntitiesWithCache(originalFilter, tenantCode, or
 					...originalFilter,
 					organization_code: defaults.orgCode,
 				}
-				const defaultResults = await entityTypeQueries.findUserEntityTypesAndEntities(defaultFilter, [
-					defaults.tenantCode,
-				])
-				if (defaultResults && defaultResults.length > 0) {
-					const existingIds = new Set((dbResult || []).map((et) => et.id))
-					const newEntityTypes = defaultResults.filter((et) => !existingIds.has(et.id))
-					dbResult = [...(dbResult || []), ...newEntityTypes]
-				}
+				dbResult = await entityTypeQueries.findUserEntityTypesAndEntities(defaultFilter, [defaults.tenantCode])
 			}
 		} catch (dbError) {
 			console.error(`Failed to fetch entity types from database:`, dbError.message)
