@@ -64,7 +64,7 @@ module.exports = class OrganizationAndEntityTypePolicyHelper {
 					organizationInfo.push(orgExtension)
 					tenantCodes.push(orgExtension.tenant_code)
 				} else if (visibilityPolicy === common.ASSOCIATED || visibilityPolicy === common.ALL) {
-					// Always include the current org (same as CURRENT branch does on lines 63-65)
+					// Always include the current org
 					organizationCodes.push(orgExtension.organization_code)
 					organizationInfo.push(orgExtension)
 					tenantCodes.push(orgExtension.tenant_code)
