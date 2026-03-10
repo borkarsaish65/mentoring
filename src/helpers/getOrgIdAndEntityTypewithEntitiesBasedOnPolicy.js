@@ -188,6 +188,7 @@ module.exports = class OrganizationAndEntityTypePolicyHelper {
 										],
 									},
 								],
+								organization_id: { [Op.ne]: orgExtension.organization_id },
 								tenant_code: tenantCode,
 							},
 							{
