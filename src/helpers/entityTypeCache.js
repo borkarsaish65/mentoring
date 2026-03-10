@@ -152,10 +152,6 @@ async function getEntityTypesAndEntitiesWithCache(originalFilter, tenantCode, or
 				defaults.tenantCode &&
 				(defaults.tenantCode !== tenantCode || defaults.orgCode !== orgCode)
 			) {
-				console.log(
-					`💾 EntityTypes not found with user codes, trying defaults: tenant:${defaults.tenantCode}:org:${defaults.orgCode}`
-				)
-
 				let defaultFilter = {
 					...originalFilter,
 					organization_code: defaults.orgCode,
