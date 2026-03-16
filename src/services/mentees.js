@@ -1576,14 +1576,10 @@ module.exports = class MenteesHelper {
 					responseCode: 'CLIENT_ERROR',
 				})
 
-			let validationData = await entityTypeCache.getEntityTypesAndEntitiesWithCache(
-				{
-					status: common.ACTIVE_STATUS,
-					model_names: { [Op.overlap]: [userExtensionModelName] },
-				},
+			const validationData = await entityTypeCache.getEntityTypesAndEntitiesForModel(
+				userExtensionModelName,
 				tenantCode,
-				organizationCode,
-				userExtensionModelName
+				organizationCode
 			)
 
 			let filteredQuery = utils.validateAndBuildFilters(query, validationData)
@@ -1726,7 +1722,7 @@ module.exports = class MenteesHelper {
 				message: 'MENTEE_LIST',
 				result: {
 					data: extensionDetails.data,
-					count: queryParams.connected_mentees === 'true' ? connectedMenteesCount : extensionDetails.count,
+					count: extensionDetails.count,
 				},
 			})
 		} catch (error) {

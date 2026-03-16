@@ -1538,39 +1538,16 @@ const notificationTemplates = {
 				}
 			}
 
-			// Step 3: Cache miss - query database with prioritized fallback logic
+			// Step 3: Cache miss - query database with header/footer injection
+			// Uses findOneEmailTemplate so email_header (logo) and email_footer are composed into body
 
 			let templateFromDb = null
 			try {
-				// Try user tenant/org first
-				templateFromDb = await notificationTemplateQueries.findOne(
-					{
-						code: templateCode,
-						organization_code: orgCode,
-						type: 'email',
-						status: 'active',
-					},
-					tenantCode
+				templateFromDb = await notificationTemplateQueries.findOneEmailTemplate(
+					templateCode,
+					[orgCode, defaults.orgCode],
+					[tenantCode, defaults.tenantCode]
 				)
-
-				// If not found and defaults are different, try defaults
-				if (
-					!templateFromDb &&
-					defaults &&
-					defaults.orgCode &&
-					defaults.tenantCode &&
-					(defaults.tenantCode !== tenantCode || defaults.orgCode !== orgCode)
-				) {
-					templateFromDb = await notificationTemplateQueries.findOne(
-						{
-							code: templateCode,
-							organization_code: defaults.orgCode,
-							type: 'email',
-							status: 'active',
-						},
-						defaults.tenantCode
-					)
-				}
 
 				if (templateFromDb) {
 					console.log(
