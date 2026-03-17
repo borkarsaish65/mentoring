@@ -102,18 +102,18 @@ async function startConsumer(kafkaClient) {
 						}
 					}
 				}
-				if (payload && topic === process.env.CLEAR_INTERNAL_CACHE) {
-					if (payload.type === 'CLEAR_INTERNAL_CACHE') {
-						response = await utils.internalDel(payload.value)
-					}
-				}
+				// if (payload && topic === process.env.CLEAR_INTERNAL_CACHE) {
+				// 	if (payload.type === 'CLEAR_INTERNAL_CACHE') {
+				// 		response = await utils.internalDel(payload.value)
+				// 	}
+				// }
 
 				logger.info(`Kafka event handling response : ${response}`)
 			} catch (err) {
 				logger.error(`Error in Kafka message handler for topic ${topic}`, {
 					topic,
 					partition,
-					offset,
+					offset: message.offset,
 					err: err?.stack || err?.message || String(err),
 				})
 			}

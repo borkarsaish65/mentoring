@@ -172,14 +172,14 @@ module.exports = class NotificationTemplateData {
 
 			// Compose template with header and footer
 			if (selectedTemplate && selectedTemplate.email_header) {
-				const header = await this.getEmailHeader(selectedTemplate.email_header)
+				const header = await this.getEmailHeader(selectedTemplate.email_header, tenantCodes, orgCodes)
 				if (header && header.body) {
 					selectedTemplate.body = header.body + selectedTemplate.body
 				}
 			}
 
 			if (selectedTemplate && selectedTemplate.email_footer) {
-				const footer = await this.getEmailFooter(selectedTemplate.email_footer)
+				const footer = await this.getEmailFooter(selectedTemplate.email_footer, tenantCodes, orgCodes)
 				if (footer && footer.body) {
 					selectedTemplate.body += footer.body
 				}
@@ -193,31 +193,57 @@ module.exports = class NotificationTemplateData {
 		}
 	}
 
-	static async getEmailHeader(headerCode) {
+	static async getEmailHeader(headerCode, tenantCodes = [], orgCodes = []) {
 		try {
-			return await NotificationTemplate.findOne({
-				where: {
-					code: headerCode,
-					type: 'emailHeader',
-					status: 'active',
-				},
-				raw: true,
-			})
+			const normalizedTenantCodes = Array.isArray(tenantCodes)
+				? tenantCodes.filter(Boolean)
+				: [tenantCodes].filter(Boolean)
+			const normalizedOrgCodes = Array.isArray(orgCodes) ? orgCodes.filter(Boolean) : [orgCodes].filter(Boolean)
+			const where = {
+				code: headerCode,
+				type: 'emailHeader',
+				status: 'active',
+			}
+			if (normalizedTenantCodes.length > 0) where.tenant_code = { [Op.in]: normalizedTenantCodes }
+			if (normalizedOrgCodes.length > 0) where.organization_code = { [Op.in]: normalizedOrgCodes }
+			const results = await NotificationTemplate.findAll({ where, raw: true })
+			if (!results || results.length === 0) return null
+			const preferredOrg = normalizedOrgCodes[0]
+			const preferredTenant = normalizedTenantCodes[0]
+			return (
+				results.find((r) => r.organization_code === preferredOrg && r.tenant_code === preferredTenant) ||
+				results.find((r) => r.organization_code === preferredOrg) ||
+				results.find((r) => r.tenant_code === preferredTenant) ||
+				results[0]
+			)
 		} catch (error) {
 			return null
 		}
 	}
 
-	static async getEmailFooter(footerCode) {
+	static async getEmailFooter(footerCode, tenantCodes = [], orgCodes = []) {
 		try {
-			return await NotificationTemplate.findOne({
-				where: {
-					code: footerCode,
-					type: 'emailFooter',
-					status: 'active',
-				},
-				raw: true,
-			})
+			const normalizedTenantCodes = Array.isArray(tenantCodes)
+				? tenantCodes.filter(Boolean)
+				: [tenantCodes].filter(Boolean)
+			const normalizedOrgCodes = Array.isArray(orgCodes) ? orgCodes.filter(Boolean) : [orgCodes].filter(Boolean)
+			const where = {
+				code: footerCode,
+				type: 'emailFooter',
+				status: 'active',
+			}
+			if (normalizedTenantCodes.length > 0) where.tenant_code = { [Op.in]: normalizedTenantCodes }
+			if (normalizedOrgCodes.length > 0) where.organization_code = { [Op.in]: normalizedOrgCodes }
+			const results = await NotificationTemplate.findAll({ where, raw: true })
+			if (!results || results.length === 0) return null
+			const preferredOrg = normalizedOrgCodes[0]
+			const preferredTenant = normalizedTenantCodes[0]
+			return (
+				results.find((r) => r.organization_code === preferredOrg && r.tenant_code === preferredTenant) ||
+				results.find((r) => r.organization_code === preferredOrg) ||
+				results.find((r) => r.tenant_code === preferredTenant) ||
+				results[0]
+			)
 		} catch (error) {
 			return null
 		}
