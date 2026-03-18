@@ -1328,7 +1328,12 @@ module.exports = class MentorsHelper {
 				orgCode,
 				{ allow_filtering: true }
 			)
+
+			console.log(validationData, '<---validationData')
+
 			const filteredQuery = utils.validateAndBuildFilters(query, validationData)
+
+			console.log(filteredQuery, '<---filteredQuery')
 
 			const saasFilter = await this.filterMentorListBasedOnSaasPolicy(
 				userId,
@@ -1337,6 +1342,8 @@ module.exports = class MentorsHelper {
 				tenantCode,
 				orgCode
 			)
+
+			console.log(saasFilter, '<--saasFilter')
 
 			let search_config = defaultSearchConfig
 			if (searchConfig.search) {

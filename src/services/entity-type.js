@@ -111,6 +111,8 @@ module.exports = class EntityHelper {
 					for (const modelName of originalEntity.model_names) {
 						await cacheHelper.entityTypes.delete(tenantCode, orgCode, modelName, originalEntity.value)
 					}
+					// Also clear model-level 'all' cache
+					await entityTypeCache.clearModelCache(tenantCode, orgCode, originalEntity.model_names)
 				}
 			} catch (cacheError) {
 				// Failed to invalidate entity type cache - continue operation
@@ -288,13 +290,6 @@ module.exports = class EntityHelper {
 				})
 			}
 
-			// Clear cache for affected models before deletion
-			await this._clearUserCachesForEntityTypeChange(organizationCode, tenantCode, {
-				id: entityToDelete.id,
-				value: entityToDelete.value,
-				modelNames: entityToDelete.model_names,
-			})
-
 			// SECOND: Delete from database
 			const deleteCount = await entityTypeQueries.deleteOneEntityType(id, organizationCode, tenantCode)
 			if (deleteCount === 0) {
@@ -318,25 +313,11 @@ module.exports = class EntityHelper {
 							entityToDelete.value
 						)
 					}
+					// Also clear model-level 'all' cache
+					await entityTypeCache.clearModelCache(tenantCode, organizationCode, entityToDelete.model_names)
 				}
 			} catch (cacheError) {
 				// Failed to perform selective cache removal - continue operation
-
-				// Fallback: retry removing only this specific entity's cache
-				if (entityToDelete.model_names && Array.isArray(entityToDelete.model_names)) {
-					for (const modelName of entityToDelete.model_names) {
-						try {
-							await cacheHelper.entityTypes.delete(
-								tenantCode,
-								organizationCode,
-								modelName,
-								entityToDelete.value
-							)
-						} catch (retryError) {
-							// Failed to retry clear cache - continue operation
-						}
-					}
-				}
 			}
 
 			// Clear user caches since entity types affect user profiles
@@ -490,6 +471,10 @@ module.exports = class EntityHelper {
 							entityToDelete.value
 						)
 					}
+					// Also clear model-level 'all' cache
+					if (modelNames.length > 0) {
+						await entityTypeCache.clearModelCache(tenantCode, entityToDelete.organization_code, modelNames)
+					}
 				}
 			} catch (cacheError) {
 				console.log('Failed to clear cache for deleted entities:', cacheError.message)
@@ -544,14 +529,12 @@ module.exports = class EntityHelper {
 				})
 			)
 
-			// 2. Clear entity type caches for unified model strategy
+			// 2. Clear entity type caches for the affected model
 			if (modelName) {
 				clearPromises.push(
-					cacheHelper.entityTypes
-						.delete(tenantCode, organizationCode, `model:${modelName}:__ALL__`)
-						.catch((error) => {
-							/* Failed to clear unified entity type cache - continue operation */
-						})
+					entityTypeCache.clearModelCache(tenantCode, organizationCode, [modelName]).catch((_error) => {
+						/* Failed to clear model-level entity type cache - continue operation */
+					})
 				)
 			}
 

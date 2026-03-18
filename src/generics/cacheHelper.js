@@ -573,11 +573,12 @@ const entityTypes = {
 
 			// Step 5: Cache result under user tenant/org (regardless of where entityType was found)
 			if (entityTypeFromDb && entityTypeFromDb.length > 0) {
-				await this.set(tenantCode, orgCode, modelName, entityValue, entityTypeFromDb)
+				const entityType = entityTypeFromDb[0]
+				await this.set(tenantCode, orgCode, modelName, entityValue, entityType)
 				console.log(
 					`💾 EntityType ${modelName}:${entityValue} fetched from database and cached under user context: tenant:${tenantCode}:org:${orgCode}`
 				)
-				return entityTypeFromDb
+				return entityType
 			}
 
 			// Step 6: EntityType not found in any location
