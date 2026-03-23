@@ -550,22 +550,15 @@ const entityTypes = {
 
 			let entityTypeFromDb = []
 			try {
-				// Step 1: Fetch from user tenant and org codes
-				const userFilter = {
+				const defaultOrgCode = process.env.DEFAULT_ORGANISATION_CODE
+				const orgCandidates = [...new Set([orgCode, defaultOrgCode].filter(Boolean))]
+
+				const filter = {
 					status: 'ACTIVE',
-					organization_code: orgCode,
+					organization_code: { [Op.in]: orgCandidates },
 					model_names: { [Op.contains]: modelName },
 				}
-				if (entityValue) {
-					userFilter.value = entityValue
-				}
-				const userEntityTypes = await entityTypeQueries.findUserEntityTypesAndEntities(userFilter, tenantCode)
-				if (userEntityTypes && userEntityTypes.length > 0) {
-					entityTypeFromDb.push(...userEntityTypes)
-					console.log(
-						`💾 EntityType ${modelName}:${entityValue} found in user tenant/org: ${userEntityTypes.length} results`
-					)
-				}
+				if (entityValue) filter.value = entityValue
 
 				// Tenant isolation: no default tenant fallback
 			} catch (dbError) {
@@ -629,13 +622,17 @@ const entityTypes = {
 			// Get defaults internally for database query
 			let entityTypes = []
 			try {
-				// Step 1: Fetch from user tenant and org codes
-				const userFilter = {
-					status: 'ACTIVE',
-					organization_code: orgCode,
-					model_names: { [Op.contains]: [modelName] },
-				}
-				const userEntityTypes = await entityTypeQueries.findUserEntityTypesAndEntities(userFilter, [tenantCode])
+				const defaultOrgCode = process.env.DEFAULT_ORGANISATION_CODE
+				const orgCandidates = [...new Set([orgCode, defaultOrgCode].filter(Boolean))]
+
+				const userEntityTypes = await entityTypeQueries.findUserEntityTypesAndEntities(
+					{
+						status: 'ACTIVE',
+						organization_code: { [Op.in]: orgCandidates },
+						model_names: { [Op.contains]: [modelName] },
+					},
+					[tenantCode]
+				)
 				if (userEntityTypes && userEntityTypes.length > 0) {
 					entityTypes.push(...userEntityTypes)
 					console.log(
@@ -745,14 +742,16 @@ const forms = {
 
 			let formFromDb = null
 			try {
-				// First try with user tenant and org codes
-				formFromDb = await formQueries.findOne(
+				const defaultOrgCode = process.env.DEFAULT_ORGANISATION_CODE
+				const orgCandidates = [...new Set([orgCode, defaultOrgCode].filter(Boolean))]
+
+				const forms = await formQueries.findFormsByFilter(
 					{
-						type: type,
+						type,
 						sub_type: subtype,
-						organization_code: orgCode,
+						organization_code: { [Op.in]: orgCandidates },
 					},
-					tenantCode
+					[tenantCode]
 				)
 
 				// Step 4: If not found with user codes and defaults exist, try with default codes
@@ -1407,29 +1406,28 @@ const notificationTemplates = {
 				return cachedTemplate
 			}
 
-			// Step 2: Get defaults internally for database query
-			let defaults = null
-			try {
-				defaults = await getDefaults()
-			} catch (error) {
-				console.error('Failed to get defaults for notification template cache:', error.message)
-				// Fallback defaults from environment variables
-				defaults = {
-					orgCode: process.env.DEFAULT_ORGANISATION_CODE || 'default_code',
-					tenantCode: process.env.DEFAULT_TENANT_CODE || 'default',
-				}
-			}
-
-			// Step 3: Cache miss - query database with header/footer injection
-			// Uses findOneEmailTemplate so email_header (logo) and email_footer are composed into body
+			// Step 2: Cache miss - query database
+			// Fetch both user org and default org templates in one query, then prioritize
 
 			let templateFromDb = null
 			try {
-				templateFromDb = await notificationTemplateQueries.findOneEmailTemplate(
-					templateCode,
-					[orgCode, defaults.orgCode],
-					[tenantCode, defaults.tenantCode]
-				)
+				const defaultOrgCode = process.env.DEFAULT_ORGANISATION_CODE
+				const orgCandidates = [orgCode]
+				if (defaultOrgCode && defaultOrgCode !== orgCode) orgCandidates.push(defaultOrgCode)
+
+				const templates = await notificationTemplateQueries.findTemplatesByFilter({
+					code: templateCode,
+					organization_code: orgCandidates,
+					tenant_code: tenantCode,
+					type: 'email',
+					status: 'active',
+				})
+
+				// Priority: user's org first, default org as fallback
+				templateFromDb =
+					templates.find((t) => t.organization_code === orgCode) ||
+					templates.find((t) => t.organization_code === defaultOrgCode) ||
+					null
 
 				if (templateFromDb) {
 					console.log(
