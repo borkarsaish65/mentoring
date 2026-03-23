@@ -1407,23 +1407,29 @@ const notificationTemplates = {
 				return cachedTemplate
 			}
 
-			// Step 2: Cache miss - query database with user codes
+			// Step 2: Get defaults internally for database query
+			let defaults = null
+			try {
+				defaults = await getDefaults()
+			} catch (error) {
+				console.error('Failed to get defaults for notification template cache:', error.message)
+				// Fallback defaults from environment variables
+				defaults = {
+					orgCode: process.env.DEFAULT_ORGANISATION_CODE || 'default_code',
+					tenantCode: process.env.DEFAULT_TENANT_CODE || 'default',
+				}
+			}
+
+			// Step 3: Cache miss - query database with header/footer injection
+			// Uses findOneEmailTemplate so email_header (logo) and email_footer are composed into body
 
 			let templateFromDb = null
 			try {
-				// Try user tenant/org first
-				templateFromDb = await notificationTemplateQueries.findOne(
-					{
-						code: templateCode,
-						organization_code: orgCode,
-						type: 'email',
-						status: 'active',
-					},
-					tenantCode
+				templateFromDb = await notificationTemplateQueries.findOneEmailTemplate(
+					templateCode,
+					[orgCode, defaults.orgCode],
+					[tenantCode, defaults.tenantCode]
 				)
-
-				// If not found and defaults are different, try defaults
-				// Tenant isolation: no default tenant fallback
 
 				if (templateFromDb) {
 					console.log(

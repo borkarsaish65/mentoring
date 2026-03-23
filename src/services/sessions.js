@@ -3507,7 +3507,7 @@ module.exports = class SessionsHelper {
 			const enrollPromises = mentees.map((menteeData) =>
 				this.enroll(
 					sessionId,
-					{ user_id: menteeData.user_id },
+					{ user_id: menteeData.user_id, email: menteeData.email, name: menteeData.name },
 					timeZone,
 					menteeData.is_mentor,
 					false,
@@ -3610,6 +3610,7 @@ module.exports = class SessionsHelper {
 			}
 
 			const templateData = await cacheHelper.notificationTemplates.get(tenantCode, orgCode, templateCode)
+			if (!templateData) return null
 
 			// Construct data
 			const payload = {
