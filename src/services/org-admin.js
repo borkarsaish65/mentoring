@@ -152,7 +152,7 @@ module.exports = class OrgAdminService {
 				removedSessionsDetail,
 				mentorDetails.organization_id ? mentorDetails.organization_id : '',
 				{ [Op.in]: [bodyData.organization_code, defaults.orgCode] },
-				{ [Op.in]: [tenantCode, defaults.tenantCode] },
+				tenantCode,
 				tenantCode,
 				mentorDetails.organization_code
 			)
@@ -403,7 +403,7 @@ module.exports = class OrgAdminService {
 
 			let defaultOrgId
 			if (defaultOrgDetails.success && defaultOrgDetails.data && defaultOrgDetails.data.result) {
-				defaultOrgId = defaultOrgDetails.data.result.id
+				defaultOrgId = String(defaultOrgDetails.data.result.id)
 			} else {
 				return responses.failureResponse({
 					message: 'DEFAULT_ORG_ID_NOT_SET',
@@ -412,19 +412,12 @@ module.exports = class OrgAdminService {
 				})
 			}
 
-			if (defaultOrgId === userOrgId) {
+			if (String(defaultOrgId) === String(userOrgId)) {
 				return responses.failureResponse({
 					message: 'USER_IS_FROM_DEFAULT_ORG',
 					statusCode: httpStatusCode.bad_request,
 					responseCode: 'CLIENT_ERROR',
 				})
-			}
-
-			// Fetch entity type data using defaultOrgId and entityValue
-			const filter = {
-				value: entityValue,
-				organization_id: defaultOrgId,
-				allow_filtering: true,
 			}
 
 			const defaults = await getDefaults()
@@ -441,9 +434,14 @@ module.exports = class OrgAdminService {
 					responseCode: 'CLIENT_ERROR',
 				})
 
-			let entityTypeDetails = await entityTypeQueries.findOneEntityType(filter, {
-				[Op.in]: [defaults.tenantCode, tenantCode],
-			})
+			// Fetch entity type data using organization_code and entityValue
+			const filter = {
+				value: entityValue,
+				organization_code: defaults.orgCode,
+				allow_filtering: true,
+			}
+
+			let entityTypeDetails = await entityTypeQueries.findOneEntityType(filter, tenantCode)
 
 			// If no matching data found return failure response
 			if (!entityTypeDetails) {
@@ -458,6 +456,7 @@ module.exports = class OrgAdminService {
 			entityTypeDetails.parent_id = entityTypeDetails.id
 			entityTypeDetails.label = entityLabel
 			entityTypeDetails.organization_id = userOrgId
+			entityTypeDetails.organization_code = decodedToken.organization_code
 			entityTypeDetails.created_by = decodedToken.id
 			entityTypeDetails.updated_by = decodedToken.id
 			delete entityTypeDetails.id
@@ -516,8 +515,8 @@ module.exports = class OrgAdminService {
 			// Get organization policies
 			const orgPolicies = await organisationExtensionQueries.findOrInsertOrganizationExtension(
 				orgId,
-				organizationDetails.data.result.name,
 				bodyData.organization_code,
+				organizationDetails.data.result.name,
 				tenantCode
 			)
 			if (!orgPolicies?.organization_id) {
@@ -609,7 +608,7 @@ module.exports = class OrgAdminService {
 					await adminService.unenrollAndNotifySessionAttendees(
 						removedSessionsDetail,
 						{ [Op.in]: [orgCode, defaults.orgCode] },
-						{ [Op.in]: [tenantCode, defaults.tenantCode] },
+						tenantCode,
 						tenantCode,
 						orgCode
 					)
@@ -732,7 +731,7 @@ module.exports = class OrgAdminService {
 			const questionSets = await questionSetQueries.findQuestionSets(
 				{
 					code: { [Op.in]: [bodyData.mentee_feedback_question_set, bodyData.mentor_feedback_question_set] },
-					tenant_code: defaults.tenantCode,
+					tenant_code: tenantCode,
 				},
 				['id', 'code']
 			)
@@ -901,7 +900,7 @@ module.exports = class OrgAdminService {
 		// If not in cache, fetch from database
 		organizationDetails = await organisationExtensionQueries.getById(
 			{ [Op.in]: [defaults.orgCode, orgCode] },
-			{ [Op.in]: [defaults.tenantCode, tenantCode] }
+			tenantCode
 		)
 
 		if (!organizationDetails) {

@@ -135,9 +135,7 @@ module.exports = class DefaultRuleHelper {
 					statusCode: httpStatusCode.bad_request,
 					responseCode: 'CLIENT_ERROR',
 				})
-			const validation = await this.validateFields({ [Op.in]: [orgCode, defaults.orgCode] }, bodyData, {
-				[Op.in]: [tenantCode, defaults.tenantCode],
-			})
+			const validation = await this.validateFields({ [Op.in]: [orgCode, defaults.orgCode] }, bodyData, tenantCode)
 
 			if (!validation.isValid) {
 				return responses.failureResponse({
@@ -273,9 +271,7 @@ module.exports = class DefaultRuleHelper {
 					statusCode: httpStatusCode.bad_request,
 					responseCode: 'CLIENT_ERROR',
 				})
-			const validation = await this.validateFields({ [Op.in]: [orgCode, defaults.orgCode] }, bodyData, {
-				[Op.in]: [tenantCode, defaults.tenantCode],
-			})
+			const validation = await this.validateFields({ [Op.in]: [orgCode, defaults.orgCode] }, bodyData, tenantCode)
 
 			if (!validation.isValid) {
 				return responses.failureResponse({
@@ -345,7 +341,7 @@ module.exports = class DefaultRuleHelper {
 				})
 			const defaultRules = await defaultRuleQueries.findAndCountAll({
 				organization_code: { [Op.in]: [orgCode, defaults.orgCode] },
-				tenant_code: { [Op.in]: [tenantCode, defaults.tenantCode] },
+				tenant_code: tenantCode,
 			})
 
 			return responses.successResponse({
@@ -387,7 +383,7 @@ module.exports = class DefaultRuleHelper {
 			const defaultRule = await defaultRuleQueries.findOne({
 				id: ruleId,
 				organization_code: { [Op.in]: [orgCode, defaults.orgCode] },
-				tenant_code: { [Op.in]: [tenantCode, defaults.tenantCode] },
+				tenant_code: tenantCode,
 			})
 			if (!defaultRule) {
 				return responses.failureResponse({

@@ -42,8 +42,7 @@ module.exports = class ReportsHelper {
 				})
 			}
 
-			// Try both current tenant and default tenant using array
-			const tenantCodes = [tenantCode, defaults.tenantCode]
+			const tenantCodes = [tenantCode]
 			const reportTypes = await reportTypeQueries.findReportTypesByTitle(title, tenantCodes)
 
 			if (!reportTypes || reportTypes.length === 0) {
@@ -54,8 +53,7 @@ module.exports = class ReportsHelper {
 				})
 			}
 
-			// Business logic: Prefer current tenant over default tenant
-			const reportType = reportTypes.find((rt) => rt.tenant_code === tenantCode) || reportTypes[0]
+			const reportType = reportTypes[0]
 
 			return responses.successResponse({
 				statusCode: httpStatusCode.created,

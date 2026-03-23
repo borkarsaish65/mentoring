@@ -160,7 +160,7 @@ module.exports = class EntityHelper {
 				})
 			const entities = await entityTypeQueries.findAllEntityTypes(
 				{ [Op.or]: [orgCode, defaults.orgCode] },
-				{ [Op.in]: [tenantCode, defaults.tenantCode] },
+				tenantCode,
 				attributes
 			)
 
@@ -228,11 +228,9 @@ module.exports = class EntityHelper {
 				organization_code: {
 					[Op.in]: [orgCode, defaults.orgCode],
 				},
-				tenant_code: { [Op.in]: [defaults.tenantCode, tenantCode] },
+				tenant_code: tenantCode,
 			}
-			const entityTypes = await entityTypeQueries.findUserEntityTypesAndEntities(filter, {
-				[Op.in]: [defaults.tenantCode, tenantCode],
-			})
+			const entityTypes = await entityTypeQueries.findUserEntityTypesAndEntities(filter, tenantCode)
 
 			const prunedEntities = removeDefaultOrgEntityTypes(entityTypes, defaults.orgCode)
 
@@ -396,9 +394,7 @@ module.exports = class EntityHelper {
 				orgCodes.push(defaults.orgCode)
 			}
 
-			if (!tenantCodes.includes(defaults.tenantCode)) {
-				tenantCodes.push(defaults.tenantCode)
-			}
+			// Tenant isolation: only use the provided tenant codes, no default tenant fallback
 
 			const additionalFilters = {
 				has_entities: true,
@@ -408,7 +404,7 @@ module.exports = class EntityHelper {
 			}
 			// get entityTypes with entities data using cache
 			// Use first tenant/org as user context - cache helper handles defaults internally
-			const primaryTenantCode = tenantCodes[0] || defaults.tenantCode
+			const primaryTenantCode = tenantCodes[0]
 			const primaryOrgCode = orgCodes[0] || defaults.orgCode
 			let entityTypesWithEntities = await entityTypeCache.getEntityTypesAndEntitiesForModel(
 				Array.isArray(modelName) ? modelName[0] : modelName,
@@ -457,7 +453,7 @@ module.exports = class EntityHelper {
 			// Get entity types before deletion to clear cache
 			const entitiesToDelete = await entityTypeQueries.findAllEntityTypes(
 				{}, // No org code filter for this operation
-				{ [Op.in]: [tenantCode] },
+				tenantCode,
 				['value', 'model_names', 'organization_code'],
 				{
 					status: common.ACTIVE_STATUS,
@@ -465,11 +461,14 @@ module.exports = class EntityHelper {
 				}
 			)
 
-			const deleteCount = await entityTypeQueries.deleteEntityTypesAndEntities({
-				status: common.ACTIVE_STATUS,
-				value: { [Op.in]: value },
-				tenant_code: tenantCode,
-			})
+			const deleteCount = await entityTypeQueries.deleteEntityTypesAndEntities(
+				{
+					status: common.ACTIVE_STATUS,
+					value: { [Op.in]: value },
+					tenant_code: tenantCode,
+				},
+				tenantCode
+			)
 
 			if (deleteCount === 0) {
 				return responses.failureResponse({
@@ -632,7 +631,7 @@ module.exports = class EntityHelper {
 			const defaults = await getDefaults()
 			const allEntityTypes = await entityTypeQueries.findAllEntityTypes(
 				{ [Op.or]: [orgCode, defaults.orgCode] },
-				{ [Op.in]: [tenantCode, defaults.tenantCode] },
+				tenantCode,
 				['model_names']
 			)
 
