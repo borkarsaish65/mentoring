@@ -3,7 +3,6 @@
 const tenantQueries = require('@database/queries/tenants')
 const tenantService = require('@services/tenant')
 const materializedViewsService = require('@generics/materializedViews')
-const schedulerRequests = require('@requests/scheduler')
 
 var messageReceived = function (message) {
 	return new Promise(async function (resolve, reject) {
@@ -44,42 +43,23 @@ var messageReceived = function (message) {
 					}
 					const { created } = await tenantQueries.upsert(tenantData)
 					if (created) {
-						console.log(`✅ [TENANT] Created new tenant: ${code}`)
-					} else {
-						console.log(`ℹ️ [TENANT] Tenant already exists: ${code}`)
+						await tenantService.replicateConfigFromDefaultTenant(code, org_id, org_code)
+
+						// Build materialized views for the new tenant
+						const entityTypesGroupedByModel = await materializedViewsService.triggerViewBuild(code)
+
+						// Register periodic refresh jobs in scheduler service for the new tenant
+						const baseInterval = process.env.REFRESH_VIEW_INTERVAL
+
+						for (const { modelName } of entityTypesGroupedByModel) {
+							const interval =
+								(modelName === 'UserExtension' && process.env.USER_EXTENSION_REFRESH_VIEW_INTERVAL) ||
+								(modelName === 'Session' && process.env.SESSION_REFRESH_VIEW_INTERVAL) ||
+								baseInterval
+
+							materializedViewsService.scheduleViewRefreshJob(code, modelName, interval)
+						}
 					}
-					await tenantService.replicateConfigFromDefaultTenant(code, org_id, org_code)
-
-					// Build materialized views for the new tenant
-					console.log(`[TENANT] Building materialized views for tenant: ${code}`)
-					const entityTypesGroupedByModel = await materializedViewsService.triggerViewBuild(code)
-					console.log(`[TENANT] Materialized views built for tenant: ${code}`)
-
-					// Register periodic refresh jobs in scheduler service for the new tenant
-					const baseInterval = process.env.REFRESH_VIEW_INTERVAL
-					const timestamp = Date.now()
-					let globalOffset = 0
-					const offsetStep = Number(baseInterval) / entityTypesGroupedByModel.length
-
-					console.log(
-						`[TENANT] Registering refresh jobs - tenant: ${code}, baseInterval: ${baseInterval}ms, models: ${entityTypesGroupedByModel
-							.map((m) => m.modelName)
-							.join(', ')}`
-					)
-
-					for (const { modelName } of entityTypesGroupedByModel) {
-						const interval =
-							(modelName === 'UserExtension' && process.env.USER_EXTENSION_REFRESH_VIEW_INTERVAL) ||
-							(modelName === 'Session' && process.env.SESSION_REFRESH_VIEW_INTERVAL) ||
-							baseInterval
-
-						console.log(
-							`[TENANT] Scheduling job - tenant: ${code}, model: ${modelName}, interval: ${interval}ms, offset: ${globalOffset}ms`
-						)
-						schedulerRequests.scheduleViewRefreshJob(code, modelName, interval, globalOffset, timestamp)
-						globalOffset += offsetStep
-					}
-					console.log(`[TENANT] Periodic refresh scheduler jobs registered for tenant: ${code}`)
 					break
 				}
 
@@ -98,8 +78,7 @@ var messageReceived = function (message) {
 					if (updated_by !== undefined) updateData.updated_by = updated_by ? updated_by.toString() : null
 
 					if (Object.keys(updateData).length > 0) {
-						const result = await tenantQueries.update(message.entityId, updateData)
-						console.log(`✅ [TENANT] Update result for ${message.entityId}: ${result}`)
+						await tenantQueries.update(message.entityId, updateData)
 					}
 					break
 				}

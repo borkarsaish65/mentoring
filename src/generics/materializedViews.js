@@ -1,5 +1,6 @@
 'use strict'
 const entityTypeQueries = require('@database/queries/entityType')
+const schedulerRequests = require('@requests/scheduler')
 const { sequelize } = require('@database/models/index')
 const models = require('@database/models/index')
 const { Op } = require('sequelize')
@@ -673,6 +674,20 @@ const triggerPeriodicViewRefreshForAllTenants = async (modelName = null) => {
 	}
 }
 
+const scheduleViewRefreshJob = (tenantCode, modelName, interval) => {
+	const jobId = `repeatable_view_job_${tenantCode}_${modelName}`
+	const jobName = `repeatable_view_job_${tenantCode}_${modelName}`
+	const encodedParams = encodeURIComponent(`${tenantCode}|${modelName}`)
+	const urlEndpoint = `/mentoring/v1/admin/triggerPeriodicViewRefreshInternal/${encodedParams}`
+
+	schedulerRequests.createSchedulerJob(jobId, null, jobName, {}, urlEndpoint, 'get', {
+		jobId: jobId,
+		repeat: { every: Number(interval) },
+		removeOnComplete: 50,
+		removeOnFail: 200,
+	})
+}
+
 const adminService = {
 	triggerViewBuild,
 	triggerPeriodicViewRefresh,
@@ -680,6 +695,7 @@ const adminService = {
 	checkAndCreateMaterializedViews,
 	triggerViewBuildForAllTenants,
 	triggerPeriodicViewRefreshForAllTenants,
+	scheduleViewRefreshJob,
 }
 
 module.exports = adminService
