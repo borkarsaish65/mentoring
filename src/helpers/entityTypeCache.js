@@ -196,17 +196,40 @@ async function getEntityTypesAndEntitiesForModel(modelName, tenantCode, orgCode,
 			})
 		}
 
-		// Try model-level 'all' cache key first
+		// Try to get known entity types from cache first using user codes
+		const entityValues =
+			additionalFilters.value && additionalFilters.value[Op.in] ? additionalFilters.value[Op.in] : []
+		const cachedEntities = []
+
 		try {
-			const cachedAll = await cacheHelper.entityTypes.get(tenantCode, orgCode, modelName, 'all')
-			console.log('fetched from the cache', cachedAll, '<---cachedAll')
-			if (cachedAll && Array.isArray(cachedAll) && cachedAll.length > 0) {
-				let filtered = cachedAll
+			// Check cache for each entity value using user codes only
+			for (const entityValue of entityValues) {
+				try {
+					const cachedEntity = await cacheHelper.entityTypes.get(tenantCode, orgCode, modelName, entityValue)
+
+					if (cachedEntity && cachedEntity.entities) {
+						cachedEntities.push(cachedEntity)
+					}
+				} catch (entityFetchError) {
+					// Silent fail for cache errors
+				}
+			}
+
+			// If we found cached entities, format and apply filters
+			if (cachedEntities.length > 0) {
+				let formattedCachedEntities = cachedEntities.map((cachedEntity) => ({
+					...cachedEntity,
+					entities: Array.isArray(cachedEntity.entities) ? cachedEntity.entities : [],
+				}))
+
+				// Apply additional filters to cached results
 				if (additionalFilters && Object.keys(additionalFilters).length > 0) {
-					filtered = cachedAll.filter((entityType) => {
+					formattedCachedEntities = formattedCachedEntities.filter((entityType) => {
 						for (const [key, value] of Object.entries(additionalFilters)) {
 							if (Array.isArray(value)) {
-								if (!value.includes(entityType[key])) return false
+								if (!value.includes(entityType[key])) {
+									return false
+								}
 							} else if (entityType[key] !== value) {
 								return false
 							}
@@ -214,10 +237,12 @@ async function getEntityTypesAndEntitiesForModel(modelName, tenantCode, orgCode,
 						return true
 					})
 				}
-				return filtered
+
+				return formattedCachedEntities
 			}
 		} catch (cacheError) {
-			console.error(`Entity type model cache read failed: ${cacheError.message}`)
+			console.error(`Entity type cache read failed (cache+DB): ${cacheError.message}`, cacheError)
+			throw cacheError
 		}
 
 		// Cache miss - fetch from database with user-centric approach
@@ -243,16 +268,22 @@ async function getEntityTypesAndEntitiesForModel(modelName, tenantCode, orgCode,
 			return []
 		}
 
-		// Cache full list under model-level 'all' key
+		// Cache individual entities using user tenant/org context (regardless of where they were found)
 		if (allEntityTypes && allEntityTypes.length > 0) {
-			try {
-				await cacheHelper.entityTypes.set(tenantCode, orgCode, modelName, 'all', allEntityTypes)
-				console.log(
-					`💾 Cached ${allEntityTypes.length} entity types for model ${modelName} under key 'all': tenant:${tenantCode}:org:${orgCode}`
-				)
-			} catch (cacheError) {
-				console.error(`Failed to cache entity types for model ${modelName}:`, cacheError.message)
+			for (const entityType of allEntityTypes) {
+				try {
+					await cacheHelper.entityTypes.set(
+						tenantCode, // Always cache under user context
+						orgCode, // Always cache under user context
+						modelName,
+						entityType.value,
+						entityType
+					)
+				} catch (individualCacheError) {}
 			}
+			console.log(
+				`💾 Cached ${allEntityTypes.length} entity types for model ${modelName} under user context: tenant:${tenantCode}:org:${orgCode}`
+			)
 		}
 
 		// Apply additional filters to the database results
@@ -290,8 +321,11 @@ async function getEntityTypesAndEntitiesForModel(modelName, tenantCode, orgCode,
  */
 async function clearModelCache(tenantCode, orgCode, modelNames = []) {
 	try {
+		// Clear all model-level caches for affected models
 		for (const modelName of modelNames) {
-			await cacheHelper.entityTypes.delete(tenantCode, orgCode, modelName, 'all')
+			// We can't easily clear specific model cache keys since they contain hashed filters
+			// So we clear the entire allModels namespace for this tenant/org
+			await cacheHelper.entityTypes.delete(tenantCode, orgCode, 'allModels', `*${modelName}*`)
 		}
 	} catch (error) {}
 }

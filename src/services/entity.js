@@ -8,7 +8,6 @@ const responses = require('@helpers/responses')
 const { getDefaults } = require('@helpers/getDefaultOrgId')
 const cacheHelper = require('@generics/cacheHelper')
 const common = require('@constants/common')
-const entityTypeCache = require('@helpers/entityTypeCache')
 
 module.exports = class EntityHelper {
 	/**
@@ -45,11 +44,6 @@ module.exports = class EntityHelper {
 							entityTypeDetails.value
 						)
 					}
-					await entityTypeCache.clearModelCache(
-						tenantCode,
-						entityTypeDetails.organization_code,
-						entityTypeDetails.model_names
-					)
 				} catch (cacheError) {
 					console.error(`❌ Failed to invalidate entityType cache after entity creation:`, cacheError)
 				}
@@ -140,11 +134,6 @@ module.exports = class EntityHelper {
 								entityTypeDetails.value
 							)
 						}
-						await entityTypeCache.clearModelCache(
-							tenantCode,
-							entityTypeDetails.organization_code,
-							entityTypeDetails.model_names
-						)
 					}
 				} catch (cacheError) {
 					console.error(`❌ Failed to invalidate entityType cache after entity update:`, cacheError)
@@ -352,11 +341,6 @@ module.exports = class EntityHelper {
 							entityTypeDetails.value
 						)
 					}
-					await entityTypeCache.clearModelCache(
-						tenantCode,
-						entityTypeDetails.organization_code,
-						entityTypeDetails.model_names
-					)
 				} catch (cacheError) {
 					console.error(`❌ Failed to invalidate entityType cache after entity deletion:`, cacheError)
 				}
