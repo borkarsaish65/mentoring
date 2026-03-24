@@ -21,7 +21,7 @@ const mentoringBaseurl = `http://${process.env.APPLICATION_HOST}:${process.env.A
  * @param {Object} requestBody 				- Job api call request body.
  * @param {function} callback 				- The callback function to handle the result of the job creation.
  */
-const createSchedulerJob = function (jobId, delay, jobName, requestBody = {}, urlEndpoint, method) {
+const createSchedulerJob = function (jobId, delay, jobName, requestBody = {}, urlEndpoint, method, jobOptions = null) {
 	const bodyData = {
 		jobName: jobName,
 		email: email,
@@ -32,7 +32,7 @@ const createSchedulerJob = function (jobId, delay, jobName, requestBody = {}, ur
 			reqBody: requestBody,
 		},
 
-		jobOptions: {
+		jobOptions: jobOptions || {
 			jobId: jobId,
 			delay: delay,
 			removeOnComplete: true,
@@ -132,8 +132,32 @@ const removeScheduledJob = function (bodyData) {
 	}
 }
 
+/**
+ * Schedule a repeatable materialized view refresh job for a specific tenant and model.
+ *
+ * @param {string} tenantCode  - The tenant code.
+ * @param {string} modelName   - The model name (e.g. 'Session', 'UserExtension').
+ * @param {number} interval    - Repeat interval in milliseconds.
+ * @param {number} offset      - Offset in ms to stagger job start times.
+ * @param {number} timestamp   - Batch timestamp to make jobId unique per deployment.
+ */
+const scheduleViewRefreshJob = function (tenantCode, modelName, interval, offset, timestamp) {
+	const jobId = `repeatable_view_job_${tenantCode}_${modelName}_${timestamp}`
+	const jobName = `repeatable_view_job_${tenantCode}_${modelName}`
+	const encodedParams = encodeURIComponent(`${tenantCode}|${modelName}`)
+	const urlEndpoint = `/mentoring/v1/admin/triggerPeriodicViewRefreshInternal/${encodedParams}`
+
+	createSchedulerJob(jobId, null, jobName, {}, urlEndpoint, 'get', {
+		jobId: jobId,
+		repeat: { every: Number(interval), offset },
+		removeOnComplete: 50,
+		removeOnFail: 200,
+	})
+}
+
 module.exports = {
 	createSchedulerJob,
+	scheduleViewRefreshJob,
 	updateDelayOfScheduledJob,
 	removeScheduledJob,
 }
