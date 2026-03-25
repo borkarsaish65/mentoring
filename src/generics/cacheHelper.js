@@ -560,7 +560,12 @@ const entityTypes = {
 				}
 				if (entityValue) filter.value = entityValue
 
-				// Tenant isolation: no default tenant fallback
+				entityTypeFromDb = await entityTypeQueries.findUserEntityTypesAndEntities(filter, tenantCode)
+				if (entityTypeFromDb.length > 0) {
+					console.log(
+						`💾 EntityType ${modelName}:${entityValue} found in user tenant/org: ${entityTypeFromDb.length} results`
+					)
+				}
 			} catch (dbError) {
 				console.error(`Failed to fetch entityType ${modelName}:${entityValue} from database:`, dbError.message)
 				return null
@@ -639,8 +644,6 @@ const entityTypes = {
 						`💾 Entity types for model ${modelName} found in user tenant/org: ${userEntityTypes.length} results`
 					)
 				}
-
-				// Tenant isolation: no default tenant fallback
 			} catch (dbError) {
 				console.error(`Failed to fetch entity types for model ${modelName} from database:`, dbError.message)
 				return []
@@ -754,8 +757,11 @@ const forms = {
 					[tenantCode]
 				)
 
-				// Step 4: If not found with user codes and defaults exist, try with default codes
-				// Tenant isolation: no default tenant fallback
+				// Priority: user's org first, default org as fallback
+				formFromDb =
+					forms.find((f) => f.organization_code === orgCode) ||
+					forms.find((f) => f.organization_code === defaultOrgCode) ||
+					null
 			} catch (dbError) {
 				console.error(`Failed to fetch form ${type}:${subtype} from database:`, dbError.message)
 				return null
