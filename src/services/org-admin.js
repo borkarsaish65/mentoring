@@ -434,6 +434,13 @@ module.exports = class OrgAdminService {
 					responseCode: 'CLIENT_ERROR',
 				})
 
+			// Fetch entity type data using organization_code and entityValue
+			const filter = {
+				value: entityValue,
+				organization_code: defaults.orgCode,
+				allow_filtering: true,
+			}
+
 			let entityTypeDetails = await entityTypeQueries.findOneEntityType(filter, tenantCode)
 
 			// If no matching data found return failure response
