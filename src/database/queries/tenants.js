@@ -1,6 +1,7 @@
 'use strict'
 
 const Tenant = require('@database/models/index').Tenant
+const { UniqueConstraintError } = require('sequelize')
 
 module.exports = class TenantQueries {
 	static async findByCode(code) {
@@ -22,6 +23,10 @@ module.exports = class TenantQueries {
 			})
 			return { tenant: tenant.get({ plain: true }), created }
 		} catch (error) {
+			if (error instanceof UniqueConstraintError) {
+				const existing = await Tenant.findOne({ where: { code: data.code }, raw: true })
+				return { tenant: existing, created: false }
+			}
 			throw error
 		}
 	}
