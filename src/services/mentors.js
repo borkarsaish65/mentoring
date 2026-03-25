@@ -55,12 +55,8 @@ module.exports = class MentorsHelper {
 		try {
 			let requestedMentorExtension = false
 			if (id !== '' && isAMentor !== '' && roles !== '') {
-				// Try cache first, fallback to database
+				// Try cache first, fallback to direct query
 				requestedMentorExtension = await cacheHelper.mentor.get(tenantCode, id)
-
-				if (!requestedMentorExtension) {
-					requestedMentorExtension = await mentorQueries.getMentorExtension(id, [], false, tenantCode)
-				}
 
 				if (!requestedMentorExtension) {
 					return responses.failureResponse({
