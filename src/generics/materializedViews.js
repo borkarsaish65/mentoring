@@ -1,4 +1,5 @@
 'use strict'
+const crypto = require('crypto')
 const entityTypeQueries = require('@database/queries/entityType')
 const schedulerRequests = require('@requests/scheduler')
 const { sequelize } = require('@database/models/index')
@@ -674,15 +675,40 @@ const triggerPeriodicViewRefreshForAllTenants = async (modelName = null) => {
 	}
 }
 
+const getStableOffset = (tenantCode, modelName, interval) => {
+	if (!tenantCode || !modelName || !interval || Number(interval) <= 0) {
+		logger.error(
+			`[getStableOffset] Invalid params - tenantCode: ${tenantCode}, modelName: ${modelName}, interval: ${interval}`
+		)
+		return 0
+	}
+	const hash = crypto.createHash('md5').update(`${tenantCode}_${modelName}`).digest('hex')
+	return parseInt(hash.substring(0, 8), 16) % Number(interval)
+}
+
 const scheduleViewRefreshJob = (tenantCode, modelName, interval) => {
+	if (!tenantCode || !modelName) {
+		logger.error(
+			`[scheduleViewRefreshJob] Missing required params - tenantCode: ${tenantCode}, modelName: ${modelName}`
+		)
+		return
+	}
+	if (!interval || Number(interval) <= 0) {
+		logger.error(
+			`[scheduleViewRefreshJob] Invalid interval: ${interval} for tenant: ${tenantCode}, model: ${modelName}`
+		)
+		return
+	}
+
 	const jobId = `repeatable_view_job_${tenantCode}_${modelName}`
 	const jobName = `repeatable_view_job_${tenantCode}_${modelName}`
 	const encodedParams = encodeURIComponent(`${tenantCode}|${modelName}`)
 	const urlEndpoint = `/mentoring/v1/admin/triggerPeriodicViewRefreshInternal/${encodedParams}`
+	const offset = getStableOffset(tenantCode, modelName, interval)
 
 	schedulerRequests.createSchedulerJob(jobId, null, jobName, {}, urlEndpoint, 'get', {
 		jobId: jobId,
-		repeat: { every: Number(interval) },
+		repeat: { every: Number(interval), offset },
 		removeOnComplete: 50,
 		removeOnFail: 200,
 	})
