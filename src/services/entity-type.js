@@ -118,12 +118,13 @@ module.exports = class EntityHelper {
 
 			// Clear user caches since entity types affect user profiles
 			const updatedEntity = updatedEntityType[0]
-			await this._clearUserCachesForEntityTypeChange(
-				orgCode,
-				tenantCode,
-				updatedEntity.model_names ? updatedEntity.model_names[0] : null,
-				updatedEntity.value
-			)
+			const updatedModelNames = updatedEntity.model_names || []
+			for (const modelName of updatedModelNames) {
+				await this._clearUserCachesForEntityTypeChange(orgCode, tenantCode, modelName, updatedEntity.value)
+			}
+			if (updatedModelNames.length === 0) {
+				await this._clearUserCachesForEntityTypeChange(orgCode, tenantCode, null, updatedEntity.value)
+			}
 
 			return responses.successResponse({
 				statusCode: httpStatusCode.accepted,
@@ -289,12 +290,18 @@ module.exports = class EntityHelper {
 			}
 
 			// Clear cache for affected models before deletion
-			await this._clearUserCachesForEntityTypeChange(
-				organizationCode,
-				tenantCode,
-				entityToDelete.model_names ? entityToDelete.model_names[0] : null,
-				entityToDelete.value
-			)
+			const deleteModelNames = entityToDelete.model_names || []
+			for (const modelName of deleteModelNames) {
+				await this._clearUserCachesForEntityTypeChange(
+					organizationCode,
+					tenantCode,
+					modelName,
+					entityToDelete.value
+				)
+			}
+			if (deleteModelNames.length === 0) {
+				await this._clearUserCachesForEntityTypeChange(organizationCode, tenantCode, null, entityToDelete.value)
+			}
 
 			// SECOND: Delete from database
 			const deleteCount = await entityTypeQueries.deleteOneEntityType(id, organizationCode, tenantCode)
@@ -339,14 +346,6 @@ module.exports = class EntityHelper {
 					}
 				}
 			}
-
-			// Clear user caches since entity types affect user profiles
-			await this._clearUserCachesForEntityTypeChange(
-				organizationCode,
-				tenantCode,
-				entityToDelete.model_names ? entityToDelete.model_names[0] : null,
-				entityToDelete.value
-			)
 
 			return responses.successResponse({
 				statusCode: httpStatusCode.accepted,
