@@ -182,7 +182,6 @@ module.exports = class FormsHelper {
 				filter.organization_code = { [Op.in]: [orgCode, defaults.orgCode] }
 			}
 
-			// Tenant isolation: only use the current tenant
 			const forms = await formQueries.findFormsByFilter(filter, tenantCode)
 
 			if (!forms || forms.length === 0) {

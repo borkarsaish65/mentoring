@@ -52,12 +52,10 @@ module.exports = class ReportsHelper {
 				})
 			}
 
-			const reportType = reportTypes[0]
-
 			return responses.successResponse({
 				statusCode: httpStatusCode.created,
 				message: 'REPORT_TYPE_FETCHED_SUCCESSFULLY',
-				result: reportType,
+				result: reportTypes[0],
 			})
 		} catch (error) {
 			throw error
