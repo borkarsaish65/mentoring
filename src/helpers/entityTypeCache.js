@@ -34,13 +34,9 @@ async function getEntityTypesAndEntitiesWithCache(originalFilter, tenantCode, or
 				...originalFilter,
 				organization_code: orgCode,
 			}
-			const userResults = await entityTypeQueries.findUserEntityTypesAndEntities(
-				userFilter,
-				Array.isArray(tenantCode) ? tenantCode : [tenantCode]
-			)
+			const userResults = await entityTypeQueries.findUserEntityTypesAndEntities(userFilter, tenantCode)
 			let dbResult = userResults ? [...userResults] : []
 
-			// Tenant isolation: no default tenant fallback
 			return dbResult || []
 		}
 
@@ -118,12 +114,7 @@ async function getEntityTypesAndEntitiesWithCache(originalFilter, tenantCode, or
 				...originalFilter,
 				organization_code: orgCode,
 			}
-			dbResult = await entityTypeQueries.findUserEntityTypesAndEntities(
-				userFilter,
-				Array.isArray(tenantCode) ? tenantCode : [tenantCode]
-			)
-
-			// Tenant isolation: no default tenant fallback
+			dbResult = await entityTypeQueries.findUserEntityTypesAndEntities(userFilter, tenantCode)
 		} catch (dbError) {
 			console.error(`Failed to fetch entity types from database:`, dbError.message)
 			return []
@@ -156,10 +147,7 @@ async function getEntityTypesAndEntitiesWithCache(originalFilter, tenantCode, or
 				...originalFilter,
 				organization_code: orgCode,
 			}
-			return await entityTypeQueries.findUserEntityTypesAndEntities(
-				userFilter,
-				Array.isArray(tenantCode) ? tenantCode : [tenantCode]
-			)
+			return await entityTypeQueries.findUserEntityTypesAndEntities(userFilter, tenantCode)
 		} catch (fallbackError) {
 			console.error(`❌ Fallback database query also failed:`, fallbackError)
 			return []
@@ -256,13 +244,10 @@ async function getEntityTypesAndEntitiesForModel(modelName, tenantCode, orgCode,
 				model_names: { [Op.contains]: [modelName] },
 			}
 			// Handle both array and single value for tenantCode
-			const tenantCodesArray = Array.isArray(tenantCode) ? tenantCode : [tenantCode]
-			const userEntityTypes = await entityTypeQueries.findUserEntityTypesAndEntities(userFilter, tenantCodesArray)
+			const userEntityTypes = await entityTypeQueries.findUserEntityTypesAndEntities(userFilter, tenantCode)
 			if (userEntityTypes && userEntityTypes.length > 0) {
 				allEntityTypes.push(...userEntityTypes)
 			}
-
-			// Tenant isolation: no default tenant fallback
 		} catch (dbError) {
 			console.error(`Failed to fetch entity types for model ${modelName} from database:`, dbError.message)
 			return []
@@ -369,13 +354,8 @@ async function getEntityTypeByValue(modelName, entityValue, tenantCode, orgCode)
 			organization_code: orgCode,
 			model_names: { [Op.contains]: [modelName] },
 		}
-		let entityTypes = await entityTypeQueries.findUserEntityTypesAndEntities(
-			userFilter,
-			Array.isArray(tenantCode) ? tenantCode : [tenantCode]
-		)
+		let entityTypes = await entityTypeQueries.findUserEntityTypesAndEntities(userFilter, tenantCode)
 		found = entityTypes.length > 0 ? entityTypes[0] : null
-
-		// Tenant isolation: no default tenant fallback
 	} catch (dbError) {
 		console.error(`Failed to fetch entity type ${modelName}:${entityValue} from database:`, dbError.message)
 		return null

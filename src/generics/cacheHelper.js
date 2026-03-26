@@ -636,7 +636,7 @@ const entityTypes = {
 						organization_code: { [Op.in]: orgCandidates },
 						model_names: { [Op.contains]: [modelName] },
 					},
-					[tenantCode]
+					tenantCode
 				)
 				if (userEntityTypes && userEntityTypes.length > 0) {
 					entityTypes.push(...userEntityTypes)
@@ -754,7 +754,7 @@ const forms = {
 						sub_type: subtype,
 						organization_code: { [Op.in]: orgCandidates },
 					},
-					[tenantCode]
+					tenantCode
 				)
 
 				// Priority: user's org first, default org as fallback
@@ -1426,7 +1426,7 @@ const notificationTemplates = {
 					organization_code: orgCandidates,
 					tenant_code: tenantCode,
 					type: 'email',
-					status: 'active',
+					status: { [Op.iLike]: 'active' },
 				})
 
 				// Priority: user's org first, default org as fallback

@@ -3234,7 +3234,7 @@ module.exports = class SessionsHelper {
 				common.sessionModelName,
 				'mentor_organization_id',
 				[],
-				[tenantCode]
+				tenantCode
 			)
 
 			await Promise.all(
@@ -3909,7 +3909,6 @@ module.exports = class SessionsHelper {
 				organization_code: organizationCode,
 				created_by: userId,
 				tenant_code: tenantCode,
-				defaultTenantCode: '',
 				defaultOrganizationCode: defaults.orgCode,
 			}
 
@@ -4174,7 +4173,6 @@ module.exports = class SessionsHelper {
 					removedSessionsDetail,
 					{ [Op.in]: [mentor.organization_code, defaults.orgCode] },
 					tenantCode,
-					tenantCode,
 					mentor.organization_code
 				)
 
@@ -4212,7 +4210,6 @@ module.exports = class SessionsHelper {
 				await adminService.unenrollAndNotifySessionAttendees(
 					removedSessionsDetail,
 					{ [Op.in]: [mentor.organization_code] },
-					tenantCode,
 					tenantCode,
 					mentor.organization_code
 				)

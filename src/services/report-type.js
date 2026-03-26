@@ -42,8 +42,7 @@ module.exports = class ReportsHelper {
 				})
 			}
 
-			const tenantCodes = [tenantCode]
-			const reportTypes = await reportTypeQueries.findReportTypesByTitle(title, tenantCodes)
+			const reportTypes = await reportTypeQueries.findReportTypesByTitle(title, tenantCode)
 
 			if (!reportTypes || reportTypes.length === 0) {
 				return responses.failureResponse({

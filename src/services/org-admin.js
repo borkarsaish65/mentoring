@@ -150,9 +150,7 @@ module.exports = class OrgAdminService {
 
 			const isAttendeesNotified = await adminService.unenrollAndNotifySessionAttendees(
 				removedSessionsDetail,
-				mentorDetails.organization_id ? mentorDetails.organization_id : '',
 				{ [Op.in]: [bodyData.organization_code, defaults.orgCode] },
-				tenantCode,
 				tenantCode,
 				mentorDetails.organization_code
 			)
@@ -608,7 +606,6 @@ module.exports = class OrgAdminService {
 					await adminService.unenrollAndNotifySessionAttendees(
 						removedSessionsDetail,
 						{ [Op.in]: [orgCode, defaults.orgCode] },
-						tenantCode,
 						tenantCode,
 						orgCode
 					)

@@ -31,13 +31,13 @@ module.exports = class ReportTypeQueries {
 		}
 	}
 
-	static async findReportTypesByTitle(title, tenantCodes, options = {}) {
+	static async findReportTypesByTitle(title, tenantCode, options = {}) {
 		try {
 			const { where: optionsWhere = {}, ...rest } = options || {}
 			const where = {
 				...optionsWhere,
 				title: title,
-				tenant_code: { [Op.in]: tenantCodes },
+				tenant_code: tenantCode,
 			}
 
 			return await ReportType.findAll({

@@ -373,7 +373,7 @@ module.exports = class EntityHelper {
 		modelName,
 		orgCodeKey,
 		entityType,
-		tenantCodes = []
+		tenantCode
 	) {
 		try {
 			const defaults = await getDefaults()
@@ -394,21 +394,16 @@ module.exports = class EntityHelper {
 				orgCodes.push(defaults.orgCode)
 			}
 
-			// Tenant isolation: only use the provided tenant codes, no default tenant fallback
-
 			const additionalFilters = {
 				has_entities: true,
 			}
 			if (entityType && entityType.length > 0) {
 				additionalFilters.value = entityType
 			}
-			// get entityTypes with entities data using cache
-			// Use first tenant/org as user context - cache helper handles defaults internally
-			const primaryTenantCode = tenantCodes[0]
 			const primaryOrgCode = orgCodes[0] || defaults.orgCode
 			let entityTypesWithEntities = await entityTypeCache.getEntityTypesAndEntitiesForModel(
 				Array.isArray(modelName) ? modelName[0] : modelName,
-				primaryTenantCode,
+				tenantCode,
 				primaryOrgCode,
 				additionalFilters
 			)

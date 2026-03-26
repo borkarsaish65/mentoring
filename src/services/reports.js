@@ -39,7 +39,6 @@ module.exports = class ReportsHelper {
 			const report_filter = reportFilter === '' ? {} : { report_filter: reportFilter }
 
 			let organization_codes = []
-			let tenantCodes = []
 
 			const defaults = await getDefaults()
 			if (!defaults.orgCode)
@@ -64,7 +63,6 @@ module.exports = class ReportsHelper {
 
 			if (organizations.success && organizations.result) {
 				organization_codes = [...organizations.result.organizationCodes]
-				tenantCodes = [...organizations.result.tenantCodes]
 
 				if (organization_codes.length > 0) {
 					const defaults = await getDefaults()
@@ -85,8 +83,7 @@ module.exports = class ReportsHelper {
 						defaults.orgCode ? defaults.orgCode : '',
 						modelName,
 						report_filter,
-						tenantCodes,
-						''
+						tenantCode
 					)
 
 					if (getEntityTypesWithEntities.success && getEntityTypesWithEntities.result) {
@@ -196,7 +193,7 @@ module.exports = class ReportsHelper {
 			// Validate report permissions
 			const reportPermission = await reportMappingQueries.findReportRoleMappingByReportCode(
 				reportCode,
-				[tenantCode],
+				tenantCode,
 				[defaults.orgCode, orgCode]
 			)
 			if (!reportPermission || reportPermission.dataValues.role_title !== reportRole) {
@@ -451,8 +448,7 @@ module.exports = class ReportsHelper {
 					defaults.orgCode ? defaults.orgCode : '',
 					sessionModelName,
 					{},
-					tenantCode,
-					''
+					tenantCode
 				)
 
 				if (reportDataResult.report_type === common.REPORT_TABLE && resultWithoutPagination) {
@@ -486,8 +482,7 @@ module.exports = class ReportsHelper {
 							defaults.orgCode ? defaults.orgCode : '',
 							sessionModelName,
 							{},
-							tenantCode,
-							''
+							tenantCode
 						)
 
 						const filtersEntity = entityTypeFilters.result.reduce((acc, item) => {
@@ -516,8 +511,7 @@ module.exports = class ReportsHelper {
 							defaults.orgCode ? defaults.orgCode : '',
 							sessionModelName,
 							{},
-							tenantCode,
-							''
+							tenantCode
 						)
 
 						// Process the data
