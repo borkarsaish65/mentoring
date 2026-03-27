@@ -46,7 +46,7 @@ module.exports = class UserEntityData {
 			// Only apply org filter when a real value is provided (skip empty object {})
 			const hasOrgFilter =
 				orgCodes &&
-				(Array.isArray(orgCodes) || typeof orgCodes !== 'object' || Object.keys(orgCodes).length > 0)
+				(Array.isArray(orgCodes) || typeof orgCodes !== 'object' || Reflect.ownKeys(orgCodes).length > 0)
 			if (hasOrgFilter) {
 				whereClause.organization_code = orgCodes
 			}
