@@ -402,10 +402,9 @@ module.exports = class AdminService {
 						false,
 						true,
 						orgCodes,
-						userTenantCode,
 						organizationCode,
 						userTenantCode
-					) // (sessionsDetails, received, sent, orgCodes, tenantCode)
+					) // (sessionsDetails, received, sent, orgCodes, orgCode, tenantCode)
 				}
 
 				if (isMentor && receivedSessions.length > 0) {
@@ -414,10 +413,9 @@ module.exports = class AdminService {
 						true,
 						false,
 						orgCodes,
-						userTenantCode,
 						organizationCode,
 						userTenantCode
-					) // (sessionsDetails, received, sent, orgCodes, tenantCode)
+					) // (sessionsDetails, received, sent, orgCodes, orgCode, tenantCode)
 				}
 			}
 
