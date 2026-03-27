@@ -60,7 +60,7 @@ exports.findOne = async (filter, tenantCode, options = {}) => {
 
 exports.findById = async (id, tenantCode) => {
 	try {
-		return await Session.findOne({ where: { id, tenant_code: tenantCode } })
+		return await Session.findOne({ where: { id, tenant_code: tenantCode }, raw: true })
 	} catch (error) {
 		return error
 	}

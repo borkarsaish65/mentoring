@@ -103,7 +103,7 @@ module.exports = class FormsHelper {
 					responseCode: 'CLIENT_ERROR',
 				})
 			}
-			await KafkaProducer.clearInternalCache('formVersion')
+			//await KafkaProducer.clearInternalCache('formVersion')
 
 			// Cache invalidation after successful update: just delete, don't re-set
 			try {
