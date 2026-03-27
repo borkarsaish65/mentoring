@@ -211,7 +211,12 @@ const createIndexesOnAllowFilteringFields = async (model, modelEntityTypes, fiel
 const createViewGINIndexOnSearch = async (model, config, fields, tenantCode) => {
 	try {
 		const modelName = model.name
-		const searchType = modelName === 'Session' ? 'session' : modelName === 'MentorExtension' ? 'mentor' : null
+		const searchType =
+			modelName === 'Session'
+				? 'session'
+				: modelName === 'UserExtension' || modelName === 'MentorExtension'
+				? 'mentor'
+				: null
 
 		if (!searchType) {
 			return
