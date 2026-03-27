@@ -118,12 +118,8 @@ module.exports = class EntityHelper {
 
 			// Clear user caches since entity types affect user profiles
 			const updatedEntity = updatedEntityType[0]
-			const updatedModelNames = updatedEntity.model_names || []
-			for (const modelName of updatedModelNames) {
+			for (const modelName of updatedEntity.model_names) {
 				await this._clearUserCachesForEntityTypeChange(orgCode, tenantCode, modelName, updatedEntity.value)
-			}
-			if (updatedModelNames.length === 0) {
-				await this._clearUserCachesForEntityTypeChange(orgCode, tenantCode, null, updatedEntity.value)
 			}
 
 			return responses.successResponse({
@@ -289,20 +285,6 @@ module.exports = class EntityHelper {
 				})
 			}
 
-			// Clear cache for affected models before deletion
-			const deleteModelNames = entityToDelete.model_names || []
-			for (const modelName of deleteModelNames) {
-				await this._clearUserCachesForEntityTypeChange(
-					organizationCode,
-					tenantCode,
-					modelName,
-					entityToDelete.value
-				)
-			}
-			if (deleteModelNames.length === 0) {
-				await this._clearUserCachesForEntityTypeChange(organizationCode, tenantCode, null, entityToDelete.value)
-			}
-
 			// SECOND: Delete from database
 			const deleteCount = await entityTypeQueries.deleteOneEntityType(id, organizationCode, tenantCode)
 			if (deleteCount === 0) {
@@ -311,6 +293,16 @@ module.exports = class EntityHelper {
 					statusCode: httpStatusCode.bad_request,
 					responseCode: 'CLIENT_ERROR',
 				})
+			}
+
+			// Clear user caches after successful deletion
+			for (const modelName of entityToDelete.model_names) {
+				await this._clearUserCachesForEntityTypeChange(
+					organizationCode,
+					tenantCode,
+					modelName,
+					entityToDelete.value
+				)
 			}
 
 			// THIRD: Remove individual entity type from cache

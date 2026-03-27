@@ -696,7 +696,7 @@ module.exports = class AdminService {
 					try {
 						await cacheHelper.mentee.delete(tenantCode, menteeData.mentee_id)
 					} catch (cacheError) {
-						console.error(`Cache deletion failed for mentee ${menteeId}:`, cacheError)
+						console.error(`Cache deletion failed for mentee ${menteeData.mentee_id}:`, cacheError)
 					}
 				}
 			}
