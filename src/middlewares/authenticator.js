@@ -118,7 +118,7 @@ module.exports = async function (req, res, next) {
 					if (key === 'organization_code') {
 						let orgId = getOrgId(req.headers, decodedToken, orgIdPath)
 
-						// Now extract roles using fully dynamic path
+						// Now extract organization_code using fully dynamic path
 						const rolePathTemplate = pathStr
 
 						decodedToken[organizationKey] = orgId
