@@ -80,6 +80,12 @@ module.exports = async function (req, res, next) {
 				...decodedToken.data,
 			}
 		} else {
+			// Resolve organization_id path once — used by both 'roles' and 'organization_code' blocks
+			const orgIdPath =
+				typeof configData[organizationKey] === 'object'
+					? configData[organizationKey].path
+					: configData[organizationKey]
+
 			// Iterate through each key in the config object
 			for (let key in configData) {
 				if (configData.hasOwnProperty(key)) {
@@ -97,10 +103,6 @@ module.exports = async function (req, res, next) {
 						continue
 					}
 					if (key === 'roles') {
-						const orgIdPath =
-							typeof configData[organizationKey] === 'object'
-								? configData[organizationKey].path
-								: configData[organizationKey]
 						let orgId = getOrgId(req.headers, decodedToken, orgIdPath)
 
 						// Now extract roles using fully dynamic path
@@ -114,10 +116,6 @@ module.exports = async function (req, res, next) {
 					}
 
 					if (key === 'organization_code') {
-						const orgIdPath =
-							typeof configData[organizationKey] === 'object'
-								? configData[organizationKey].path
-								: configData[organizationKey]
 						let orgId = getOrgId(req.headers, decodedToken, orgIdPath)
 
 						// Now extract roles using fully dynamic path
