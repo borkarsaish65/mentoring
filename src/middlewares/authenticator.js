@@ -83,36 +83,49 @@ module.exports = async function (req, res, next) {
 			// Iterate through each key in the config object
 			for (let key in configData) {
 				if (configData.hasOwnProperty(key)) {
-					let keyValue = getNestedValue(decodedToken, configData[key])
+					const configEntry = configData[key]
+					const pathStr = typeof configEntry === 'object' ? configEntry.path : configEntry
+					const defaultVal = typeof configEntry === 'object' ? configEntry.default : undefined
+
+					let keyValue = getNestedValue(decodedToken, pathStr) ?? defaultVal
 					if (key === 'id') {
 						keyValue = keyValue?.toString()
 					}
 					if (key === organizationKey) {
-						req.decodedToken[key] = getOrgId(req.headers, decodedToken, configData[key])
+						const orgId = getOrgId(req.headers, decodedToken, pathStr)
+						req.decodedToken[key] = orgId
 						continue
 					}
 					if (key === 'roles') {
-						let orgId = getOrgId(req.headers, decodedToken, configData[organizationKey])
+						const orgIdPath =
+							typeof configData[organizationKey] === 'object'
+								? configData[organizationKey].path
+								: configData[organizationKey]
+						let orgId = getOrgId(req.headers, decodedToken, orgIdPath)
 
 						// Now extract roles using fully dynamic path
-						const rolePathTemplate = configData['roles']
+						const rolePathTemplate = pathStr
 
 						decodedToken[organizationKey] = orgId
 						const resolvedRolePath = resolvePathTemplate(rolePathTemplate, decodedToken)
-						const roles = getNestedValue(decodedToken, resolvedRolePath) || []
+						const roles = getNestedValue(decodedToken, resolvedRolePath) ?? defaultVal ?? []
 						req.decodedToken[key] = roles
 						continue
 					}
 
 					if (key === 'organization_code') {
-						let orgId = getOrgId(req.headers, decodedToken, configData[organizationKey])
+						const orgIdPath =
+							typeof configData[organizationKey] === 'object'
+								? configData[organizationKey].path
+								: configData[organizationKey]
+						let orgId = getOrgId(req.headers, decodedToken, orgIdPath)
 
 						// Now extract roles using fully dynamic path
-						const rolePathTemplate = configData['organization_code']
+						const rolePathTemplate = pathStr
 
 						decodedToken[organizationKey] = orgId
 						const resolvedOrgPath = resolvePathTemplate(rolePathTemplate, decodedToken)
-						const org = getNestedValue(decodedToken, resolvedOrgPath) || []
+						const org = getNestedValue(decodedToken, resolvedOrgPath) ?? defaultVal ?? []
 						req.decodedToken[key] = org
 						continue
 					}
