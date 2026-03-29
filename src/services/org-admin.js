@@ -387,37 +387,13 @@ module.exports = class OrgAdminService {
 	 * @name 							- inheritEntityType
 	 * @param {String} entityValue 		- Entity type value
 	 * @param {String} entityLabel 		- Entity type label
-	 * @param {Integer} userOrgId 		- User org id
+	 * @param {String} userOrgCode 		- User org code
 	 * @param {Object} decodedToken 	- User token details
 	 * @returns {Promise<Object>} 		- A Promise that resolves to a response object.
 	 */
 
-	static async inheritEntityType(entityValue, entityLabel, userOrgId, decodedToken, tenantCode) {
+	static async inheritEntityType(entityValue, entityLabel, userOrgCode, decodedToken, tenantCode) {
 		try {
-			// Get default organisation details
-			let defaultOrgDetails = await userRequests.fetchOrgDetails({
-				organizationCode: process.env.DEFAULT_ORGANISATION_CODE,
-			})
-
-			let defaultOrgId
-			if (defaultOrgDetails.success && defaultOrgDetails.data && defaultOrgDetails.data.result) {
-				defaultOrgId = String(defaultOrgDetails.data.result.id)
-			} else {
-				return responses.failureResponse({
-					message: 'DEFAULT_ORG_ID_NOT_SET',
-					statusCode: httpStatusCode.bad_request,
-					responseCode: 'CLIENT_ERROR',
-				})
-			}
-
-			if (String(defaultOrgId) === String(userOrgId)) {
-				return responses.failureResponse({
-					message: 'USER_IS_FROM_DEFAULT_ORG',
-					statusCode: httpStatusCode.bad_request,
-					responseCode: 'CLIENT_ERROR',
-				})
-			}
-
 			const defaults = await getDefaults()
 			if (!defaults.orgCode)
 				return responses.failureResponse({
@@ -431,6 +407,14 @@ module.exports = class OrgAdminService {
 					statusCode: httpStatusCode.bad_request,
 					responseCode: 'CLIENT_ERROR',
 				})
+
+			if (defaults.orgCode === userOrgCode) {
+				return responses.failureResponse({
+					message: 'USER_IS_FROM_DEFAULT_ORG',
+					statusCode: httpStatusCode.bad_request,
+					responseCode: 'CLIENT_ERROR',
+				})
+			}
 
 			// Fetch entity type data using organization_code and entityValue
 			const filter = {
