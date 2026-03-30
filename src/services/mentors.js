@@ -107,7 +107,7 @@ module.exports = class MentorsHelper {
 				requesterId: menteeUserId,
 				roles: roles,
 				requesterOrganizationCode: orgCode,
-				tenantCode: { [Op.in]: [tenantCode, defaults.tenantCode] },
+				tenantCode: tenantCode,
 			})
 
 			if (defaultRuleFilter.error && defaultRuleFilter.error.missingField) {
@@ -162,7 +162,7 @@ module.exports = class MentorsHelper {
 				common.sessionModelName,
 				'mentor_organization_id',
 				[],
-				[tenantCode]
+				tenantCode
 			)
 
 			upcomingSessions.data = await this.sessionMentorDetails(upcomingSessions.data, tenantCode)
@@ -1377,7 +1377,7 @@ module.exports = class MentorsHelper {
 				requesterId: queryParams.menteeId ? queryParams.menteeId : userId,
 				roles: roles,
 				requesterOrganizationCode: orgCode,
-				tenantCode: { [Op.in]: [tenantCode, defaults.tenantCode] },
+				tenantCode: tenantCode,
 			})
 
 			if (defaultRuleFilter.error && defaultRuleFilter.error.missingField) {
@@ -1518,7 +1518,7 @@ module.exports = class MentorsHelper {
 					userExtensionsModelName, // Use UserExtension model name for entity processing
 					'organization_code',
 					[], // Empty array means process ALL entity types for this model
-					[tenantCode]
+					tenantCode
 				)
 			}
 
@@ -1754,7 +1754,7 @@ module.exports = class MentorsHelper {
 				common.sessionModelName,
 				'mentor_organization_id',
 				[],
-				[tenantCode]
+				tenantCode
 			)
 
 			return responses.successResponse({

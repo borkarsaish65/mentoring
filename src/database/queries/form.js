@@ -33,11 +33,11 @@ module.exports = class FormsData {
 		}
 	}
 
-	static async findFormsByFilter(filter, tenantCodes, options = {}) {
+	static async findFormsByFilter(filter, tenantCode, options = {}) {
 		try {
 			const whereClause = {
 				...filter,
-				tenant_code: { [Op.in]: tenantCodes },
+				tenant_code: tenantCode,
 			}
 
 			// Safe merge: tenant filtering cannot be overridden by options.where

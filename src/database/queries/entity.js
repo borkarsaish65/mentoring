@@ -126,7 +126,7 @@ module.exports = class UserEntityData {
 			let whereClause = {
 				...filters,
 				// MANDATORY: Include tenant_code filtering
-				tenant_code: Array.isArray(tenantCode) ? { [Op.in]: tenantCode } : tenantCode,
+				tenant_code: tenantCode,
 			}
 
 			if (search) {
