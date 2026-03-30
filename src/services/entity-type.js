@@ -296,6 +296,7 @@ module.exports = class EntityHelper {
 			}
 
 			// SECOND: Delete from database
+			const isDefaultOrg = organizationCode === process.env.DEFAULT_ORGANISATION_CODE
 			const deleteCount = await entityTypeQueries.deleteOneEntityType(id, organizationCode, tenantCode)
 			if (deleteCount === 0) {
 				return responses.failureResponse({
@@ -311,7 +312,8 @@ module.exports = class EntityHelper {
 					organizationCode,
 					tenantCode,
 					modelName,
-					entityToDelete.value
+					entityToDelete.value,
+					isDefaultOrg
 				)
 			}
 
