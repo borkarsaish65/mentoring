@@ -369,6 +369,16 @@ const sessions = {
 		return del(cacheKey, { useInternal })
 	},
 
+	async deleteAll(tenantCode, orgCode = null) {
+		const pattern = orgCode
+			? `tenant:${tenantCode}:org:${orgCode}:sessions:*`
+			: `tenant:${tenantCode}:org:*:sessions:*`
+		console.log(`[SessionCache] deleteAll - scanning and deleting pattern: ${pattern}`)
+		const result = await scanAndDelete(pattern)
+		console.log(`[SessionCache] deleteAll - deleted ${result} key(s)`)
+		return result
+	},
+
 	async reset(tenantCode, sessionId, sessionData, customTtl = null) {
 		return this.set(tenantCode, sessionId, sessionData, customTtl)
 	},
