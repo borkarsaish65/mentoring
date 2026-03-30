@@ -437,7 +437,7 @@ module.exports = class OrgAdminService {
 			// Build data for inheriting entityType
 			entityTypeDetails.parent_id = entityTypeDetails.id
 			entityTypeDetails.label = entityLabel
-			entityTypeDetails.organization_id = userOrgId
+			entityTypeDetails.organization_id = decodedToken.organization_id
 			entityTypeDetails.organization_code = decodedToken.organization_code
 			entityTypeDetails.created_by = decodedToken.id
 			entityTypeDetails.updated_by = decodedToken.id
