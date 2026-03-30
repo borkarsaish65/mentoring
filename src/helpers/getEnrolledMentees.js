@@ -76,7 +76,7 @@ exports.getEnrolledMentees = async (sessionId, queryParams, tenantCode) => {
 			[modelName],
 			'organization_id',
 			[],
-			[tenantCode]
+			tenantCode
 		)
 
 		// Check if processing actually returned processed data or error

@@ -30,7 +30,7 @@ module.exports = class DefaultRuleHelper {
 	 * The object contains a boolean `isValid` indicating if the validation passed and an array `errors` with the validation errors if any.
 	 */
 
-	static async validateFields(orgCodes, bodyData, tenantCodes) {
+	static async validateFields(orgCodes, bodyData, tenantCode) {
 		const isSessionType =
 			bodyData.type === common.DEFAULT_RULES.SESSION_TYPE && !bodyData.is_target_from_sessions_mentor
 		const modelNamePromise = isSessionType ? sessionQueries.getModelName() : mentorExtensionQueries.getModelName()
@@ -40,14 +40,14 @@ module.exports = class DefaultRuleHelper {
 		const [modelName, mentorModelName] = await Promise.all([modelNamePromise, mentorModelNamePromise])
 
 		const validFieldsPromise = Promise.all([
-			entityTypeQueries.findAllEntityTypes(orgCodes, tenantCodes, ['id', 'data_type'], {
+			entityTypeQueries.findAllEntityTypes(orgCodes, tenantCode, ['id', 'data_type'], {
 				status: common.ACTIVE_STATUS,
 				value: bodyData.target_field,
 				model_names: { [Op.contains]: [modelName] },
 				required: true,
 				allow_filtering: true,
 			}),
-			entityTypeQueries.findAllEntityTypes(orgCodes, tenantCodes, ['id', 'data_type'], {
+			entityTypeQueries.findAllEntityTypes(orgCodes, tenantCode, ['id', 'data_type'], {
 				status: common.ACTIVE_STATUS,
 				value: bodyData.requester_field,
 				model_names: { [Op.contains]: [mentorModelName] },

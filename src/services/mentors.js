@@ -162,7 +162,7 @@ module.exports = class MentorsHelper {
 				common.sessionModelName,
 				'mentor_organization_id',
 				[],
-				[tenantCode]
+				tenantCode
 			)
 
 			upcomingSessions.data = await this.sessionMentorDetails(upcomingSessions.data, tenantCode)
@@ -1518,7 +1518,7 @@ module.exports = class MentorsHelper {
 					userExtensionsModelName, // Use UserExtension model name for entity processing
 					'organization_code',
 					[], // Empty array means process ALL entity types for this model
-					[tenantCode]
+					tenantCode
 				)
 			}
 
@@ -1754,7 +1754,7 @@ module.exports = class MentorsHelper {
 				common.sessionModelName,
 				'mentor_organization_id',
 				[],
-				[tenantCode]
+				tenantCode
 			)
 
 			return responses.successResponse({

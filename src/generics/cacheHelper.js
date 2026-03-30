@@ -13,6 +13,7 @@ const notificationTemplateQueries = require('@database/queries/notificationTempl
 const sessionQueries = require('@database/queries/sessions')
 const permissionQueries = require('@database/queries/permissions')
 const rolePermissionMappingQueries = require('@database/queries/role-permission-mapping')
+const { getDefaults } = require('@helpers/getDefaultOrgId')
 const kafkaCommunication = require('@generics/kafka-communication')
 // Removed SessionsHelper import to avoid circular dependency
 const formQueries = require('@database/queries/form')
@@ -636,7 +637,7 @@ const entityTypes = {
 						organization_code: { [Op.in]: orgCandidates },
 						model_names: { [Op.contains]: [modelName] },
 					},
-					[tenantCode]
+					tenantCode
 				)
 				if (userEntityTypes && userEntityTypes.length > 0) {
 					entityTypes.push(...userEntityTypes)
@@ -754,7 +755,7 @@ const forms = {
 						sub_type: subtype,
 						organization_code: { [Op.in]: orgCandidates },
 					},
-					[tenantCode]
+					tenantCode
 				)
 
 				// Priority: user's org first, default org as fallback
@@ -1407,28 +1408,28 @@ const notificationTemplates = {
 				return cachedTemplate
 			}
 
-			// Step 2: Cache miss - query database
-			// Fetch both user org and default org templates in one query, then prioritize
+			// Step 2: Get defaults internally for database query
+			let defaults = null
+			try {
+				defaults = await getDefaults()
+			} catch (error) {
+				console.error('Failed to get defaults for notification template cache:', error.message)
+				// Fallback defaults from environment variables
+				defaults = {
+					orgCode: process.env.DEFAULT_ORGANISATION_CODE || 'default_code',
+					tenantCode: process.env.DEFAULT_TENANT_CODE || 'default',
+				}
+			}
 
+			// Step 3: Cache miss - query database with header/footer injection
+			// Uses findOneEmailTemplate so email_header (logo) and email_footer are composed into body
 			let templateFromDb = null
 			try {
-				const defaultOrgCode = process.env.DEFAULT_ORGANISATION_CODE
-				const orgCandidates = [orgCode]
-				if (defaultOrgCode && defaultOrgCode !== orgCode) orgCandidates.push(defaultOrgCode)
-
-				const templates = await notificationTemplateQueries.findTemplatesByFilter({
-					code: templateCode,
-					organization_code: orgCandidates,
-					tenant_code: tenantCode,
-					type: 'email',
-					status: 'active',
-				})
-
-				// Priority: user's org first, default org as fallback
-				templateFromDb =
-					templates.find((t) => t.organization_code === orgCode) ||
-					templates.find((t) => t.organization_code === defaultOrgCode) ||
-					null
+				templateFromDb = await notificationTemplateQueries.findOneEmailTemplate(
+					templateCode,
+					[orgCode, defaults.orgCode],
+					tenantCode
+				)
 
 				if (templateFromDb) {
 					console.log(

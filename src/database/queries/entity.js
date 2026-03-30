@@ -126,7 +126,7 @@ module.exports = class UserEntityData {
 			let whereClause = {
 				...filters,
 				// MANDATORY: Include tenant_code filtering
-				tenant_code: Array.isArray(tenantCode) ? { [Op.in]: tenantCode } : tenantCode,
+				tenant_code: tenantCode,
 			}
 
 			if (search) {
@@ -156,6 +156,21 @@ module.exports = class UserEntityData {
 					['created_at', 'DESC'],
 					['id', 'ASC'],
 				],
+			})
+		} catch (error) {
+			throw error
+		}
+	}
+
+	static async bulkCreate(records, tenantCode, options = {}) {
+		try {
+			const dataWithTenant = records.map((item) => ({
+				...item,
+				tenant_code: tenantCode,
+			}))
+			return await Entity.bulkCreate(dataWithTenant, {
+				ignoreDuplicates: true,
+				...options,
 			})
 		} catch (error) {
 			throw error

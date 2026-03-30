@@ -20,7 +20,6 @@ module.exports = class NotificationTemplateHelper {
 			const template = await notificationTemplateQueries.findOne(
 				{
 					code: bodyData.code,
-					tenant_code: tenantCode,
 					organization_code: tokenInformation.organization_code,
 				},
 				tenantCode
@@ -312,12 +311,8 @@ module.exports = class NotificationTemplateHelper {
 				return null
 			}
 
-			// Business logic: Prefer current tenant and org over default
-			let selectedTemplate =
-				templateData.find((t) => t.organization_code === orgCode && t.tenant_code === tenantCode) ||
-				templateData.find((t) => t.organization_code === orgCode) ||
-				templateData.find((t) => t.tenant_code === tenantCode) ||
-				templateData[0]
+			// Business logic: Prefer user's org template over default org template
+			let selectedTemplate = templateData.find((t) => t.organization_code === orgCode) || templateData[0]
 
 			// Business logic: Compose template with header and footer
 			if (selectedTemplate && selectedTemplate.email_header) {
