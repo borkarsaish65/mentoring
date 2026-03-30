@@ -112,7 +112,7 @@ module.exports = class EntityHelper {
 						if (isDefaultOrg) {
 							// Default org update: other orgs may have cached this entity type via fallback
 							// under their own org key — sweep all of them
-							await cacheHelper.entityTypes.deleteAcrossAllOrgs(
+							await cacheHelper.entityTypes.deleteEntityTypesAcrossAllOrgs(
 								tenantCode,
 								modelName,
 								originalEntity.value

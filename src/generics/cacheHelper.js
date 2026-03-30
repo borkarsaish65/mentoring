@@ -616,7 +616,7 @@ const entityTypes = {
 	 * Used when the default org updates an entity type — other orgs may have cached
 	 * the default org's data under their own org key via fallback logic.
 	 */
-	async deleteAcrossAllOrgs(tenantCode, modelName, entityValue) {
+	async deleteEntityTypesAcrossAllOrgs(tenantCode, modelName, entityValue) {
 		const pattern = `tenant:${tenantCode}:org:*:entityTypes:model:${modelName}:${entityValue}`
 		const result = await scanAndDelete(pattern)
 		return result
