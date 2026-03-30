@@ -110,7 +110,7 @@ module.exports = async function (req, res, next) {
 
 						decodedToken[organizationKey] = orgId
 						const resolvedRolePath = resolvePathTemplate(rolePathTemplate, decodedToken)
-						const roles = getNestedValue(decodedToken, resolvedRolePath) ?? defaultVal ?? []
+						const roles = [...(getNestedValue(decodedToken, resolvedRolePath) ?? []), ...(defaultVal ?? [])]
 						req.decodedToken[key] = roles
 						continue
 					}
