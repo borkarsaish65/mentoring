@@ -39,6 +39,17 @@ module.exports = class NotificationTemplateHelper {
 
 			const createdNotification = await notificationTemplateQueries.create(bodyData, tenantCode)
 
+			// Invalidate cache so stale fallback (default org) is not served
+			try {
+				await cacheHelper.notificationTemplates.delete(
+					tenantCode,
+					tokenInformation.organization_code,
+					bodyData.code
+				)
+			} catch (cacheError) {
+				console.error('❌ Failed to invalidate notification template cache:', cacheError)
+			}
+
 			return responses.successResponse({
 				statusCode: httpStatusCode.created,
 				message: 'NOTIFICATION_TEMPLATE_CREATED_SUCCESSFULLY',
@@ -220,30 +231,6 @@ module.exports = class NotificationTemplateHelper {
 			}
 
 			const notificationTemplates = await notificationTemplateQueries.findTemplatesByFilter(filter)
-
-			// Cache each individual template for future single reads
-			if (notificationTemplates && notificationTemplates.length > 0) {
-				try {
-					console.log(`Caching ${notificationTemplates.length} notification templates individually...`)
-					const cachePromises = []
-
-					for (const template of notificationTemplates) {
-						if (template.code) {
-							const cachePromise = cacheHelper.notificationTemplates.set(
-								tenantCode,
-								organizationCode,
-								template.code,
-								template
-							)
-							cachePromises.push(cachePromise)
-						}
-					}
-
-					await Promise.all(cachePromises)
-				} catch (cacheError) {
-					console.warn('Failed to cache individual notification templates:', cacheError)
-				}
-			}
 
 			return responses.successResponse({
 				statusCode: httpStatusCode.ok,
