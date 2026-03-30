@@ -1483,6 +1483,17 @@ const notificationTemplates = {
 		const cacheKey = await buildKey({ tenantCode, orgCode: orgCode, ns: 'notificationTemplates', id: compositeId })
 		return del(cacheKey, { useInternal })
 	},
+
+	/**
+	 * Invalidate a specific notification template across ALL orgs in a tenant.
+	 * Used when the default org updates a template — other orgs may have cached
+	 * the default org's template under their own org key via fallback logic.
+	 */
+	async deleteNotificationsAcrossAllOrgs(tenantCode, templateCode) {
+		const pattern = `tenant:${tenantCode}:org:*:notificationTemplates:templateCode:${templateCode}`
+		const result = await scanAndDelete(pattern)
+		return result
+	},
 }
 
 /**

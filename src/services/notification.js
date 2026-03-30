@@ -102,20 +102,29 @@ module.exports = class NotificationTemplateHelper {
 			// Delete cache for both old code and new code (in case code was changed)
 			const oldCode = existingTemplate?.code
 			const newCode = bodyData.code
+			const isDefaultOrg = tokenInformation.organization_code === process.env.DEFAULT_ORGANISATION_CODE
 			try {
 				if (oldCode) {
-					await cacheHelper.notificationTemplates.delete(
-						tenantCode,
-						tokenInformation.organization_code,
-						oldCode
-					)
+					if (isDefaultOrg) {
+						await cacheHelper.notificationTemplates.deleteNotificationsAcrossAllOrgs(tenantCode, oldCode)
+					} else {
+						await cacheHelper.notificationTemplates.delete(
+							tenantCode,
+							tokenInformation.organization_code,
+							oldCode
+						)
+					}
 				}
 				if (newCode && newCode !== oldCode) {
-					await cacheHelper.notificationTemplates.delete(
-						tenantCode,
-						tokenInformation.organization_code,
-						newCode
-					)
+					if (isDefaultOrg) {
+						await cacheHelper.notificationTemplates.deleteNotificationsAcrossAllOrgs(tenantCode, newCode)
+					} else {
+						await cacheHelper.notificationTemplates.delete(
+							tenantCode,
+							tokenInformation.organization_code,
+							newCode
+						)
+					}
 				}
 			} catch (cacheError) {
 				console.error(`❌ Failed to update notification template cache:`, cacheError)
