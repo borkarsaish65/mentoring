@@ -102,11 +102,15 @@ module.exports = class NotificationTemplateHelper {
 
 			try {
 				if (oldCode) {
-					await cacheHelper.notificationTemplates.delete(
-						tenantCode,
-						tokenInformation.organization_code,
-						oldCode
-					)
+					if (isDefaultOrg) {
+						await cacheHelper.notificationTemplates.deleteNotificationsAcrossAllOrgs(tenantCode, oldCode)
+					} else {
+						await cacheHelper.notificationTemplates.delete(
+							tenantCode,
+							tokenInformation.organization_code,
+							oldCode
+						)
+					}
 				}
 			} catch (cacheError) {
 				console.error(`❌ Failed to update notification template cache:`, cacheError)

@@ -819,6 +819,17 @@ const forms = {
 	async evictAll(tenantCode, orgCode) {
 		return await evictNamespace({ tenantCode, orgCode: orgCode, ns: 'forms' })
 	},
+
+	/**
+	 * Invalidate a specific form across ALL orgs in a tenant.
+	 * Used when the default org updates a form — other orgs may have cached
+	 * the default org's form data under their own org key via fallback logic.
+	 */
+	async deleteFormsAcrossAllOrgs(tenantCode, type, subtype) {
+		const pattern = `tenant:${tenantCode}:org:*:forms:${type}:${subtype}`
+		const result = await scanAndDelete(pattern)
+		return result
+	},
 }
 
 /**
@@ -1477,6 +1488,17 @@ const notificationTemplates = {
 		const useInternal = nsUseInternal('notificationTemplates')
 		const cacheKey = await buildKey({ tenantCode, orgCode: orgCode, ns: 'notificationTemplates', id: compositeId })
 		return del(cacheKey, { useInternal })
+	},
+
+	/**
+	 * Invalidate a specific notification template across ALL orgs in a tenant.
+	 * Used when the default org updates a template — other orgs may have cached
+	 * the default org's template under their own org key via fallback logic.
+	 */
+	async deleteNotificationsAcrossAllOrgs(tenantCode, templateCode) {
+		const pattern = `tenant:${tenantCode}:org:*:notificationTemplates:templateCode:${templateCode}`
+		const result = await scanAndDelete(pattern)
+		return result
 	},
 }
 
