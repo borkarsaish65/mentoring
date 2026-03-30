@@ -107,23 +107,13 @@ module.exports = class NotificationTemplateHelper {
 					if (isDefaultOrg) {
 						// Default org update: other orgs may have cached this template via fallback
 						// under their own org key — sweep all of them
-						console.log(
-							`[NotifCache] Default org update detected (org: ${tokenInformation.organization_code}). ` +
-								`Sweeping all org caches for tenant:${tenantCode}:org:*:notificationTemplates:templateCode:${templateCode}`
-						)
 						await cacheHelper.notificationTemplates.deleteAcrossAllOrgs(tenantCode, templateCode)
-						console.log(`[NotifCache] Cross-org invalidation complete for templateCode:${templateCode}`)
 					} else {
-						console.log(
-							`[NotifCache] Non-default org update (org: ${tokenInformation.organization_code}). ` +
-								`Invalidating tenant:${tenantCode}:org:${tokenInformation.organization_code}:notificationTemplates:templateCode:${templateCode}`
-						)
 						await cacheHelper.notificationTemplates.delete(
 							tenantCode,
 							tokenInformation.organization_code,
 							templateCode
 						)
-						console.log(`[NotifCache] Single-org invalidation complete for templateCode:${templateCode}`)
 					}
 				}
 				// If the template code itself was changed, also clear the old code

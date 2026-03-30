@@ -1481,10 +1481,7 @@ const notificationTemplates = {
 		const compositeId = `templateCode:${templateCode}`
 		const useInternal = nsUseInternal('notificationTemplates')
 		const cacheKey = await buildKey({ tenantCode, orgCode: orgCode, ns: 'notificationTemplates', id: compositeId })
-		console.log(`[NotifCache] Deleting key: ${cacheKey}`)
-		const result = await del(cacheKey, { useInternal })
-		console.log(`[NotifCache] Deleted key: ${cacheKey}`)
-		return result
+		return del(cacheKey, { useInternal })
 	},
 
 	/**
@@ -1494,9 +1491,7 @@ const notificationTemplates = {
 	 */
 	async deleteAcrossAllOrgs(tenantCode, templateCode) {
 		const pattern = `tenant:${tenantCode}:org:*:notificationTemplates:templateCode:${templateCode}`
-		console.log(`[NotifCache] deleteAcrossAllOrgs - scanning and deleting pattern: ${pattern}`)
 		const result = await scanAndDelete(pattern)
-		console.log(`[NotifCache] deleteAcrossAllOrgs - done for pattern: ${pattern}`)
 		return result
 	},
 }
