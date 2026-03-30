@@ -7,7 +7,7 @@ const models = require('@database/models/index')
 const { Op } = require('sequelize')
 const utils = require('@generics/utils')
 const searchConfig = require('@configs/search.json')
-const indexQueries = require('@generics/mViewsIndexQueries')
+const getIndexQueries = require('@generics/mViewsIndexQueries')
 const { getDefaults } = require('@helpers/getDefaultOrgId')
 const { elevateLog } = require('elevate-logger')
 const logger = elevateLog.init()
@@ -211,7 +211,12 @@ const createIndexesOnAllowFilteringFields = async (model, modelEntityTypes, fiel
 const createViewGINIndexOnSearch = async (model, config, fields, tenantCode) => {
 	try {
 		const modelName = model.name
-		const searchType = modelName === 'Session' ? 'session' : modelName === 'MentorExtension' ? 'mentor' : null
+		const searchType =
+			modelName === 'Session'
+				? 'session'
+				: modelName === 'UserExtension' || modelName === 'MentorExtension'
+				? 'mentor'
+				: null
 
 		if (!searchType) {
 			return
@@ -240,9 +245,9 @@ const createViewGINIndexOnSearch = async (model, config, fields, tenantCode) => 
 	}
 }
 // Function to execute index queries for a specific model
-const executeIndexQueries = async (modelName) => {
+const executeIndexQueries = async (modelName, tenantCode) => {
 	// Find the index queries for the specified model
-	const modelQueries = indexQueries.find((item) => item.modelName === modelName)
+	const modelQueries = getIndexQueries(tenantCode).find((item) => item.modelName === modelName)
 
 	if (modelQueries) {
 		console.log(`Executing index queries for ${modelName}`)
@@ -338,7 +343,7 @@ const generateMaterializedView = async (modelEntityTypes, tenantCode) => {
 		await createIndexesOnAllowFilteringFields(model, modelEntityTypes, allFields, tenantCode)
 		await createViewUniqueIndexOnPK(model, tenantCode)
 		await createViewGINIndexOnSearch(model, searchConfig, allFields, tenantCode)
-		await executeIndexQueries(model.name)
+		await executeIndexQueries(model.name, tenantCode)
 	} catch (err) {
 		console.log(err)
 	}
