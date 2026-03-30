@@ -714,12 +714,6 @@ module.exports = class MenteeExtensionQueries {
 		try {
 			const viewName = utils.getTenantViewName(tenantCode, MenteeExtension.tableName)
 
-			// null orgCodes = all orgs (used for default-org cross-org cache invalidation)
-			if (orgCodes === null) {
-				const query = `SELECT user_id FROM ${viewName} WHERE tenant_code = :tenantCode`
-				return await Sequelize.query(query, { type: QueryTypes.SELECT, replacements: { tenantCode } })
-			}
-
 			if (!Array.isArray(orgCodes) || orgCodes.length === 0) {
 				return []
 			}

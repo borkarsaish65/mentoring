@@ -128,13 +128,9 @@ module.exports = class EntityHelper {
 
 			// Clear user caches since entity types affect user profiles
 			const updatedEntity = updatedEntityType[0]
-			await this._clearUserCachesForEntityTypeChange(
-				orgCode,
-				tenantCode,
-				updatedEntity.model_names ? updatedEntity.model_names[0] : null,
-				updatedEntity.value,
-				isDefaultOrg
-			)
+			for (const modelName of updatedEntity.model_names) {
+				await this._clearUserCachesForEntityTypeChange(orgCode, tenantCode, modelName, updatedEntity.value)
+			}
 
 			return responses.successResponse({
 				statusCode: httpStatusCode.accepted,
@@ -299,17 +295,6 @@ module.exports = class EntityHelper {
 				})
 			}
 
-			// Clear cache for affected models before deletion
-			const isDefaultOrg = organizationCode === process.env.DEFAULT_ORGANISATION_CODE
-
-			await this._clearUserCachesForEntityTypeChange(
-				organizationCode,
-				tenantCode,
-				entityToDelete.model_names ? entityToDelete.model_names[0] : null,
-				entityToDelete.value,
-				isDefaultOrg
-			)
-
 			// SECOND: Delete from database
 			const deleteCount = await entityTypeQueries.deleteOneEntityType(id, organizationCode, tenantCode)
 			if (deleteCount === 0) {
@@ -318,6 +303,16 @@ module.exports = class EntityHelper {
 					statusCode: httpStatusCode.bad_request,
 					responseCode: 'CLIENT_ERROR',
 				})
+			}
+
+			// Clear user caches after successful deletion
+			for (const modelName of entityToDelete.model_names) {
+				await this._clearUserCachesForEntityTypeChange(
+					organizationCode,
+					tenantCode,
+					modelName,
+					entityToDelete.value
+				)
 			}
 
 			// THIRD: Remove individual entity type from cache
@@ -369,15 +364,6 @@ module.exports = class EntityHelper {
 					}
 				}
 			}
-
-			// Clear user caches since entity types affect user profiles
-			await this._clearUserCachesForEntityTypeChange(
-				organizationCode,
-				tenantCode,
-				entityToDelete.model_names ? entityToDelete.model_names[0] : null,
-				entityToDelete.value,
-				isDefaultOrg
-			)
 
 			return responses.successResponse({
 				statusCode: httpStatusCode.accepted,
@@ -507,16 +493,41 @@ module.exports = class EntityHelper {
 
 			// Clear cache for deleted entities
 			try {
+				const defaultOrgCode = process.env.DEFAULT_ORGANISATION_CODE
+				const affectedModelNames = new Set()
+
 				for (const entityToDelete of entitiesToDelete) {
 					const modelNames = entityToDelete.model_names || []
+					const isDefaultOrg = entityToDelete.organization_code === defaultOrgCode
 					for (const modelName of modelNames) {
-						await cacheHelper.entityTypes.delete(
-							tenantCode,
-							entityToDelete.organization_code,
-							modelName,
-							entityToDelete.value
-						)
+						if (isDefaultOrg) {
+							await cacheHelper.entityTypes.deleteEntityTypesAcrossAllOrgs(
+								tenantCode,
+								modelName,
+								entityToDelete.value
+							)
+						} else {
+							await cacheHelper.entityTypes.delete(
+								tenantCode,
+								entityToDelete.organization_code,
+								modelName,
+								entityToDelete.value
+							)
+						}
+						affectedModelNames.add(modelName)
 					}
+				}
+
+				// Clear user profile caches for affected models
+				const [menteeModelName, mentorModelName] = await Promise.all([
+					menteeExtensionQueries.getModelName(),
+					mentorExtensionQueries.getModelName(),
+				])
+				if (affectedModelNames.has(menteeModelName)) {
+					await cacheHelper.mentee.deleteAll(tenantCode).catch(() => {})
+				}
+				if (affectedModelNames.has(mentorModelName)) {
+					await cacheHelper.mentor.deleteAll(tenantCode).catch(() => {})
 				}
 			} catch (cacheError) {
 				console.log('Failed to clear cache for deleted entities:', cacheError.message)
@@ -572,13 +583,13 @@ module.exports = class EntityHelper {
 				})
 			)
 
-			// 2. Clear entity type caches for unified model strategy
+			// 2. Clear entity type cache for the specific model + value
 			if (modelName) {
 				clearPromises.push(
 					cacheHelper.entityTypes
-						.delete(tenantCode, organizationCode, `model:${modelName}:__ALL__`)
+						.delete(tenantCode, organizationCode, modelName, entityValue)
 						.catch((error) => {
-							/* Failed to clear unified entity type cache - continue operation */
+							/* Failed to clear entity type cache - continue operation */
 						})
 				)
 			}
@@ -596,45 +607,42 @@ module.exports = class EntityHelper {
 				// Clear user caches immediately when entity types affect specific models
 
 				if (modelName === menteeModelName) {
-					// Clear all mentee caches for this organization
-					try {
-						const users = await menteeExtensionQueries.getAllUsersByOrgId(
-							allOrgs ? null : [organizationCode],
-							tenantCode
-						)
-						const menteeUserIds = users.map((user) => user.user_id)
-
-						// Clear mentee caches for all users in organization
-						const menteeClearPromises = menteeUserIds.map((userId) =>
-							cacheHelper.mentee.delete(tenantCode, userId).catch((error) => {
-								/* Failed to clear mentee cache - continue operation */
-							})
-						)
-						clearPromises.push(...menteeClearPromises)
-					} catch (error) {
-						// Failed to enumerate mentee users - continue operation
+					if (allOrgs) {
+						// Default org: sweep all mentee caches in the tenant via wildcard (no DB query needed)
+						clearPromises.push(cacheHelper.mentee.deleteAll(tenantCode).catch(() => {}))
+					} else {
+						try {
+							const users = await menteeExtensionQueries.getAllUsersByOrgId(
+								[organizationCode],
+								tenantCode
+							)
+							const menteeClearPromises = users.map(({ user_id }) =>
+								cacheHelper.mentee.delete(tenantCode, user_id).catch(() => {})
+							)
+							clearPromises.push(...menteeClearPromises)
+						} catch (error) {
+							// Failed to enumerate mentee users - continue operation
+						}
 					}
 				}
 
 				if (modelName === mentorModelName) {
-					// Clear all mentor caches for this organization
-					try {
-						// Get all users who might be mentors in this organization
-						const users = await menteeExtensionQueries.getAllUsersByOrgId(
-							allOrgs ? null : [organizationCode],
-							tenantCode
-						)
-						const mentorUserIds = users.map((user) => user.user_id)
-
-						// Clear mentor caches for all users in organization (users can be both mentee and mentor)
-						const mentorClearPromises = mentorUserIds.map((userId) =>
-							cacheHelper.mentor.delete(tenantCode, userId).catch((error) => {
-								/* Failed to clear mentor cache - continue operation */
-							})
-						)
-						clearPromises.push(...mentorClearPromises)
-					} catch (error) {
-						// Failed to enumerate mentor users - continue operation
+					if (allOrgs) {
+						// Default org: sweep all mentor caches in the tenant via wildcard (no DB query needed)
+						clearPromises.push(cacheHelper.mentor.deleteAll(tenantCode).catch(() => {}))
+					} else {
+						try {
+							const users = await menteeExtensionQueries.getAllUsersByOrgId(
+								[organizationCode],
+								tenantCode
+							)
+							const mentorClearPromises = users.map(({ user_id }) =>
+								cacheHelper.mentor.delete(tenantCode, user_id).catch(() => {})
+							)
+							clearPromises.push(...mentorClearPromises)
+						} catch (error) {
+							// Failed to enumerate mentor users - continue operation
+						}
 					}
 				}
 
