@@ -948,9 +948,7 @@ const mentor = {
 
 	async deleteAll(tenantCode) {
 		const pattern = `tenant:${tenantCode}:mentor:*`
-		console.log(`[MentorCache] deleteAll - scanning and deleting pattern: ${pattern}`)
 		const result = await scanAndDelete(pattern)
-		console.log(`[MentorCache] deleteAll - deleted ${result} key(s)`)
 		return result
 	},
 
@@ -1195,9 +1193,7 @@ const mentee = {
 
 	async deleteAll(tenantCode) {
 		const pattern = `tenant:${tenantCode}:mentee:*`
-		console.log(`[MenteeCache] deleteAll - scanning and deleting pattern: ${pattern}`)
 		const result = await scanAndDelete(pattern)
-		console.log(`[MenteeCache] deleteAll - deleted ${result} key(s)`)
 		return result
 	},
 
