@@ -723,7 +723,6 @@ const forms = {
 	 */
 	async get(tenantCode, orgCode, type, subtype) {
 		try {
-			console.log('Entering......')
 			const compositeId = `${type}:${subtype}`
 			const useInternal = nsUseInternal('forms')
 
@@ -769,8 +768,6 @@ const forms = {
 				return null
 			}
 
-			console.log(formFromDb, '<<--formFromDb 771')
-
 			// Step 5: Cache result under user tenant/org (regardless of where form was found)
 			if (formFromDb) {
 				await this.set(tenantCode, orgCode, type, subtype, formFromDb)
@@ -813,9 +810,7 @@ const forms = {
 		const compositeId = `${type}:${subtype}`
 		const useInternal = nsUseInternal('forms')
 		const cacheKey = await buildKey({ tenantCode, orgCode: orgCode, ns: 'forms', id: compositeId })
-		console.log(`[FormCache] Deleting key: ${cacheKey}`)
 		const result = await del(cacheKey, { useInternal })
-		console.log(`[FormCache] Deleted key: ${cacheKey}`)
 		return result
 	},
 

@@ -105,7 +105,7 @@ module.exports = class FormsHelper {
 			}
 			//await KafkaProducer.clearInternalCache('formVersion')
 
-			// Cache invalidation after successful update
+			// Cache invalidation after successful update just delete, don't re-set
 			try {
 				if (originalForm && originalForm.type && originalForm.sub_type) {
 					const isDefaultOrg = originalForm.organization_code === process.env.DEFAULT_ORGANISATION_CODE
@@ -158,7 +158,6 @@ module.exports = class FormsHelper {
 		try {
 			// Try to get from cache first if searching by type and subtype (not by ID)
 			if (!id && bodyData?.type && bodyData?.sub_type) {
-				console.log('line 176 ... quering the cacheHelper..')
 				const cachedData = await cacheHelper.forms.get(tenantCode, orgCode, bodyData.type, bodyData.sub_type)
 				if (cachedData) {
 					return responses.successResponse({
