@@ -89,21 +89,12 @@ module.exports = class NotificationTemplateHelper {
 				})
 			}
 
-			// Delete cache using old code (captured before update) and new code (if changed)
-			const newCode = bodyData.code || oldCode
 			try {
 				if (oldCode) {
 					await cacheHelper.notificationTemplates.delete(
 						tenantCode,
 						tokenInformation.organization_code,
 						oldCode
-					)
-				}
-				if (newCode && newCode !== oldCode) {
-					await cacheHelper.notificationTemplates.delete(
-						tenantCode,
-						tokenInformation.organization_code,
-						newCode
 					)
 				}
 			} catch (cacheError) {
