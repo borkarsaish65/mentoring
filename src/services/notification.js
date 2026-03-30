@@ -106,7 +106,7 @@ module.exports = class NotificationTemplateHelper {
 			try {
 				if (oldCode) {
 					if (isDefaultOrg) {
-						await cacheHelper.notificationTemplates.deleteAcrossAllOrgs(tenantCode, oldCode)
+						await cacheHelper.notificationTemplates.deleteNotificationsAcrossAllOrgs(tenantCode, oldCode)
 					} else {
 						await cacheHelper.notificationTemplates.delete(
 							tenantCode,
@@ -117,7 +117,7 @@ module.exports = class NotificationTemplateHelper {
 				}
 				if (newCode && newCode !== oldCode) {
 					if (isDefaultOrg) {
-						await cacheHelper.notificationTemplates.deleteAcrossAllOrgs(tenantCode, newCode)
+						await cacheHelper.notificationTemplates.deleteNotificationsAcrossAllOrgs(tenantCode, newCode)
 					} else {
 						await cacheHelper.notificationTemplates.delete(
 							tenantCode,

@@ -1489,7 +1489,7 @@ const notificationTemplates = {
 	 * Used when the default org updates a template — other orgs may have cached
 	 * the default org's template under their own org key via fallback logic.
 	 */
-	async deleteAcrossAllOrgs(tenantCode, templateCode) {
+	async deleteNotificationsAcrossAllOrgs(tenantCode, templateCode) {
 		const pattern = `tenant:${tenantCode}:org:*:notificationTemplates:templateCode:${templateCode}`
 		const result = await scanAndDelete(pattern)
 		return result
