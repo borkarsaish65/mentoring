@@ -88,20 +88,42 @@ module.exports = class NotificationTemplateHelper {
 			const existingTemplates = await notificationTemplateQueries.findTemplatesByFilter(filter)
 			const existingTemplate = existingTemplates?.[0]
 			const templateCode = bodyData.code || existingTemplate?.code || filter.code
+			const isDefaultOrg = tokenInformation.organization_code === process.env.DEFAULT_ORGANISATION_CODE
 			try {
 				if (templateCode) {
-					await cacheHelper.notificationTemplates.delete(
-						tenantCode,
-						tokenInformation.organization_code,
-						templateCode
-					)
+					if (isDefaultOrg) {
+						// Default org update: other orgs may have cached this template via fallback
+						// under their own org key — sweep all of them
+						console.log(
+							`[NotifCache] Default org update detected (org: ${tokenInformation.organization_code}). ` +
+								`Sweeping all org caches for tenant:${tenantCode}:org:*:notificationTemplates:templateCode:${templateCode}`
+						)
+						await cacheHelper.notificationTemplates.deleteAcrossAllOrgs(tenantCode, templateCode)
+						console.log(`[NotifCache] Cross-org invalidation complete for templateCode:${templateCode}`)
+					} else {
+						console.log(
+							`[NotifCache] Non-default org update (org: ${tokenInformation.organization_code}). ` +
+								`Invalidating tenant:${tenantCode}:org:${tokenInformation.organization_code}:notificationTemplates:templateCode:${templateCode}`
+						)
+						await cacheHelper.notificationTemplates.delete(
+							tenantCode,
+							tokenInformation.organization_code,
+							templateCode
+						)
+						console.log(`[NotifCache] Single-org invalidation complete for templateCode:${templateCode}`)
+					}
 				}
+				// If the template code itself was changed, also clear the old code
 				if (existingTemplate?.code && existingTemplate.code !== templateCode) {
-					await cacheHelper.notificationTemplates.delete(
-						tenantCode,
-						tokenInformation.organization_code,
-						existingTemplate.code
-					)
+					if (isDefaultOrg) {
+						await cacheHelper.notificationTemplates.deleteAcrossAllOrgs(tenantCode, existingTemplate.code)
+					} else {
+						await cacheHelper.notificationTemplates.delete(
+							tenantCode,
+							tokenInformation.organization_code,
+							existingTemplate.code
+						)
+					}
 				}
 			} catch (cacheError) {
 				console.error(`❌ Failed to update notification template cache:`, cacheError)
