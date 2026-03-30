@@ -247,7 +247,7 @@ module.exports = class EntityHelper {
 					],
 				}
 			}
-			const entities = await entityQueries.findAllEntities(filter, { [Op.in]: [tenantCode, defaults.tenantCode] })
+			const entities = await entityQueries.findAllEntities(filter, tenantCode)
 
 			if (!entities.length) {
 				return responses.failureResponse({
@@ -301,7 +301,7 @@ module.exports = class EntityHelper {
 					created_by: '0',
 				}
 			}
-			const entities = await entityQueries.findAllEntities(filter, { [Op.in]: [tenantCode, defaults.tenantCode] })
+			const entities = await entityQueries.findAllEntities(filter, tenantCode)
 
 			if (!entities.length) {
 				return responses.failureResponse({
@@ -435,7 +435,7 @@ module.exports = class EntityHelper {
 
 			let entityType = query.entity_type_id ? query.entity_type_id : ''
 			let filter = {
-				tenant_code: { [Op.in]: [tenantCode, defaults.tenantCode] },
+				tenant_code: tenantCode,
 			}
 			if (entityType) {
 				filter['entity_type_id'] = entityType
@@ -455,7 +455,7 @@ module.exports = class EntityHelper {
 				// Optimized: Get entities with entity_type details included - eliminates N+1 queries for clients
 				entities = await entityQueries.getAllEntitiesWithEntityTypeDetails(
 					filter,
-					[defaults.tenantCode, tenantCode],
+					tenantCode,
 					pageNo,
 					pageSize,
 					searchText
