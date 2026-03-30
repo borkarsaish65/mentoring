@@ -833,9 +833,7 @@ const forms = {
 	 */
 	async deleteAcrossAllOrgs(tenantCode, type, subtype) {
 		const pattern = `tenant:${tenantCode}:org:*:forms:${type}:${subtype}`
-		console.log(`[FormCache] deleteAcrossAllOrgs - scanning and deleting pattern: ${pattern}`)
 		const result = await scanAndDelete(pattern)
-		console.log(`[FormCache] deleteAcrossAllOrgs - done for pattern: ${pattern}`)
 		return result
 	},
 }
