@@ -106,30 +106,16 @@ module.exports = class EntityHelper {
 
 			// Cache invalidation after successful update: just delete using original entity data
 			const isDefaultOrg = orgCode === process.env.DEFAULT_ORGANISATION_CODE
-			try {
-				if (originalEntity && originalEntity.model_names && originalEntity.value) {
-					for (const modelName of originalEntity.model_names) {
-						if (isDefaultOrg) {
-							// Default org update: other orgs may have cached this entity type via fallback
-							// under their own org key — sweep all of them
-							await cacheHelper.entityTypes.deleteEntityTypesAcrossAllOrgs(
-								tenantCode,
-								modelName,
-								originalEntity.value
-							)
-						} else {
-							await cacheHelper.entityTypes.delete(tenantCode, orgCode, modelName, originalEntity.value)
-						}
-					}
+			if (originalEntity && originalEntity.model_names) {
+				for (const modelName of originalEntity.model_names) {
+					await this._clearUserCachesForEntityTypeChange(
+						orgCode,
+						tenantCode,
+						modelName,
+						originalEntity.value,
+						isDefaultOrg
+					)
 				}
-			} catch (cacheError) {
-				// Failed to invalidate entity type cache - continue operation
-			}
-
-			// Clear user caches since entity types affect user profiles
-			const updatedEntity = updatedEntityType[0]
-			for (const modelName of updatedEntity.model_names) {
-				await this._clearUserCachesForEntityTypeChange(orgCode, tenantCode, modelName, updatedEntity.value)
 			}
 
 			return responses.successResponse({
@@ -317,56 +303,6 @@ module.exports = class EntityHelper {
 				)
 			}
 
-			// THIRD: Remove individual entity type from cache
-			try {
-				// For each model this entity belonged to
-				if (entityToDelete.model_names && Array.isArray(entityToDelete.model_names)) {
-					for (const modelName of entityToDelete.model_names) {
-						// Remove the specific entity type cache
-						if (isDefaultOrg) {
-							await cacheHelper.entityTypes.deleteEntityTypesAcrossAllOrgs(
-								tenantCode,
-								modelName,
-								entityToDelete.value
-							)
-						} else {
-							await cacheHelper.entityTypes.delete(
-								tenantCode,
-								organizationCode,
-								modelName,
-								entityToDelete.value
-							)
-						}
-					}
-				}
-			} catch (cacheError) {
-				// Failed to perform selective cache removal - continue operation
-
-				// Fallback: retry removing only this specific entity's cache
-				if (entityToDelete.model_names && Array.isArray(entityToDelete.model_names)) {
-					for (const modelName of entityToDelete.model_names) {
-						try {
-							if (isDefaultOrg) {
-								await cacheHelper.entityTypes.deleteEntityTypesAcrossAllOrgs(
-									tenantCode,
-									modelName,
-									entityToDelete.value
-								)
-							} else {
-								await cacheHelper.entityTypes.delete(
-									tenantCode,
-									organizationCode,
-									modelName,
-									entityToDelete.value
-								)
-							}
-						} catch (retryError) {
-							// Failed to retry clear cache - continue operation
-						}
-					}
-				}
-			}
-
 			return responses.successResponse({
 				statusCode: httpStatusCode.accepted,
 				message: 'ENTITY_TYPE_DELETED_SUCCESSFULLY',
@@ -496,40 +432,17 @@ module.exports = class EntityHelper {
 			// Clear cache for deleted entities
 			try {
 				const defaultOrgCode = process.env.DEFAULT_ORGANISATION_CODE
-				const affectedModelNames = new Set()
-
 				for (const entityToDelete of entitiesToDelete) {
-					const modelNames = entityToDelete.model_names || []
 					const isDefaultOrg = entityToDelete.organization_code === defaultOrgCode
-					for (const modelName of modelNames) {
-						if (isDefaultOrg) {
-							await cacheHelper.entityTypes.deleteEntityTypesAcrossAllOrgs(
-								tenantCode,
-								modelName,
-								entityToDelete.value
-							)
-						} else {
-							await cacheHelper.entityTypes.delete(
-								tenantCode,
-								entityToDelete.organization_code,
-								modelName,
-								entityToDelete.value
-							)
-						}
-						affectedModelNames.add(modelName)
+					for (const modelName of entityToDelete.model_names || []) {
+						await this._clearUserCachesForEntityTypeChange(
+							entityToDelete.organization_code,
+							tenantCode,
+							modelName,
+							entityToDelete.value,
+							isDefaultOrg
+						)
 					}
-				}
-
-				// Clear user profile caches for affected models
-				const [menteeModelName, mentorModelName] = await Promise.all([
-					menteeExtensionQueries.getModelName(),
-					mentorExtensionQueries.getModelName(),
-				])
-				if (affectedModelNames.has(menteeModelName)) {
-					await cacheHelper.mentee.deleteAll(tenantCode).catch(() => {})
-				}
-				if (affectedModelNames.has(mentorModelName)) {
-					await cacheHelper.mentor.deleteAll(tenantCode).catch(() => {})
 				}
 			} catch (cacheError) {
 				console.log('Failed to clear cache for deleted entities:', cacheError.message)
@@ -587,13 +500,19 @@ module.exports = class EntityHelper {
 
 			// 2. Clear entity type cache for the specific model + value
 			if (modelName) {
-				clearPromises.push(
-					cacheHelper.entityTypes
-						.delete(tenantCode, organizationCode, modelName, entityValue)
-						.catch((error) => {
-							/* Failed to clear entity type cache - continue operation */
-						})
-				)
+				if (allOrgs) {
+					clearPromises.push(
+						cacheHelper.entityTypes
+							.deleteEntityTypesAcrossAllOrgs(tenantCode, modelName, entityValue)
+							.catch(() => {})
+					)
+				} else {
+					clearPromises.push(
+						cacheHelper.entityTypes
+							.delete(tenantCode, organizationCode, modelName, entityValue)
+							.catch(() => {})
+					)
+				}
 			}
 
 			// 3. Clear model-specific user caches based on the entity type model
@@ -649,10 +568,11 @@ module.exports = class EntityHelper {
 				}
 
 				if (modelName === sessionModelName) {
-					// For session model, we don't have session enumeration by org
-					// Session caches are typically cleared by individual session operations
-					// Entity types affecting sessions would be rare (custom session fields)
-					// Skip organization-wide session cache clearing to avoid performance impact
+					if (allOrgs) {
+						clearPromises.push(cacheHelper.sessions.deleteAll(tenantCode).catch(() => {}))
+					} else {
+						clearPromises.push(cacheHelper.sessions.deleteAll(tenantCode, organizationCode).catch(() => {}))
+					}
 				}
 			}
 
