@@ -114,7 +114,7 @@ module.exports = class TenantService {
 			await replicateResource({
 				label: 'Forms',
 				fetchSource: () =>
-					FormQueries.findFormsByFilter({ organization_code: defaultOrgCode }, [defaultTenantCode]),
+					FormQueries.findFormsByFilter({ organization_code: defaultOrgCode }, defaultTenantCode),
 				transform: baseTransform({ organization_id: newOrgIdStr, version: 0 }),
 				bulkCreate: (items, opts) => FormQueries.bulkCreate(items, newTenantCode, opts),
 				transaction,
@@ -123,10 +123,10 @@ module.exports = class TenantService {
 			// ── 3. Entity Types ───────────────────────────────────────────────────
 			const entityTypeIdMap = await replicateWithIdMap({
 				label: 'Entity types',
-				fetchSource: () => EntityTypeQueries.findAllEntityTypes([defaultOrgCode], [defaultTenantCode], null),
+				fetchSource: () => EntityTypeQueries.findAllEntityTypes([defaultOrgCode], defaultTenantCode, null),
 				transform: baseTransform({ organization_id: newOrgIdStr, parent_id: null }),
 				bulkCreate: (items, opts) => EntityTypeQueries.bulkCreate(items, newTenantCode, opts),
-				fetchExisting: () => EntityTypeQueries.findAllEntityTypes([defaultOrgCode], [newTenantCode], null),
+				fetchExisting: () => EntityTypeQueries.findAllEntityTypes([defaultOrgCode], newTenantCode, null),
 				matchKey: (oldET) => (c) => c.value === oldET.value && c.organization_code === oldET.organization_code,
 				transaction,
 			})

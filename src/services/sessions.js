@@ -2578,7 +2578,8 @@ module.exports = class SessionsHelper {
 					{
 						status: common.LIVE_STATUS,
 						started_at: utils.utcFormat(),
-					}
+					},
+					tenantCode
 				)
 			}
 			if (session?.meeting_info?.link) {
@@ -3233,7 +3234,7 @@ module.exports = class SessionsHelper {
 				common.sessionModelName,
 				'mentor_organization_id',
 				[],
-				[tenantCode]
+				tenantCode
 			)
 
 			await Promise.all(
@@ -3908,7 +3909,6 @@ module.exports = class SessionsHelper {
 				organization_code: organizationCode,
 				created_by: userId,
 				tenant_code: tenantCode,
-				defaultTenantCode: defaults.tenantCode,
 				defaultOrganizationCode: defaults.orgCode,
 			}
 
@@ -4172,7 +4172,6 @@ module.exports = class SessionsHelper {
 				await adminService.unenrollAndNotifySessionAttendees(
 					removedSessionsDetail,
 					{ [Op.in]: [mentor.organization_code, defaults.orgCode] },
-					{ [Op.in]: [tenantCode, defaults.tenantCode] },
 					tenantCode,
 					mentor.organization_code
 				)
@@ -4211,7 +4210,6 @@ module.exports = class SessionsHelper {
 				await adminService.unenrollAndNotifySessionAttendees(
 					removedSessionsDetail,
 					{ [Op.in]: [mentor.organization_code] },
-					{ [Op.in]: [tenantCode] },
 					tenantCode,
 					mentor.organization_code
 				)

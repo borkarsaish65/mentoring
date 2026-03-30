@@ -29,7 +29,7 @@ module.exports = class FormsHelper {
 			bodyData['organization_code'] = orgCode
 			const form = await formQueries.createForm(bodyData, tenantCode, orgCode)
 
-			//			await KafkaProducer.clearInternalCache('formVersion')
+			//await KafkaProducer.clearInternalCache('formVersion')
 
 			return responses.successResponse({
 				statusCode: httpStatusCode.created,
@@ -74,7 +74,7 @@ module.exports = class FormsHelper {
 
 				if (!originalForm) {
 					// Cache miss: fallback to database query
-					const originalForms = await formQueries.findFormsByFilter(filter, [tenantCode])
+					const originalForms = await formQueries.findFormsByFilter(filter, tenantCode)
 					originalForm = originalForms && originalForms.length > 0 ? originalForms[0] : null
 				}
 			}
@@ -173,9 +173,7 @@ module.exports = class FormsHelper {
 				filter.organization_code = { [Op.in]: [orgCode, defaults.orgCode] }
 			}
 
-			// Business logic: Try both current tenant and default tenant
-			const tenantCodes = [tenantCode, defaults.tenantCode]
-			const forms = await formQueries.findFormsByFilter(filter, tenantCodes)
+			const forms = await formQueries.findFormsByFilter(filter, tenantCode)
 
 			if (!forms || forms.length === 0) {
 				return responses.failureResponse({
@@ -219,8 +217,7 @@ module.exports = class FormsHelper {
 				})
 
 			// Fetch all forms from database (no "all forms" cache to avoid duplication)
-			const formsVersionData =
-				(await form.getAllFormsVersion({ [Op.in]: [defaults.tenantCode, tenantCode] })) || {}
+			const formsVersionData = (await form.getAllFormsVersion(tenantCode)) || {}
 
 			// Cache each individual form for future individual reads
 			try {
@@ -237,7 +234,7 @@ module.exports = class FormsHelper {
 									// Fetch complete form data by type (this should include sub_type)
 									const completeFormData = await formQueries.findFormsByFilter(
 										{ type: formVersion.type },
-										[tenantCode]
+										tenantCode
 									)
 
 									if (completeFormData && completeFormData.length > 0) {
