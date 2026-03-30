@@ -397,7 +397,7 @@ module.exports = class EntityHelper {
 
 			const entities = await entityQueries.getAllEntitiesWithEntityTypeDetails(
 				filter,
-				[tenantCode],
+				tenantCode,
 				pageNo,
 				pageSize,
 				searchText
