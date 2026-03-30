@@ -723,6 +723,7 @@ const forms = {
 	 */
 	async get(tenantCode, orgCode, type, subtype) {
 		try {
+			console.log('Entering......')
 			const compositeId = `${type}:${subtype}`
 			const useInternal = nsUseInternal('forms')
 
@@ -768,6 +769,8 @@ const forms = {
 				return null
 			}
 
+			console.log(formFromDb, '<<--formFromDb 771')
+
 			// Step 5: Cache result under user tenant/org (regardless of where form was found)
 			if (formFromDb) {
 				await this.set(tenantCode, orgCode, type, subtype, formFromDb)
@@ -810,7 +813,10 @@ const forms = {
 		const compositeId = `${type}:${subtype}`
 		const useInternal = nsUseInternal('forms')
 		const cacheKey = await buildKey({ tenantCode, orgCode: orgCode, ns: 'forms', id: compositeId })
-		return del(cacheKey, { useInternal })
+		console.log(`[FormCache] Deleting key: ${cacheKey}`)
+		const result = await del(cacheKey, { useInternal })
+		console.log(`[FormCache] Deleted key: ${cacheKey}`)
+		return result
 	},
 
 	/**
@@ -818,6 +824,19 @@ const forms = {
 	 */
 	async evictAll(tenantCode, orgCode) {
 		return await evictNamespace({ tenantCode, orgCode: orgCode, ns: 'forms' })
+	},
+
+	/**
+	 * Invalidate a specific form across ALL orgs in a tenant.
+	 * Used when the default org updates a form — other orgs may have cached
+	 * the default org's form data under their own org key via fallback logic.
+	 */
+	async deleteAcrossAllOrgs(tenantCode, type, subtype) {
+		const pattern = `tenant:${tenantCode}:org:*:forms:${type}:${subtype}`
+		console.log(`[FormCache] deleteAcrossAllOrgs - scanning and deleting pattern: ${pattern}`)
+		const result = await scanAndDelete(pattern)
+		console.log(`[FormCache] deleteAcrossAllOrgs - done for pattern: ${pattern}`)
+		return result
 	},
 }
 

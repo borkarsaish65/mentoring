@@ -31,6 +31,15 @@ module.exports = class FormsHelper {
 
 			//await KafkaProducer.clearInternalCache('formVersion')
 
+			// Invalidate cache so stale fallback (default org) is not served
+			try {
+				if (bodyData.type && bodyData.sub_type) {
+					await cacheHelper.forms.delete(tenantCode, orgCode, bodyData.type, bodyData.sub_type)
+				}
+			} catch (cacheError) {
+				console.error('Failed to invalidate form cache:', cacheError)
+			}
+
 			return responses.successResponse({
 				statusCode: httpStatusCode.created,
 				message: 'FORM_CREATED_SUCCESSFULLY',
@@ -99,13 +108,39 @@ module.exports = class FormsHelper {
 			// Cache invalidation after successful update: just delete, don't re-set
 			try {
 				if (originalForm && originalForm.type && originalForm.sub_type) {
-					// Delete the form cache using original form's type/subtype information
-					await cacheHelper.forms.delete(
-						tenantCode,
-						originalForm.organization_code || orgCode,
-						originalForm.type,
-						originalForm.sub_type
-					)
+					const isDefaultOrg = originalForm.organization_code === process.env.DEFAULT_ORGANISATION_CODE
+					if (isDefaultOrg) {
+						// Default org update: other orgs may have cached this form via fallback
+						// under their own org key — sweep all of them
+						console.log(
+							`[FormCache] Default org update detected (org: ${originalForm.organization_code}). ` +
+								`Sweeping all org caches for tenant:${tenantCode}:org:*:forms:${originalForm.type}:${originalForm.sub_type}`
+						)
+						await cacheHelper.forms.deleteAcrossAllOrgs(
+							tenantCode,
+							originalForm.type,
+							originalForm.sub_type
+						)
+						console.log(
+							`[FormCache] Cross-org invalidation complete for ${originalForm.type}:${originalForm.sub_type}`
+						)
+					} else {
+						console.log(
+							`[FormCache] Non-default org update (org: ${originalForm.organization_code || orgCode}). ` +
+								`Invalidating tenant:${tenantCode}:org:${
+									originalForm.organization_code || orgCode
+								}:forms:${originalForm.type}:${originalForm.sub_type}`
+						)
+						await cacheHelper.forms.delete(
+							tenantCode,
+							originalForm.organization_code || orgCode,
+							originalForm.type,
+							originalForm.sub_type
+						)
+						console.log(
+							`[FormCache] Single-org invalidation complete for ${originalForm.type}:${originalForm.sub_type}`
+						)
+					}
 				}
 			} catch (error) {
 				console.warn('Failed to invalidate form cache:', error)
@@ -139,6 +174,7 @@ module.exports = class FormsHelper {
 		try {
 			// Try to get from cache first if searching by type and subtype (not by ID)
 			if (!id && bodyData?.type && bodyData?.sub_type) {
+				console.log('line 176 ... quering the cacheHelper..')
 				const cachedData = await cacheHelper.forms.get(tenantCode, orgCode, bodyData.type, bodyData.sub_type)
 				if (cachedData) {
 					return responses.successResponse({
