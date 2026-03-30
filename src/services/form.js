@@ -105,40 +105,24 @@ module.exports = class FormsHelper {
 			}
 			//await KafkaProducer.clearInternalCache('formVersion')
 
-			// Cache invalidation after successful update: just delete, don't re-set
+			// Cache invalidation after successful update
 			try {
 				if (originalForm && originalForm.type && originalForm.sub_type) {
 					const isDefaultOrg = originalForm.organization_code === process.env.DEFAULT_ORGANISATION_CODE
 					if (isDefaultOrg) {
 						// Default org update: other orgs may have cached this form via fallback
 						// under their own org key — sweep all of them
-						console.log(
-							`[FormCache] Default org update detected (org: ${originalForm.organization_code}). ` +
-								`Sweeping all org caches for tenant:${tenantCode}:org:*:forms:${originalForm.type}:${originalForm.sub_type}`
-						)
 						await cacheHelper.forms.deleteAcrossAllOrgs(
 							tenantCode,
 							originalForm.type,
 							originalForm.sub_type
 						)
-						console.log(
-							`[FormCache] Cross-org invalidation complete for ${originalForm.type}:${originalForm.sub_type}`
-						)
 					} else {
-						console.log(
-							`[FormCache] Non-default org update (org: ${originalForm.organization_code || orgCode}). ` +
-								`Invalidating tenant:${tenantCode}:org:${
-									originalForm.organization_code || orgCode
-								}:forms:${originalForm.type}:${originalForm.sub_type}`
-						)
 						await cacheHelper.forms.delete(
 							tenantCode,
 							originalForm.organization_code || orgCode,
 							originalForm.type,
 							originalForm.sub_type
-						)
-						console.log(
-							`[FormCache] Single-org invalidation complete for ${originalForm.type}:${originalForm.sub_type}`
 						)
 					}
 				}
