@@ -440,7 +440,7 @@ const sessions = {
 		try {
 			// Handle single session ID case
 			if (typeof sessionIds === 'string') {
-				return await this.get(tenantCode, organizationCode, sessionIds)
+				return await this.get(tenantCode, sessionIds)
 			}
 
 			// Handle array case - smart caching with immediate DB fetch
@@ -485,7 +485,7 @@ const sessions = {
 
 					if (sessionDetails) {
 						// Cache the session data directly
-						await this.set(tenantCode, organizationCode, sessionId, sessionDetails)
+						await this.set(tenantCode, sessionId, sessionDetails)
 						dbFetchedSessions.push(sessionDetails)
 						console.log(`✅ [getSessionKafka] Session ${sessionId} fetched and cached`)
 					}
@@ -509,7 +509,7 @@ const sessions = {
 			const fallbackResults = []
 			for (const sessionId of Array.isArray(sessionIds) ? sessionIds : [sessionIds]) {
 				try {
-					const session = await this.get(tenantCode, organizationCode, sessionId)
+					const session = await this.get(tenantCode, sessionId)
 					if (session) fallbackResults.push(session)
 				} catch (fallbackError) {
 					console.error(
@@ -1045,7 +1045,7 @@ const mentor = {
 		try {
 			// Handle single user ID case
 			if (typeof userIds === 'string') {
-				return await this.get(tenantCode, organizationCode, userIds)
+				return await this.get(tenantCode, userIds)
 			}
 
 			// Handle array case - smart caching with immediate DB fetch
@@ -1073,7 +1073,7 @@ const mentor = {
 
 			// Step 4: Fetch missing users from DB immediately using getUsersByUserIds
 			const dbFetchedUsers = []
-			const userMentorEntries = []
+			let userMentorEntries = []
 			if (missingUserIds.length > 0) {
 				try {
 					const usersFromDb = await userQueries.getUsersByUserIds(missingUserIds, {}, tenantCode, false)
@@ -1114,7 +1114,7 @@ const mentor = {
 			const fallbackResults = []
 			for (const userId of Array.isArray(userIds) ? userIds : [userIds]) {
 				try {
-					const user = await this.get(tenantCode, organizationCode, userId)
+					const user = await this.get(tenantCode, userId)
 					if (user) fallbackResults.push(user)
 				} catch (fallbackError) {
 					console.error(`❌ [getMenteeKafka] Fallback failed for user ${userId}:`, fallbackError.message)
@@ -1292,7 +1292,7 @@ const mentee = {
 		try {
 			// Handle single user ID case
 			if (typeof userIds === 'string') {
-				return await this.get(tenantCode, organizationCode, userIds)
+				return await this.get(tenantCode, userIds)
 			}
 
 			// Handle array case - smart caching with immediate DB fetch
@@ -1320,7 +1320,6 @@ const mentee = {
 
 			// Step 3: Fetch missing users from DB immediately using getUsersByUserIds
 			const dbFetchedUsers = []
-			let userMentorEntries = []
 			if (missingUserIds.length > 0) {
 				try {
 					console.log(`🔄 [getMenteeKafka] Fetching ${missingUserIds.length} users from database`)
@@ -1334,15 +1333,11 @@ const mentee = {
 					if (usersFromDb && usersFromDb.length > 0) {
 						// Cache each fetched user individually
 						for (const user of usersFromDb) {
-							await this.set(tenantCode, organizationCode, user.user_id, user)
+							await this.set(tenantCode, user.user_id, user)
 						}
 
 						// Add fetched users to result
 						dbFetchedUsers.push(...usersFromDb)
-
-						// Create user ID to is_mentor mapping using map
-						const userMentorEntries = usersFromDb.map((user) => [user.user_id, user.is_mentor || false])
-						Object.assign(userIsMentorMap, Object.fromEntries(userMentorEntries))
 
 						console.log(`✅ [getMenteeKafka] ${usersFromDb.length} users fetched from DB and cached`)
 					}
@@ -1361,7 +1356,7 @@ const mentee = {
 			const fallbackResults = []
 			for (const userId of Array.isArray(userIds) ? userIds : [userIds]) {
 				try {
-					const user = await this.get(tenantCode, organizationCode, userId)
+					const user = await this.get(tenantCode, userId)
 					if (user) fallbackResults.push(user)
 				} catch (fallbackError) {
 					console.error(`❌ [getMenteeKafka] Fallback failed for user ${userId}:`, fallbackError.message)

@@ -676,9 +676,9 @@ module.exports = class AdminService {
 			if (unenrollDetails && unenrollDetails.deletedCount > 0 && Array.isArray(unenrollDetails.deletedRecords)) {
 				for (const menteeData of unenrollDetails.deletedRecords) {
 					try {
-						await cacheHelper.mentee.delete(tenantCode, menteeData.organization_code, menteeData.mentee_id)
+						await cacheHelper.mentee.delete(tenantCode, menteeData.mentee_id)
 					} catch (cacheError) {
-						console.error(`Cache deletion failed for mentee ${menteeId}:`, cacheError)
+						console.error(`Cache deletion failed for mentee ${menteeData.mentee_id}:`, cacheError)
 					}
 				}
 			}

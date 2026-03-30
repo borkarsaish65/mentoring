@@ -118,12 +118,9 @@ module.exports = class EntityHelper {
 
 			// Clear user caches since entity types affect user profiles
 			const updatedEntity = updatedEntityType[0]
-			await this._clearUserCachesForEntityTypeChange(
-				orgCode,
-				tenantCode,
-				updatedEntity.model_names ? updatedEntity.model_names[0] : null,
-				updatedEntity.value
-			)
+			for (const modelName of updatedEntity.model_names) {
+				await this._clearUserCachesForEntityTypeChange(orgCode, tenantCode, modelName, updatedEntity.value)
+			}
 
 			return responses.successResponse({
 				statusCode: httpStatusCode.accepted,
@@ -288,13 +285,6 @@ module.exports = class EntityHelper {
 				})
 			}
 
-			// Clear cache for affected models before deletion
-			await this._clearUserCachesForEntityTypeChange(organizationCode, tenantCode, {
-				id: entityToDelete.id,
-				value: entityToDelete.value,
-				modelNames: entityToDelete.model_names,
-			})
-
 			// SECOND: Delete from database
 			const deleteCount = await entityTypeQueries.deleteOneEntityType(id, organizationCode, tenantCode)
 			if (deleteCount === 0) {
@@ -303,6 +293,16 @@ module.exports = class EntityHelper {
 					statusCode: httpStatusCode.bad_request,
 					responseCode: 'CLIENT_ERROR',
 				})
+			}
+
+			// Clear user caches after successful deletion
+			for (const modelName of entityToDelete.model_names) {
+				await this._clearUserCachesForEntityTypeChange(
+					organizationCode,
+					tenantCode,
+					modelName,
+					entityToDelete.value
+				)
 			}
 
 			// THIRD: Remove individual entity type from cache
@@ -338,14 +338,6 @@ module.exports = class EntityHelper {
 					}
 				}
 			}
-
-			// Clear user caches since entity types affect user profiles
-			await this._clearUserCachesForEntityTypeChange(
-				organizationCode,
-				tenantCode,
-				entityToDelete.model_names ? entityToDelete.model_names[0] : null,
-				entityToDelete.value
-			)
 
 			return responses.successResponse({
 				statusCode: httpStatusCode.accepted,
@@ -539,13 +531,13 @@ module.exports = class EntityHelper {
 				})
 			)
 
-			// 2. Clear entity type caches for unified model strategy
+			// 2. Clear entity type cache for the specific model + value
 			if (modelName) {
 				clearPromises.push(
 					cacheHelper.entityTypes
-						.delete(tenantCode, organizationCode, `model:${modelName}:__ALL__`)
+						.delete(tenantCode, organizationCode, modelName, entityValue)
 						.catch((error) => {
-							/* Failed to clear unified entity type cache - continue operation */
+							/* Failed to clear entity type cache - continue operation */
 						})
 				)
 			}
