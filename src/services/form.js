@@ -112,7 +112,7 @@ module.exports = class FormsHelper {
 					if (isDefaultOrg) {
 						// Default org update: other orgs may have cached this form via fallback
 						// under their own org key — sweep all of them
-						await cacheHelper.forms.deleteAcrossAllOrgs(
+						await cacheHelper.forms.deleteFormsAcrossAllOrgs(
 							tenantCode,
 							originalForm.type,
 							originalForm.sub_type

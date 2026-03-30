@@ -825,7 +825,7 @@ const forms = {
 	 * Used when the default org updates a form — other orgs may have cached
 	 * the default org's form data under their own org key via fallback logic.
 	 */
-	async deleteAcrossAllOrgs(tenantCode, type, subtype) {
+	async deleteFormsAcrossAllOrgs(tenantCode, type, subtype) {
 		const pattern = `tenant:${tenantCode}:org:*:forms:${type}:${subtype}`
 		const result = await scanAndDelete(pattern)
 		return result
