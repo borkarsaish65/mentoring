@@ -107,9 +107,19 @@ module.exports = class EntityHelper {
 			// Cache invalidation after successful update: just delete using original entity data
 			try {
 				if (originalEntity && originalEntity.model_names && originalEntity.value) {
-					// Delete cache entries using original entity's model_names and value
+					const isDefaultOrg = orgCode === process.env.DEFAULT_ORGANISATION_CODE
 					for (const modelName of originalEntity.model_names) {
-						await cacheHelper.entityTypes.delete(tenantCode, orgCode, modelName, originalEntity.value)
+						if (isDefaultOrg) {
+							// Default org update: other orgs may have cached this entity type via fallback
+							// under their own org key — sweep all of them
+							await cacheHelper.entityTypes.deleteAcrossAllOrgs(
+								tenantCode,
+								modelName,
+								originalEntity.value
+							)
+						} else {
+							await cacheHelper.entityTypes.delete(tenantCode, orgCode, modelName, originalEntity.value)
+						}
 					}
 				}
 			} catch (cacheError) {

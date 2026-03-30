@@ -611,6 +611,17 @@ const entityTypes = {
 		return del(cacheKey, { useInternal })
 	},
 
+	/**
+	 * Invalidate a specific entity type across ALL orgs in a tenant.
+	 * Used when the default org updates an entity type — other orgs may have cached
+	 * the default org's data under their own org key via fallback logic.
+	 */
+	async deleteAcrossAllOrgs(tenantCode, modelName, entityValue) {
+		const pattern = `tenant:${tenantCode}:org:*:entityTypes:model:${modelName}:${entityValue}`
+		const result = await scanAndDelete(pattern)
+		return result
+	},
+
 	// Clear all entityTypes cache for a tenant/org (useful after cache key format changes)
 	async clearAll(tenantCode, orgCode) {
 		return await evictNamespace({ tenantCode, orgCode: orgCode, ns: 'entityTypes' })
