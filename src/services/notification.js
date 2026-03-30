@@ -241,27 +241,6 @@ module.exports = class NotificationTemplateHelper {
 
 			const notificationTemplates = await notificationTemplateQueries.findTemplatesByFilter(filter)
 
-			// Cache each individual template for future single reads
-			if (notificationTemplates && notificationTemplates.length > 0) {
-				try {
-					const templatesByCode = {}
-					for (const template of notificationTemplates) {
-						if (!template.code) continue
-						// Only set if not yet seen, or if this template belongs to user's own org (higher priority)
-						if (!templatesByCode[template.code] || template.organization_code === organizationCode) {
-							templatesByCode[template.code] = template
-						}
-					}
-
-					const cachePromises = Object.entries(templatesByCode).map(([code, template]) =>
-						cacheHelper.notificationTemplates.set(tenantCode, organizationCode, code, template)
-					)
-					await Promise.all(cachePromises)
-				} catch (cacheError) {
-					console.warn('Failed to cache individual notification templates:', cacheError)
-				}
-			}
-
 			return responses.successResponse({
 				statusCode: httpStatusCode.ok,
 				message: 'NOTIFICATION_TEMPLATE_FETCHED_SUCCESSFULLY',
