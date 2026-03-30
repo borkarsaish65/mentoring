@@ -64,6 +64,11 @@ module.exports = class OrganizationAndEntityTypePolicyHelper {
 					organizationInfo.push(orgExtension)
 					tenantCodes.push(orgExtension.tenant_code)
 				} else if (visibilityPolicy === common.ASSOCIATED || visibilityPolicy === common.ALL) {
+					// Always include the current org
+					organizationCodes.push(orgExtension.organization_code)
+					organizationInfo.push(orgExtension)
+					tenantCodes.push(orgExtension.tenant_code)
+
 					let relatedOrgs = []
 					let userOrgDetails = await userRequests.fetchOrgDetails({
 						organizationCode: orgExtension.organization_code,
@@ -183,6 +188,7 @@ module.exports = class OrganizationAndEntityTypePolicyHelper {
 										],
 									},
 								],
+								organization_id: { [Op.ne]: orgExtension.organization_id },
 								tenant_code: tenantCode,
 							},
 							{
@@ -235,8 +241,7 @@ module.exports = class OrganizationAndEntityTypePolicyHelper {
 		defaultOrgCode = '',
 		modelName,
 		filter = {},
-		tenantCodes,
-		defaultTenantCode = ''
+		tenantCode
 	) {
 		try {
 			filter.status = common.ACTIVE_STATUS
@@ -264,9 +269,6 @@ module.exports = class OrganizationAndEntityTypePolicyHelper {
 				filter.model_names = { [Op.contains]: Array.isArray(modelName) ? modelName : [modelName] }
 			}
 			//fetch entity types and entities
-			// Handle both array and string cases for tenantCodes
-			const tenantCodeArray = Array.isArray(tenantCodes) ? tenantCodes : [tenantCodes]
-			const finalTenantCodes = defaultTenantCode ? [...tenantCodeArray, defaultTenantCode] : tenantCodeArray
 
 			// Use cache for model-based queries since this query has core fields only
 			let entityTypesWithEntities
@@ -276,7 +278,7 @@ module.exports = class OrganizationAndEntityTypePolicyHelper {
 				try {
 					entityTypesWithEntities = await entityTypeCache.getEntityTypesAndEntitiesForModel(
 						modelName,
-						finalTenantCodes,
+						tenantCode,
 						filter.organization_code[Op.in],
 						{
 							allow_filtering: filter.allow_filtering,
@@ -285,17 +287,11 @@ module.exports = class OrganizationAndEntityTypePolicyHelper {
 					)
 				} catch (cacheError) {
 					// Fallback to direct database query
-					entityTypesWithEntities = await entityTypeQueries.findUserEntityTypesAndEntities(
-						filter,
-						finalTenantCodes
-					)
+					entityTypesWithEntities = await entityTypeQueries.findUserEntityTypesAndEntities(filter, tenantCode)
 				}
 			} else {
 				// Query has specific entity values or other non-core filters - use direct query
-				entityTypesWithEntities = await entityTypeQueries.findUserEntityTypesAndEntities(
-					filter,
-					finalTenantCodes
-				)
+				entityTypesWithEntities = await entityTypeQueries.findUserEntityTypesAndEntities(filter, tenantCode)
 			}
 			return {
 				success: true,

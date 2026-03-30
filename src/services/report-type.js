@@ -42,8 +42,7 @@ module.exports = class ReportsHelper {
 				})
 			}
 
-			const tenantCodes = [tenantCode]
-			const reportTypes = await reportTypeQueries.findReportTypesByTitle(title, tenantCodes)
+			const reportTypes = await reportTypeQueries.findReportTypesByTitle(title, tenantCode)
 
 			if (!reportTypes || reportTypes.length === 0) {
 				return responses.failureResponse({
@@ -53,12 +52,10 @@ module.exports = class ReportsHelper {
 				})
 			}
 
-			const reportType = reportTypes[0]
-
 			return responses.successResponse({
 				statusCode: httpStatusCode.created,
 				message: 'REPORT_TYPE_FETCHED_SUCCESSFULLY',
-				result: reportType,
+				result: reportTypes[0],
 			})
 		} catch (error) {
 			throw error

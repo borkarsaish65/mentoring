@@ -255,7 +255,7 @@ module.exports = class ConnectionHelper {
 				userExtensionsModelName,
 				'organization_code',
 				[],
-				[tenantCode]
+				tenantCode
 			)
 
 			const friendDetailsMap = friendDetails.reduce((acc, friend) => {
@@ -494,7 +494,7 @@ module.exports = class ConnectionHelper {
 					userExtensionsModelName,
 					'organization_code',
 					[],
-					[tenantCode]
+					tenantCode
 				)
 			}
 			const userIds = extensionDetails.data.map((item) => item.user_id)
@@ -541,8 +541,8 @@ module.exports = class ConnectionHelper {
 				{
 					attributes: ['name', 'email', 'user_id'],
 				},
-				false,
-				tenantCode
+				tenantCode,
+				false
 			)
 
 			// Get mentor details using getCacheOnly first, then fallback to database query
@@ -573,7 +573,6 @@ module.exports = class ConnectionHelper {
 				})
 			}
 
-			const tenantCodes = [tenantCode]
 			const orgCodes = [orgCode, defaults.orgCode]
 
 			// Get email template
@@ -624,8 +623,8 @@ module.exports = class ConnectionHelper {
 				{
 					attributes: ['name', 'email', 'user_id'],
 				},
-				false,
-				tenantCode
+				tenantCode,
+				false
 			)
 
 			// Get mentor details using getCacheOnly first, then fallback to database query
@@ -655,7 +654,6 @@ module.exports = class ConnectionHelper {
 				})
 			}
 
-			const tenantCodes = [tenantCode]
 			const orgCodes = [orgCode, defaults.orgCode]
 
 			// Get email template

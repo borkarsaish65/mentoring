@@ -17,11 +17,13 @@ module.exports = class NotificationTemplateHelper {
 
 	static async create(bodyData, tokenInformation, tenantCode) {
 		try {
-			const template = await notificationTemplateQueries.findOne({
-				code: bodyData.code,
-				tenant_code: tenantCode,
-				organization_code: tokenInformation.organization_code,
-			})
+			const template = await notificationTemplateQueries.findOne(
+				{
+					code: bodyData.code,
+					organization_code: tokenInformation.organization_code,
+				},
+				tenantCode
+			)
 			if (template) {
 				return responses.failureResponse({
 					message: 'NOTIFICATION_TEMPLATE_ALREADY_EXISTS',
@@ -317,12 +319,8 @@ module.exports = class NotificationTemplateHelper {
 				return null
 			}
 
-			// Business logic: Prefer current tenant and org over default
-			let selectedTemplate =
-				templateData.find((t) => t.organization_code === orgCode && t.tenant_code === tenantCode) ||
-				templateData.find((t) => t.organization_code === orgCode) ||
-				templateData.find((t) => t.tenant_code === tenantCode) ||
-				templateData[0]
+			// Business logic: Prefer user's org template over default org template
+			let selectedTemplate = templateData.find((t) => t.organization_code === orgCode) || templateData[0]
 
 			// Business logic: Compose template with header and footer
 			if (selectedTemplate && selectedTemplate.email_header) {
