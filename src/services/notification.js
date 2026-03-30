@@ -39,6 +39,17 @@ module.exports = class NotificationTemplateHelper {
 
 			const createdNotification = await notificationTemplateQueries.create(bodyData, tenantCode)
 
+			// Invalidate cache so stale fallback (default org) is not served
+			try {
+				await cacheHelper.notificationTemplates.delete(
+					tenantCode,
+					tokenInformation.organization_code,
+					bodyData.code
+				)
+			} catch (cacheError) {
+				console.error('❌ Failed to invalidate notification template cache:', cacheError)
+			}
+
 			return responses.successResponse({
 				statusCode: httpStatusCode.created,
 				message: 'NOTIFICATION_TEMPLATE_CREATED_SUCCESSFULLY',
@@ -75,6 +86,10 @@ module.exports = class NotificationTemplateHelper {
 			bodyData['organization_code'] = tokenInformation.organization_code
 			bodyData['updated_by'] = tokenInformation.id
 
+			// Fetch existing template BEFORE update to capture the old code for cache invalidation
+			const existingTemplates = await notificationTemplateQueries.findTemplatesByFilter(filter)
+			const existingTemplate = existingTemplates?.[0]
+
 			const result = await notificationTemplateQueries.updateTemplate(filter, bodyData, tenantCode)
 			if (result == 0) {
 				return responses.failureResponse({
@@ -84,24 +99,32 @@ module.exports = class NotificationTemplateHelper {
 				})
 			}
 
-			// Delete old cache
-			const existingTemplates = await notificationTemplateQueries.findTemplatesByFilter(filter)
-			const existingTemplate = existingTemplates?.[0]
-			const templateCode = bodyData.code || existingTemplate?.code || filter.code
+			// Delete cache for both old code and new code (in case code was changed)
+			const oldCode = existingTemplate?.code
+			const newCode = bodyData.code
+			const isDefaultOrg = tokenInformation.organization_code === process.env.DEFAULT_ORGANISATION_CODE
 			try {
-				if (templateCode) {
-					await cacheHelper.notificationTemplates.delete(
-						tenantCode,
-						tokenInformation.organization_code,
-						templateCode
-					)
+				if (oldCode) {
+					if (isDefaultOrg) {
+						await cacheHelper.notificationTemplates.deleteNotificationsAcrossAllOrgs(tenantCode, oldCode)
+					} else {
+						await cacheHelper.notificationTemplates.delete(
+							tenantCode,
+							tokenInformation.organization_code,
+							oldCode
+						)
+					}
 				}
-				if (existingTemplate?.code && existingTemplate.code !== templateCode) {
-					await cacheHelper.notificationTemplates.delete(
-						tenantCode,
-						tokenInformation.organization_code,
-						existingTemplate.code
-					)
+				if (newCode && newCode !== oldCode) {
+					if (isDefaultOrg) {
+						await cacheHelper.notificationTemplates.deleteNotificationsAcrossAllOrgs(tenantCode, newCode)
+					} else {
+						await cacheHelper.notificationTemplates.delete(
+							tenantCode,
+							tokenInformation.organization_code,
+							newCode
+						)
+					}
 				}
 			} catch (cacheError) {
 				console.error(`❌ Failed to update notification template cache:`, cacheError)
@@ -226,30 +249,6 @@ module.exports = class NotificationTemplateHelper {
 			}
 
 			const notificationTemplates = await notificationTemplateQueries.findTemplatesByFilter(filter)
-
-			// Cache each individual template for future single reads
-			if (notificationTemplates && notificationTemplates.length > 0) {
-				try {
-					console.log(`Caching ${notificationTemplates.length} notification templates individually...`)
-					const cachePromises = []
-
-					for (const template of notificationTemplates) {
-						if (template.code) {
-							const cachePromise = cacheHelper.notificationTemplates.set(
-								tenantCode,
-								organizationCode,
-								template.code,
-								template
-							)
-							cachePromises.push(cachePromise)
-						}
-					}
-
-					await Promise.all(cachePromises)
-				} catch (cacheError) {
-					console.warn('Failed to cache individual notification templates:', cacheError)
-				}
-			}
 
 			return responses.successResponse({
 				statusCode: httpStatusCode.ok,
