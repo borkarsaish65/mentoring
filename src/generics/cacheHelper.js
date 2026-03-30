@@ -810,8 +810,7 @@ const forms = {
 		const compositeId = `${type}:${subtype}`
 		const useInternal = nsUseInternal('forms')
 		const cacheKey = await buildKey({ tenantCode, orgCode: orgCode, ns: 'forms', id: compositeId })
-		const result = await del(cacheKey, { useInternal })
-		return result
+		return del(cacheKey, { useInternal })
 	},
 
 	/**
