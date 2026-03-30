@@ -99,32 +99,30 @@ module.exports = class NotificationTemplateHelper {
 				})
 			}
 
-			// Delete old cache
-			const templateCode = bodyData.code || existingTemplate?.code || filter.code
+			// Delete cache for both old code and new code (in case code was changed)
+			const oldCode = existingTemplate?.code
+			const newCode = bodyData.code
 			const isDefaultOrg = tokenInformation.organization_code === process.env.DEFAULT_ORGANISATION_CODE
 			try {
-				if (templateCode) {
+				if (oldCode) {
 					if (isDefaultOrg) {
-						// Default org update: other orgs may have cached this template via fallback
-						// under their own org key — sweep all of them
-						await cacheHelper.notificationTemplates.deleteAcrossAllOrgs(tenantCode, templateCode)
+						await cacheHelper.notificationTemplates.deleteAcrossAllOrgs(tenantCode, oldCode)
 					} else {
 						await cacheHelper.notificationTemplates.delete(
 							tenantCode,
 							tokenInformation.organization_code,
-							templateCode
+							oldCode
 						)
 					}
 				}
-				// If the template code itself was changed, also clear the old code
-				if (existingTemplate?.code && existingTemplate.code !== templateCode) {
+				if (newCode && newCode !== oldCode) {
 					if (isDefaultOrg) {
-						await cacheHelper.notificationTemplates.deleteAcrossAllOrgs(tenantCode, existingTemplate.code)
+						await cacheHelper.notificationTemplates.deleteAcrossAllOrgs(tenantCode, newCode)
 					} else {
 						await cacheHelper.notificationTemplates.delete(
 							tenantCode,
 							tokenInformation.organization_code,
-							existingTemplate.code
+							newCode
 						)
 					}
 				}
@@ -251,27 +249,6 @@ module.exports = class NotificationTemplateHelper {
 			}
 
 			const notificationTemplates = await notificationTemplateQueries.findTemplatesByFilter(filter)
-
-			// Cache each individual template for future single reads
-			if (notificationTemplates && notificationTemplates.length > 0) {
-				try {
-					const templatesByCode = {}
-					for (const template of notificationTemplates) {
-						if (!template.code) continue
-						// Only set if not yet seen, or if this template belongs to user's own org (higher priority)
-						if (!templatesByCode[template.code] || template.organization_code === organizationCode) {
-							templatesByCode[template.code] = template
-						}
-					}
-
-					const cachePromises = Object.entries(templatesByCode).map(([code, template]) =>
-						cacheHelper.notificationTemplates.set(tenantCode, organizationCode, code, template)
-					)
-					await Promise.all(cachePromises)
-				} catch (cacheError) {
-					console.warn('Failed to cache individual notification templates:', cacheError)
-				}
-			}
 
 			return responses.successResponse({
 				statusCode: httpStatusCode.ok,
