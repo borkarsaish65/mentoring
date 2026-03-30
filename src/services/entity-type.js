@@ -316,17 +316,26 @@ module.exports = class EntityHelper {
 			}
 
 			// THIRD: Remove individual entity type from cache
+			const isDefaultOrg = organizationCode === process.env.DEFAULT_ORGANISATION_CODE
 			try {
 				// For each model this entity belonged to
 				if (entityToDelete.model_names && Array.isArray(entityToDelete.model_names)) {
 					for (const modelName of entityToDelete.model_names) {
 						// Remove the specific entity type cache
-						await cacheHelper.entityTypes.delete(
-							tenantCode,
-							organizationCode,
-							modelName,
-							entityToDelete.value
-						)
+						if (isDefaultOrg) {
+							await cacheHelper.entityTypes.deleteEntityTypesAcrossAllOrgs(
+								tenantCode,
+								modelName,
+								entityToDelete.value
+							)
+						} else {
+							await cacheHelper.entityTypes.delete(
+								tenantCode,
+								organizationCode,
+								modelName,
+								entityToDelete.value
+							)
+						}
 					}
 				}
 			} catch (cacheError) {
@@ -336,12 +345,20 @@ module.exports = class EntityHelper {
 				if (entityToDelete.model_names && Array.isArray(entityToDelete.model_names)) {
 					for (const modelName of entityToDelete.model_names) {
 						try {
-							await cacheHelper.entityTypes.delete(
-								tenantCode,
-								organizationCode,
-								modelName,
-								entityToDelete.value
-							)
+							if (isDefaultOrg) {
+								await cacheHelper.entityTypes.deleteEntityTypesAcrossAllOrgs(
+									tenantCode,
+									modelName,
+									entityToDelete.value
+								)
+							} else {
+								await cacheHelper.entityTypes.delete(
+									tenantCode,
+									organizationCode,
+									modelName,
+									entityToDelete.value
+								)
+							}
 						} catch (retryError) {
 							// Failed to retry clear cache - continue operation
 						}
