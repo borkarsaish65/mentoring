@@ -300,11 +300,15 @@ module.exports = class EntityHelper {
 			}
 
 			// Clear cache for affected models before deletion
-			await this._clearUserCachesForEntityTypeChange(organizationCode, tenantCode, {
-				id: entityToDelete.id,
-				value: entityToDelete.value,
-				modelNames: entityToDelete.model_names,
-			})
+			const isDefaultOrg = organizationCode === process.env.DEFAULT_ORGANISATION_CODE
+
+			await this._clearUserCachesForEntityTypeChange(
+				organizationCode,
+				tenantCode,
+				entityToDelete.model_names ? entityToDelete.model_names[0] : null,
+				entityToDelete.value,
+				isDefaultOrg
+			)
 
 			// SECOND: Delete from database
 			const deleteCount = await entityTypeQueries.deleteOneEntityType(id, organizationCode, tenantCode)
@@ -317,7 +321,6 @@ module.exports = class EntityHelper {
 			}
 
 			// THIRD: Remove individual entity type from cache
-			const isDefaultOrg = organizationCode === process.env.DEFAULT_ORGANISATION_CODE
 			try {
 				// For each model this entity belonged to
 				if (entityToDelete.model_names && Array.isArray(entityToDelete.model_names)) {
