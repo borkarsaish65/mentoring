@@ -105,9 +105,9 @@ module.exports = class EntityHelper {
 			}
 
 			// Cache invalidation after successful update: just delete using original entity data
+			const isDefaultOrg = orgCode === process.env.DEFAULT_ORGANISATION_CODE
 			try {
 				if (originalEntity && originalEntity.model_names && originalEntity.value) {
-					const isDefaultOrg = orgCode === process.env.DEFAULT_ORGANISATION_CODE
 					for (const modelName of originalEntity.model_names) {
 						if (isDefaultOrg) {
 							// Default org update: other orgs may have cached this entity type via fallback
@@ -132,7 +132,8 @@ module.exports = class EntityHelper {
 				orgCode,
 				tenantCode,
 				updatedEntity.model_names ? updatedEntity.model_names[0] : null,
-				updatedEntity.value
+				updatedEntity.value,
+				isDefaultOrg
 			)
 
 			return responses.successResponse({
@@ -371,7 +372,8 @@ module.exports = class EntityHelper {
 				organizationCode,
 				tenantCode,
 				entityToDelete.model_names ? entityToDelete.model_names[0] : null,
-				entityToDelete.value
+				entityToDelete.value,
+				isDefaultOrg
 			)
 
 			return responses.successResponse({
@@ -546,7 +548,8 @@ module.exports = class EntityHelper {
 		organizationCode,
 		tenantCode,
 		modelName = null,
-		entityValue = null
+		entityValue = null,
+		allOrgs = false
 	) {
 		try {
 			const logContext = modelName ? `${modelName}:${entityValue}` : 'global'
@@ -592,7 +595,10 @@ module.exports = class EntityHelper {
 				if (modelName === menteeModelName) {
 					// Clear all mentee caches for this organization
 					try {
-						const users = await menteeExtensionQueries.getAllUsersByOrgId([organizationCode], tenantCode)
+						const users = await menteeExtensionQueries.getAllUsersByOrgId(
+							allOrgs ? null : [organizationCode],
+							tenantCode
+						)
 						const menteeUserIds = users.map((user) => user.user_id)
 
 						// Clear mentee caches for all users in organization
@@ -611,7 +617,10 @@ module.exports = class EntityHelper {
 					// Clear all mentor caches for this organization
 					try {
 						// Get all users who might be mentors in this organization
-						const users = await menteeExtensionQueries.getAllUsersByOrgId([organizationCode], tenantCode)
+						const users = await menteeExtensionQueries.getAllUsersByOrgId(
+							allOrgs ? null : [organizationCode],
+							tenantCode
+						)
 						const mentorUserIds = users.map((user) => user.user_id)
 
 						// Clear mentor caches for all users in organization (users can be both mentee and mentor)
