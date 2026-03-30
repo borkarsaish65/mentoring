@@ -86,10 +86,9 @@ module.exports = class NotificationTemplateHelper {
 			bodyData['organization_code'] = tokenInformation.organization_code
 			bodyData['updated_by'] = tokenInformation.id
 
-			// Fetch original template BEFORE update to capture old code for cache invalidation
+			// Fetch existing template BEFORE update to capture the old code for cache invalidation
 			const existingTemplates = await notificationTemplateQueries.findTemplatesByFilter(filter)
 			const existingTemplate = existingTemplates?.[0]
-			const oldCode = existingTemplate?.code || filter.code
 
 			const result = await notificationTemplateQueries.updateTemplate(filter, bodyData, tenantCode)
 			if (result == 0) {
@@ -100,6 +99,10 @@ module.exports = class NotificationTemplateHelper {
 				})
 			}
 
+			// Delete cache for both old code and new code (in case code was changed)
+			const oldCode = existingTemplate?.code
+			const newCode = bodyData.code
+			const isDefaultOrg = tokenInformation.organization_code === process.env.DEFAULT_ORGANISATION_CODE
 			try {
 				if (oldCode) {
 					if (isDefaultOrg) {
@@ -109,6 +112,17 @@ module.exports = class NotificationTemplateHelper {
 							tenantCode,
 							tokenInformation.organization_code,
 							oldCode
+						)
+					}
+				}
+				if (newCode && newCode !== oldCode) {
+					if (isDefaultOrg) {
+						await cacheHelper.notificationTemplates.deleteNotificationsAcrossAllOrgs(tenantCode, newCode)
+					} else {
+						await cacheHelper.notificationTemplates.delete(
+							tenantCode,
+							tokenInformation.organization_code,
+							newCode
 						)
 					}
 				}
