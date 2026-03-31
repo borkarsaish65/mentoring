@@ -712,11 +712,12 @@ module.exports = class MenteeExtensionQueries {
 
 	static async getAllUsersByOrgId(orgCodes, tenantCode) {
 		try {
-			const viewName = utils.getTenantViewName(tenantCode, MenteeExtension.tableName)
-
 			if (!Array.isArray(orgCodes) || orgCodes.length === 0) {
 				return []
 			}
+
+			const viewName = utils.getTenantViewName(tenantCode, MenteeExtension.tableName)
+
 			const query = `
 			SELECT user_id
 			FROM ${viewName}
