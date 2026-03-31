@@ -85,6 +85,8 @@ module.exports = async function (req, res, next) {
 				typeof configData[organizationKey] === 'object'
 					? configData[organizationKey].path
 					: configData[organizationKey]
+			const orgIdDefault =
+				typeof configData[organizationKey] === 'object' ? configData[organizationKey].default : undefined
 
 			// Iterate through each key in the config object
 			for (let key in configData) {
@@ -98,12 +100,12 @@ module.exports = async function (req, res, next) {
 						keyValue = keyValue?.toString()
 					}
 					if (key === organizationKey) {
-						const orgId = getOrgId(req.headers, decodedToken, pathStr)
+						const orgId = getOrgId(req.headers, decodedToken, pathStr, orgIdDefault)
 						req.decodedToken[key] = orgId
 						continue
 					}
 					if (key === 'roles') {
-						let orgId = getOrgId(req.headers, decodedToken, orgIdPath)
+						let orgId = getOrgId(req.headers, decodedToken, orgIdPath, orgIdDefault)
 
 						// Now extract roles using fully dynamic path
 						const rolePathTemplate = pathStr
@@ -203,12 +205,12 @@ module.exports = async function (req, res, next) {
 	}
 }
 
-function getOrgId(headers, decodedToken, orgConfigData) {
+function getOrgId(headers, decodedToken, orgConfigData, defaultVal) {
 	if (headers['organization_id']) {
 		return (orgId = headers['organization_id'].toString())
 	} else {
 		const orgIdPath = orgConfigData
-		return (orgId = getNestedValue(decodedToken, orgIdPath)?.toString())
+		return (orgId = (getNestedValue(decodedToken, orgIdPath) ?? defaultVal)?.toString())
 	}
 }
 function getNestedValue(obj, path) {
