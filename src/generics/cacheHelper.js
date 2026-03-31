@@ -1587,6 +1587,14 @@ const displayProperties = {
 		await del(orgKey, { useInternal })
 		await del(tenantKey, { useInternal })
 	},
+	async deleteAll(tenantCode) {
+		// Delete all org-level displayProperties
+		const pattern = `tenant:${tenantCode}:org:*:displayProperties`
+		await scanAndDelete(pattern)
+		// Optional: delete tenant-level fallback
+		const tenantPattern = `tenant:${tenantCode}:org::displayProperties`
+		await scanAndDelete(tenantPattern)
+	},
 }
 
 /**

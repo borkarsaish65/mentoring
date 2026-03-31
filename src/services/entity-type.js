@@ -492,11 +492,11 @@ module.exports = class EntityHelper {
 			const clearPromises = []
 
 			// 1. Clear display properties cache (affects all users in org)
-			clearPromises.push(
-				cacheHelper.displayProperties.delete(tenantCode, organizationCode).catch((error) => {
-					/* Failed to clear display properties cache - continue operation */
-				})
-			)
+			if (allOrgs) {
+				clearPromises.push(cacheHelper.displayProperties.deleteAll(tenantCode).catch(() => {}))
+			} else {
+				clearPromises.push(cacheHelper.displayProperties.delete(tenantCode, organizationCode).catch(() => {}))
+			}
 
 			// 2. Clear entity type cache for the specific model + value
 			if (modelName) {
