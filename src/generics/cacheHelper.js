@@ -369,10 +369,8 @@ const sessions = {
 		return del(cacheKey, { useInternal })
 	},
 
-	async deleteAll(tenantCode, orgCode = null) {
-		const pattern = orgCode
-			? `tenant:${tenantCode}:org:${orgCode}:sessions:*`
-			: `tenant:${tenantCode}:org:*:sessions:*`
+	async deleteAll(tenantCode) {
+		const pattern = `tenant:${tenantCode}:sessions:*`
 		const result = await scanAndDelete(pattern)
 		return result
 	},

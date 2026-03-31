@@ -568,11 +568,8 @@ module.exports = class EntityHelper {
 				}
 
 				if (modelName === sessionModelName) {
-					if (allOrgs) {
-						clearPromises.push(cacheHelper.sessions.deleteAll(tenantCode).catch(() => {}))
-					} else {
-						clearPromises.push(cacheHelper.sessions.deleteAll(tenantCode, organizationCode).catch(() => {}))
-					}
+					// Session keys have no org scope, so always sweep all sessions for the tenant
+					clearPromises.push(cacheHelper.sessions.deleteAll(tenantCode).catch(() => {}))
 				}
 			}
 
