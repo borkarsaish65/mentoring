@@ -1591,9 +1591,6 @@ const displayProperties = {
 		// Delete all org-level displayProperties
 		const pattern = `tenant:${tenantCode}:org:*:displayProperties`
 		await scanAndDelete(pattern)
-		// Optional: delete tenant-level fallback
-		const tenantPattern = `tenant:${tenantCode}:org::displayProperties`
-		await scanAndDelete(tenantPattern)
 	},
 }
 
