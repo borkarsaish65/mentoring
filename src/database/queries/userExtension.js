@@ -715,6 +715,7 @@ module.exports = class MenteeExtensionQueries {
 			if (!Array.isArray(orgCodes) || orgCodes.length === 0) {
 				return []
 			}
+
 			const viewName = utils.getTenantViewName(tenantCode, MenteeExtension.tableName)
 
 			const query = `

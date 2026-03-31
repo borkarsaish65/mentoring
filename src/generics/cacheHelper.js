@@ -369,6 +369,12 @@ const sessions = {
 		return del(cacheKey, { useInternal })
 	},
 
+	async deleteAll(tenantCode) {
+		const pattern = `tenant:${tenantCode}:sessions:*`
+		const result = await scanAndDelete(pattern)
+		return result
+	},
+
 	async reset(tenantCode, sessionId, sessionData, customTtl = null) {
 		return this.set(tenantCode, sessionId, sessionData, customTtl)
 	},
@@ -609,6 +615,17 @@ const entityTypes = {
 		const useInternal = nsUseInternal('entityTypes')
 		const cacheKey = await buildKey({ tenantCode, orgCode: orgCode, ns: 'entityTypes', id: compositeId })
 		return del(cacheKey, { useInternal })
+	},
+
+	/**
+	 * Invalidate a specific entity type across ALL orgs in a tenant.
+	 * Used when the default org updates an entity type — other orgs may have cached
+	 * the default org's data under their own org key via fallback logic.
+	 */
+	async deleteEntityTypesAcrossAllOrgs(tenantCode, modelName, entityValue) {
+		const pattern = `tenant:${tenantCode}:org:*:entityTypes:model:${modelName}:${entityValue}`
+		const result = await scanAndDelete(pattern)
+		return result
 	},
 
 	// Clear all entityTypes cache for a tenant/org (useful after cache key format changes)
@@ -935,6 +952,12 @@ const mentor = {
 		}
 	},
 
+	async deleteAll(tenantCode) {
+		const pattern = `tenant:${tenantCode}:mentor:*`
+		const result = await scanAndDelete(pattern)
+		return result
+	},
+
 	_sanitizeProfileData(profileData) {
 		const sanitized = { ...profileData }
 
@@ -1172,6 +1195,12 @@ const mentee = {
 		} catch (error) {
 			console.error(`❌ Failed to delete mentee profile ${menteeId} cache:`, error)
 		}
+	},
+
+	async deleteAll(tenantCode) {
+		const pattern = `tenant:${tenantCode}:mentee:*`
+		const result = await scanAndDelete(pattern)
+		return result
 	},
 
 	_sanitizeProfileData(profileData) {
@@ -1557,6 +1586,11 @@ const displayProperties = {
 
 		await del(orgKey, { useInternal })
 		await del(tenantKey, { useInternal })
+	},
+	async deleteAll(tenantCode) {
+		// Delete all org-level displayProperties
+		const pattern = `tenant:${tenantCode}:org:*:displayProperties`
+		await scanAndDelete(pattern)
 	},
 }
 
