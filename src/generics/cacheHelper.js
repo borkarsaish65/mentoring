@@ -373,9 +373,7 @@ const sessions = {
 		const pattern = orgCode
 			? `tenant:${tenantCode}:org:${orgCode}:sessions:*`
 			: `tenant:${tenantCode}:org:*:sessions:*`
-		console.log(`[SessionCache] deleteAll - scanning and deleting pattern: ${pattern}`)
 		const result = await scanAndDelete(pattern)
-		console.log(`[SessionCache] deleteAll - deleted ${result} key(s)`)
 		return result
 	},
 
