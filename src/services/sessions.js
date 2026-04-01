@@ -1469,8 +1469,7 @@ module.exports = class SessionsHelper {
 
 			if (utils.isNumeric(id) && sessionDetailedResponse) {
 				try {
-					// Normalize fields that may be stored as processed {value, label} objects in cache
-					sessionDetailedResponse.type = sessionDetailedResponse.type?.value ?? sessionDetailedResponse.type
+					const sessionTypeValue = sessionDetailedResponse.type?.value ?? sessionDetailedResponse.type
 
 					let sessionAttendee = sessionDetailedResponse.mentees?.find(
 						(mentee) => String(mentee.id) === String(userId)
@@ -1480,7 +1479,7 @@ module.exports = class SessionsHelper {
 					// Check accessibility for cached response
 					if (userId !== '' && isAMentor !== '') {
 						let isAccessible = await this.checkIfSessionIsAccessible(
-							sessionDetailedResponse,
+							{ ...sessionDetailedResponse, type: sessionTypeValue },
 							userId,
 							isAMentor,
 							tenantCode,
@@ -1504,7 +1503,7 @@ module.exports = class SessionsHelper {
 								requesterId: userId,
 								roles: roles,
 								requesterOrganizationCode: orgCode,
-								data: sessionDetailedResponse,
+								data: { ...sessionDetailedResponse, type: sessionTypeValue },
 								tenantCode: tenantCode,
 							})
 						}
