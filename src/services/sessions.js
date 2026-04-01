@@ -599,6 +599,10 @@ module.exports = class SessionsHelper {
 				})
 			}
 
+			// Normalize fields that may be stored as processed {value, label} objects in cache
+			sessionDetail.status = sessionDetail.status?.value ?? sessionDetail.status
+			sessionDetail.type = sessionDetail.type?.value ?? sessionDetail.type
+
 			// let triggerSessionMeetinkAddEmail = false
 			// if (
 			// 	sessionDetail.meeting_info &&

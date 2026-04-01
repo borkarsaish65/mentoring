@@ -503,6 +503,9 @@ module.exports = class MenteesHelper {
 				})
 			}
 
+			// Normalize status that may be stored as processed {value, label} object in cache
+			sessionData.status = sessionData.status?.value ?? sessionData.status
+
 			const sessionAttendeeExist = sessionWithAttendee.attendee_id
 				? {
 						id: sessionWithAttendee.attendee_id,
