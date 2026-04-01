@@ -279,7 +279,7 @@ module.exports = class OrganizationAndEntityTypePolicyHelper {
 					entityTypesWithEntities = await entityTypeCache.getEntityTypesAndEntitiesForModel(
 						modelName,
 						tenantCode,
-						filter.organization_code[Op.in],
+						orgCodes[0],
 						{
 							allow_filtering: filter.allow_filtering,
 							has_entities: filter.has_entities,

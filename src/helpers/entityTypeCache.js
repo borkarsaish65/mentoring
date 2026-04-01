@@ -240,7 +240,7 @@ async function getEntityTypesAndEntitiesForModel(modelName, tenantCode, orgCode,
 			// Step 1: ALWAYS fetch from user tenant and org codes
 			const userFilter = {
 				status: 'ACTIVE',
-				organization_code: orgCode,
+				organization_code: { [Op.in]: [orgCode, defaults.orgCode].filter(Boolean) },
 				model_names: { [Op.contains]: [modelName] },
 			}
 			// Handle both array and single value for tenantCode
