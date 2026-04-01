@@ -1469,6 +1469,14 @@ module.exports = class SessionsHelper {
 
 			if (utils.isNumeric(id) && sessionDetailedResponse) {
 				try {
+					// Normalize fields that may be stored as processed {value, label} objects in cache
+					sessionDetailedResponse.type = sessionDetailedResponse.type?.value ?? sessionDetailedResponse.type
+
+					let sessionAttendee = sessionDetailedResponse.mentees?.find(
+						(mentee) => String(mentee.id) === String(userId)
+					)
+					sessionDetailedResponse.is_enrolled = userId && sessionAttendee ? true : false
+
 					// Check accessibility for cached response
 					if (userId !== '' && isAMentor !== '') {
 						let isAccessible = await this.checkIfSessionIsAccessible(
@@ -1486,10 +1494,6 @@ module.exports = class SessionsHelper {
 							})
 						}
 					}
-
-					let sessionAttendee = sessionDetailedResponse.mentees?.find(
-						(mentee) => String(mentee.id) === String(userId)
-					)
 
 					if (!sessionAttendee) {
 						let validateDefaultRules
@@ -1521,9 +1525,7 @@ module.exports = class SessionsHelper {
 						}
 					}
 
-					sessionDetailedResponse.is_enrolled = false
 					if (userId && sessionAttendee) {
-						sessionDetailedResponse.is_enrolled = true
 						sessionDetailedResponse.enrolment_type = sessionAttendee.type
 					}
 
@@ -2061,6 +2063,9 @@ module.exports = class SessionsHelper {
 					responseCode: 'CLIENT_ERROR',
 				})
 			}
+
+			// Normalize fields that may be stored as processed {value, label} objects in cache
+			session.type = session.type?.value ?? session.type
 
 			let validateDefaultRules
 			if (isSelfEnrolled) {
