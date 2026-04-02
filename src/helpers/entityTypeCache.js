@@ -162,7 +162,7 @@ async function getEntityTypesAndEntitiesWithCache(originalFilter, tenantCode, or
  * @name getEntityTypesAndEntitiesForModel
  * @param {String} modelName - model name to filter by
  * @param {String} tenantCode - user tenant code (single value, not array)
- * @param {String} orgCode - user organization code (single value, not array)
+ * @param {String|Array} orgCode - user organization code(s); single string or array — default org is always appended internally
  * @param {Object} additionalFilters - additional filter conditions
  * @returns {JSON} - Entity types with entities for the model
  */
@@ -238,9 +238,14 @@ async function getEntityTypesAndEntitiesForModel(modelName, tenantCode, orgCode,
 		let allEntityTypes = []
 		try {
 			// Step 1: ALWAYS fetch from user tenant and org codes
+			// Normalize orgCode: accept array or single string, always include default org
+			const orgCodeArray = Array.isArray(orgCode) ? [...orgCode] : [orgCode]
+			if (defaults.orgCode && !orgCodeArray.includes(defaults.orgCode)) {
+				orgCodeArray.push(defaults.orgCode)
+			}
 			const userFilter = {
 				status: 'ACTIVE',
-				organization_code: { [Op.in]: [orgCode, defaults.orgCode].filter(Boolean) },
+				organization_code: { [Op.in]: orgCodeArray.filter(Boolean) },
 				model_names: { [Op.contains]: [modelName] },
 			}
 			// Handle both array and single value for tenantCode

@@ -356,11 +356,10 @@ module.exports = class EntityHelper {
 			if (entityType && entityType.length > 0) {
 				additionalFilters.value = entityType
 			}
-			const primaryOrgCode = orgCodes[0] || defaults.orgCode
 			let entityTypesWithEntities = await entityTypeCache.getEntityTypesAndEntitiesForModel(
 				Array.isArray(modelName) ? modelName[0] : modelName,
 				tenantCode,
-				primaryOrgCode,
+				orgCodes,
 				additionalFilters
 			)
 			entityTypesWithEntities = JSON.parse(JSON.stringify(entityTypesWithEntities))
