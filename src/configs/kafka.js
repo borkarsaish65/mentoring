@@ -53,6 +53,7 @@ async function startConsumer(kafkaClient) {
 		process.env.EVENTS_TOPIC,
 		process.env.CLEAR_INTERNAL_CACHE,
 		process.env.EVENT_TENANT_KAFKA_TOPIC,
+		process.env.EVENT_ORGANIZATION_KAFKA_TOPIC,
 	].filter(Boolean)
 	await consumer.subscribe({ topics })
 
@@ -88,8 +89,7 @@ async function startConsumer(kafkaClient) {
 					}
 				}
 
-				if (payload && topic === process.env.EVENTS_TOPIC) {
-					// Handle organization events
+				if (payload && topic === process.env.EVENT_ORGANIZATION_KAFKA_TOPIC) {
 					if (
 						payload.entity === 'organization' &&
 						(payload.eventType === 'create' ||
@@ -98,6 +98,9 @@ async function startConsumer(kafkaClient) {
 					) {
 						response = await organizationConsumer.messageReceived(payload)
 					}
+				}
+
+				if (payload && topic === process.env.EVENTS_TOPIC) {
 					if (payload.entity === 'user') {
 						if (payload.eventType === 'roleChange') {
 							response = await rolechangeConsumer.messageReceived(payload)

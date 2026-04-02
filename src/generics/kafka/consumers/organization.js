@@ -30,7 +30,7 @@ var messageReceived = function (message) {
 					// Use existing createOrgExtension method from organization service
 					const createEventBody = {
 						entityId: entityId.toString(),
-						organization_code: code,
+						code: code,
 						name: name,
 						description: description,
 						status: status,
