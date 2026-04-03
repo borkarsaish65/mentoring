@@ -71,7 +71,6 @@ module.exports = class NotificationTemplateHelper {
 	static async update(id, bodyData, tokenInformation, tenantCode) {
 		try {
 			let filter = {
-				organization_id: tokenInformation.organization_id,
 				organization_code: tokenInformation.organization_code,
 				tenant_code: tenantCode,
 			}
