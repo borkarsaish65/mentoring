@@ -143,11 +143,3 @@ node src/scripts/backfillTenantData.js <path-to-csv>
 - The script exits with code `1` if any rows fail; check the console output for per-row status.
 
 #
-
-<br><br>
-
-# **References**
-
-\- Docker Installation Guide: https://docs.docker.com/engine/install/ubuntu/
-
-\- Docker Compose Docs: https://docs.docker.com/compose/
