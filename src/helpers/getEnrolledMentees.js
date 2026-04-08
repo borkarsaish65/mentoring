@@ -67,7 +67,6 @@ exports.getEnrolledMentees = async (sessionId, queryParams, tenantCode) => {
 		}
 
 		// Process entity types to add value labels
-		// organization_code is directly available on each user from getUserDetailedListUsingCache
 		const uniqueOrgCodes = [...new Set(enrolledUsers.map((user) => user.organization_code).filter(Boolean))]
 		const modelName = await menteeExtensionQueries.getModelName()
 
