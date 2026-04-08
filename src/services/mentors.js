@@ -162,7 +162,8 @@ module.exports = class MentorsHelper {
 				common.sessionModelName,
 				'mentor_organization_id',
 				[],
-				tenantCode
+				tenantCode,
+				true
 			)
 
 			upcomingSessions.data = await this.sessionMentorDetails(upcomingSessions.data, tenantCode)
@@ -1741,18 +1742,18 @@ module.exports = class MentorsHelper {
 					}
 				}
 				item.is_assigned = item.mentor_id !== item.created_by
+				// Normalize org code from enriched organization object for entity type resolution
+				item.organization_code = item.organization?.organization_code || null
 			})
 
 			// Extract organization codes for entity processing
-			const uniqueOrgIds = [
-				...new Set(sessionDetails.rows.map((obj) => obj.organization?.organization_code).filter(Boolean)),
-			]
+			const uniqueOrgCodes = [...new Set(sessionDetails.rows.map((obj) => obj.organization_code).filter(Boolean))]
 
 			sessionDetails.rows = await entityTypeService.processEntityTypesToAddValueLabels(
 				sessionDetails.rows,
-				uniqueOrgIds,
+				uniqueOrgCodes,
 				common.sessionModelName,
-				'mentor_organization_id',
+				'organization_code',
 				[],
 				tenantCode
 			)

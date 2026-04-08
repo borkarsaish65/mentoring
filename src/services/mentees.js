@@ -726,7 +726,8 @@ module.exports = class MenteesHelper {
 				common.sessionModelName,
 				'mentor_organization_id',
 				[],
-				tenantCode
+				tenantCode,
+				true
 			)
 		}
 
@@ -879,7 +880,8 @@ module.exports = class MenteesHelper {
 					common.sessionModelName,
 					'mentor_organization_id',
 					[],
-					tenantCode
+					tenantCode,
+					true
 				)
 				sessionDetails.rows = await this.sessionMentorDetails(sessionDetails.rows, tenantCode)
 				sessionDetails.rows = sessionDetails.rows.map((r) => ({ ...r, is_enrolled: true }))

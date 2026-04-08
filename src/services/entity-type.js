@@ -4,6 +4,7 @@ const entityTypeQueries = require('../database/queries/entityType')
 const menteeExtensionQueries = require('../database/queries/userExtension')
 const mentorExtensionQueries = require('../database/queries/mentorExtension')
 const sessionQueries = require('../database/queries/sessions')
+const organisationExtensionQueries = require('../database/queries/organisationExtension')
 const { UniqueConstraintError } = require('sequelize')
 const { Op } = require('sequelize')
 const { removeDefaultOrgEntityTypes } = require('@generics/utils')
@@ -317,10 +318,12 @@ module.exports = class EntityHelper {
 	 * @method
 	 * @name processEntityTypesToAddValueLabels
 	 * @param {Array} responseData 				- data to modify
-	 * @param {Array} orgCods					- org ids
+	 * @param {Array} orgCodes					- org ids or org codes depending on orgIdPassed
 	 * @param {String} modelName 				- model name which the entity search is associated to.
-	 * @param {String} orgCodeKey 				- In responseData which key represents org id
+	 * @param {String} orgCodeKey 				- In responseData which key represents org identifier
 	 * @param {ARRAY} entityType 				- Array of entity types value
+	 * @param {String} tenantCode				- tenant code
+	 * @param {Boolean} orgIdPassed				- true when orgCodes contains integer org IDs instead of org code strings
 	 * @returns {JSON} 							- modified response data
 	 */
 	static async processEntityTypesToAddValueLabels(
@@ -329,7 +332,8 @@ module.exports = class EntityHelper {
 		modelName,
 		orgCodeKey,
 		entityType,
-		tenantCode
+		tenantCode,
+		orgIdPassed = false
 	) {
 		try {
 			const defaults = await getDefaults()
@@ -346,8 +350,24 @@ module.exports = class EntityHelper {
 					responseCode: 'CLIENT_ERROR',
 				})
 
-			if (!orgCodes.includes(defaults.orgCode)) {
-				orgCodes.push(defaults.orgCode)
+			// When callers pass integer org IDs instead of org code strings, resolve them first
+			let idToCodeMap = null
+			let resolvedOrgCodes = orgCodes
+			if (orgIdPassed) {
+				const validIds = orgCodes.filter(Boolean)
+				const orgExtensions = await organisationExtensionQueries.findAll(
+					{ organization_id: { [Op.in]: validIds }, tenant_code: tenantCode },
+					{ attributes: ['organization_id', 'organization_code'] }
+				)
+				idToCodeMap = {}
+				orgExtensions.forEach((ext) => {
+					idToCodeMap[ext.organization_id] = ext.organization_code
+				})
+				resolvedOrgCodes = [...new Set(Object.values(idToCodeMap))]
+			}
+
+			if (!resolvedOrgCodes.includes(defaults.orgCode)) {
+				resolvedOrgCodes = [...resolvedOrgCodes, defaults.orgCode]
 			}
 
 			const additionalFilters = {
@@ -359,7 +379,7 @@ module.exports = class EntityHelper {
 			let entityTypesWithEntities = await entityTypeCache.getEntityTypesAndEntitiesForModel(
 				Array.isArray(modelName) ? modelName[0] : modelName,
 				tenantCode,
-				orgCodes,
+				resolvedOrgCodes,
 				additionalFilters
 			)
 			entityTypesWithEntities = JSON.parse(JSON.stringify(entityTypesWithEntities))
@@ -369,8 +389,14 @@ module.exports = class EntityHelper {
 
 			// Use Array.map with async to process each element asynchronously
 			const result = responseData.map(async (element) => {
-				// Prepare the array of orgCodes to search
-				const orgIdToSearch = [element[orgCodeKey], defaults.orgCode]
+				// Resolve per-element org code (handles both integer ID and string code cases)
+				const elementOrgIdentifier = element[orgCodeKey]
+				const elementOrgCode = idToCodeMap ? idToCodeMap[elementOrgIdentifier] : elementOrgIdentifier
+
+				// Build org codes to search — only include elementOrgCode if resolved; defaults.orgCode always last
+				const orgIdToSearch = []
+				if (elementOrgCode) orgIdToSearch.push(elementOrgCode)
+				orgIdToSearch.push(defaults.orgCode)
 
 				// Filter entity types based on orgCodes and remove parent entity types
 				let entitTypeData = entityTypesWithEntities.filter((obj) =>

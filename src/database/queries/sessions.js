@@ -1150,6 +1150,8 @@ exports.findAllSessions = async (page, limit, search, filters, tenantCode) => {
 				'created_at',
 				'meeting_info',
 				'created_by',
+				'mentor_organization_id',
+				'meta',
 			],
 			offset: parseInt((page - 1) * limit, 10),
 			limit: parseInt(limit, 10),
