@@ -393,7 +393,6 @@ module.exports = class EntityHelper {
 				const elementOrgIdentifier = element[orgCodeKey]
 				const elementOrgCode = idToCodeMap ? idToCodeMap[elementOrgIdentifier] : elementOrgIdentifier
 
-				// Build org codes to search — only include elementOrgCode if resolved; defaults.orgCode always last
 				const orgIdToSearch = []
 				if (elementOrgCode) orgIdToSearch.push(elementOrgCode)
 				orgIdToSearch.push(defaults.orgCode)
