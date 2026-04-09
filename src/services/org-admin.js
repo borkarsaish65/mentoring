@@ -317,11 +317,13 @@ module.exports = class OrgAdminService {
 					{ organization_id: decodedToken.organization_id }, //custom filter for where clause
 					tenantCode
 				)
-
 				// Clear per-user profile caches so stale policy fields are not served after bulk update
-				await cacheHelper.mentee.deleteAll(tenantCode)
-				await cacheHelper.mentor.deleteAll(tenantCode)
-
+				try {
+					await cacheHelper.mentee.deleteAll(tenantCode)
+					await cacheHelper.mentor.deleteAll(tenantCode)
+				} catch (cacheError) {
+					console.error('Failed to invalidate mentee/mentor caches after setOrgPolicies:', cacheError)
+				}
 				// commenting as part of first level SAAS changes. will need this in the code next level
 				// await sessionQueries.updateSession(
 				// 	{
