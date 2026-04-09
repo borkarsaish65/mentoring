@@ -1628,7 +1628,7 @@ module.exports = class MentorsHelper {
 
 					filter =
 						additionalFilter +
-						`AND ( ('${userPolicyDetails.organization_code}' = ANY("visible_to_organizations") AND "mentor_visibility" != 'CURRENT')`
+						`AND ( ('${userPolicyDetails.organization_id}' = ANY("visible_to_organizations") AND "mentor_visibility" != 'CURRENT')`
 
 					if (additionalFilter.length === 0)
 						filter += ` OR organization_code = '${userPolicyDetails.organization_code}' )`
@@ -1640,7 +1640,7 @@ module.exports = class MentorsHelper {
 					 */
 					filter =
 						additionalFilter +
-						`AND (('${userPolicyDetails.organization_code}' = ANY("visible_to_organizations") AND "mentor_visibility" != 'CURRENT' ) OR "mentor_visibility" = 'ALL' OR "organization_code" = '${userPolicyDetails.organization_code}')`
+						`AND (('${userPolicyDetails.organization_id}' = ANY("visible_to_organizations") AND "mentor_visibility" != 'CURRENT' ) OR "mentor_visibility" = 'ALL' OR "organization_code" = '${userPolicyDetails.organization_code}')`
 				}
 			}
 
