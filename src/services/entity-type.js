@@ -411,7 +411,7 @@ module.exports = class EntityHelper {
 			})
 			return Promise.all(result)
 		} catch (err) {
-			return err
+			throw err
 		}
 	}
 
