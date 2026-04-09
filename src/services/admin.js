@@ -1825,7 +1825,7 @@ module.exports = class AdminService {
 			try {
 				const orgData = await orgQueries.findOne({ organization_code: orgCode }, tenantCode)
 				if (orgData) {
-					await cacheHelper.organizations.set(tenantCode, orgCode, orgCode, orgData)
+					await cacheHelper.organizations.set(tenantCode, orgCode, orgData.organization_id, orgData)
 					warmupResults.organizations = 1
 				}
 			} catch (error) {

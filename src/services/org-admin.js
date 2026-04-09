@@ -317,6 +317,11 @@ module.exports = class OrgAdminService {
 					{ organization_id: decodedToken.organization_id }, //custom filter for where clause
 					tenantCode
 				)
+
+				// Clear per-user profile caches so stale policy fields are not served after bulk update
+				await cacheHelper.mentee.deleteAll(tenantCode)
+				await cacheHelper.mentor.deleteAll(tenantCode)
+
 				// commenting as part of first level SAAS changes. will need this in the code next level
 				// await sessionQueries.updateSession(
 				// 	{
@@ -672,12 +677,20 @@ module.exports = class OrgAdminService {
 				await menteeQueries.removeVisibleToOrg(orgId, deltaOrganizationIds, tenantCode)
 			}
 
+			// Clear per-user profile caches — visible_to_organizations field is cached in mentee/mentor profiles
+			try {
+				await cacheHelper.mentee.deleteAll(tenantCode)
+				await cacheHelper.mentor.deleteAll(tenantCode)
+			} catch (cacheError) {
+				console.error('Failed to invalidate mentee/mentor caches after updateRelatedOrgs:', cacheError)
+			}
+
 			// Invalidate organization cache for the affected organization
 			try {
 				// Get organization details to extract orgCode for cache invalidation
 				const organizationDetails = await userRequests.fetchOrgDetails({ organizationId: orgId, tenantCode })
-				if (organizationDetails.success && organizationDetails.data && organizationDetails.data.result) {
-					const orgCode = organizationDetails.data.result.organization_code || orgId
+				const orgCode = organizationDetails?.data?.result?.code
+				if (orgCode) {
 					await cacheHelper.organizations.delete(tenantCode, orgCode, orgId)
 				}
 			} catch (cacheError) {
