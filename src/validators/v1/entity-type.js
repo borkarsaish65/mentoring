@@ -79,7 +79,13 @@ module.exports = {
 		req.checkBody('meta')
 			.optional()
 			.custom((meta) => {
-				if (meta && meta.filterType) {
+				if (meta === null || typeof meta !== 'object' || Array.isArray(meta)) {
+					throw new Error('meta must be an object')
+				}
+				if (meta.filterType !== undefined) {
+					if (typeof meta.filterType !== 'string') {
+						throw new Error('filterType inside meta must be a string')
+					}
 					const filterType = meta.filterType.toUpperCase()
 					if (!['OR', 'AND'].includes(filterType)) {
 						throw new Error('filterType inside meta must be either OR or AND')
@@ -173,7 +179,13 @@ module.exports = {
 		req.checkBody('meta')
 			.optional()
 			.custom((meta) => {
-				if (meta && meta.filterType) {
+				if (meta === null || typeof meta !== 'object' || Array.isArray(meta)) {
+					throw new Error('meta must be an object')
+				}
+				if (meta.filterType !== undefined) {
+					if (typeof meta.filterType !== 'string') {
+						throw new Error('filterType inside meta must be a string')
+					}
 					const filterType = meta.filterType.toUpperCase()
 					if (!['OR', 'AND'].includes(filterType)) {
 						throw new Error('filterType inside meta must be either OR or AND')
