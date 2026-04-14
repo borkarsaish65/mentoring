@@ -90,6 +90,7 @@ module.exports = class MenteesHelper {
 		}
 
 		delete mentee.user_id
+		const visibleToOrganizations = mentee.visible_to_organizations
 		delete mentee.visible_to_organizations
 
 		const defaults = await getDefaults()
@@ -230,7 +231,7 @@ module.exports = class MenteesHelper {
 			user_id: id, // Add user_id to match mentor read response
 			...sanitizedMenteeData,
 			...processDbResponse,
-			visible_to_organizations: mentee.visible_to_organizations, // Add to match mentor read
+			visible_to_organizations: visibleToOrganizations, // Add to match mentor read
 			settings: mentee.settings, // Add settings to match mentor read
 			displayProperties,
 		}
