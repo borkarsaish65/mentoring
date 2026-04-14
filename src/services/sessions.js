@@ -599,6 +599,10 @@ module.exports = class SessionsHelper {
 				})
 			}
 
+			// Normalize fields that may be stored as processed {value, label} objects in cache
+			sessionDetail.status = sessionDetail.status?.value ?? sessionDetail.status
+			sessionDetail.type = sessionDetail.type?.value ?? sessionDetail.type
+
 			// let triggerSessionMeetinkAddEmail = false
 			// if (
 			// 	sessionDetail.meeting_info &&
@@ -1465,10 +1469,17 @@ module.exports = class SessionsHelper {
 
 			if (utils.isNumeric(id) && sessionDetailedResponse) {
 				try {
+					const sessionTypeValue = sessionDetailedResponse.type?.value ?? sessionDetailedResponse.type
+
+					let sessionAttendee = sessionDetailedResponse.mentees?.find(
+						(mentee) => String(mentee.id) === String(userId)
+					)
+					sessionDetailedResponse.is_enrolled = userId && sessionAttendee ? true : false
+
 					// Check accessibility for cached response
 					if (userId !== '' && isAMentor !== '') {
 						let isAccessible = await this.checkIfSessionIsAccessible(
-							sessionDetailedResponse,
+							{ ...sessionDetailedResponse, type: sessionTypeValue },
 							userId,
 							isAMentor,
 							tenantCode,
@@ -1483,10 +1494,6 @@ module.exports = class SessionsHelper {
 						}
 					}
 
-					let sessionAttendee = sessionDetailedResponse.mentees?.find(
-						(mentee) => String(mentee.id) === String(userId)
-					)
-
 					if (!sessionAttendee) {
 						let validateDefaultRules
 
@@ -1496,7 +1503,7 @@ module.exports = class SessionsHelper {
 								requesterId: userId,
 								roles: roles,
 								requesterOrganizationCode: orgCode,
-								data: sessionDetailedResponse,
+								data: { ...sessionDetailedResponse, type: sessionTypeValue },
 								tenantCode: tenantCode,
 							})
 						}
@@ -1517,9 +1524,7 @@ module.exports = class SessionsHelper {
 						}
 					}
 
-					sessionDetailedResponse.is_enrolled = false
 					if (userId && sessionAttendee) {
-						sessionDetailedResponse.is_enrolled = true
 						sessionDetailedResponse.enrolment_type = sessionAttendee.type
 					}
 
@@ -2058,6 +2063,9 @@ module.exports = class SessionsHelper {
 				})
 			}
 
+			// Normalize fields that may be stored as processed {value, label} objects in cache
+			session.type = session.type?.value ?? session.type
+
 			let validateDefaultRules
 			if (isSelfEnrolled) {
 				validateDefaultRules = await validateDefaultRulesFilter({
@@ -2578,7 +2586,8 @@ module.exports = class SessionsHelper {
 					{
 						status: common.LIVE_STATUS,
 						started_at: utils.utcFormat(),
-					}
+					},
+					tenantCode
 				)
 			}
 			if (session?.meeting_info?.link) {
@@ -3233,7 +3242,7 @@ module.exports = class SessionsHelper {
 				common.sessionModelName,
 				'mentor_organization_id',
 				[],
-				[tenantCode]
+				tenantCode
 			)
 
 			await Promise.all(
@@ -3507,7 +3516,7 @@ module.exports = class SessionsHelper {
 			const enrollPromises = mentees.map((menteeData) =>
 				this.enroll(
 					sessionId,
-					{ user_id: menteeData.user_id },
+					{ user_id: menteeData.user_id, email: menteeData.email, name: menteeData.name },
 					timeZone,
 					menteeData.is_mentor,
 					false,
@@ -3610,6 +3619,7 @@ module.exports = class SessionsHelper {
 			}
 
 			const templateData = await cacheHelper.notificationTemplates.get(tenantCode, orgCode, templateCode)
+			if (!templateData) return null
 
 			// Construct data
 			const payload = {
@@ -3907,7 +3917,6 @@ module.exports = class SessionsHelper {
 				organization_code: organizationCode,
 				created_by: userId,
 				tenant_code: tenantCode,
-				defaultTenantCode: defaults.tenantCode,
 				defaultOrganizationCode: defaults.orgCode,
 			}
 
@@ -4171,7 +4180,6 @@ module.exports = class SessionsHelper {
 				await adminService.unenrollAndNotifySessionAttendees(
 					removedSessionsDetail,
 					{ [Op.in]: [mentor.organization_code, defaults.orgCode] },
-					{ [Op.in]: [tenantCode, defaults.tenantCode] },
 					tenantCode,
 					mentor.organization_code
 				)
@@ -4210,7 +4218,6 @@ module.exports = class SessionsHelper {
 				await adminService.unenrollAndNotifySessionAttendees(
 					removedSessionsDetail,
 					{ [Op.in]: [mentor.organization_code] },
-					{ [Op.in]: [tenantCode] },
 					tenantCode,
 					mentor.organization_code
 				)

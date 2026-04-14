@@ -503,6 +503,9 @@ module.exports = class MenteesHelper {
 				})
 			}
 
+			// Normalize status that may be stored as processed {value, label} object in cache
+			sessionData.status = sessionData.status?.value ?? sessionData.status
+
 			const sessionAttendeeExist = sessionWithAttendee.attendee_id
 				? {
 						id: sessionWithAttendee.attendee_id,
@@ -696,7 +699,7 @@ module.exports = class MenteesHelper {
 			requesterId: userId,
 			roles: roles,
 			requesterOrganizationCode: organizationCode,
-			tenantCode: { [Op.in]: [tenantCode, defaults.tenantCode] },
+			tenantCode: tenantCode,
 		})
 
 		if (defaultRuleFilter.error && defaultRuleFilter.error.missingField) {
@@ -723,7 +726,7 @@ module.exports = class MenteesHelper {
 				common.sessionModelName,
 				'mentor_organization_id',
 				[],
-				[tenantCode]
+				tenantCode
 			)
 		}
 
@@ -876,7 +879,7 @@ module.exports = class MenteesHelper {
 					common.sessionModelName,
 					'mentor_organization_id',
 					[],
-					[tenantCode]
+					tenantCode
 				)
 				sessionDetails.rows = await this.sessionMentorDetails(sessionDetails.rows, tenantCode)
 				sessionDetails.rows = sessionDetails.rows.map((r) => ({ ...r, is_enrolled: true }))
@@ -1415,7 +1418,6 @@ module.exports = class MenteesHelper {
 			const filter_type = filterType !== '' ? filterType : common.MENTOR_ROLE
 
 			let organization_codes = []
-			let tenantCodes = []
 			let organizationInfo = []
 			const organizations = await getOrgIdAndEntityTypes.getOrganizationIdBasedOnPolicy(
 				tokenInformation.id,
@@ -1428,7 +1430,6 @@ module.exports = class MenteesHelper {
 
 			if (organizations && organizations.result.organizationInfo?.length > 0) {
 				organization_codes = organizations.result.organizationCodes
-				tenantCodes = organizations.result.tenantCodes
 
 				organizationInfo = organizations.result.organizationInfo
 				if (organizationInfo.length > 1) {
@@ -1455,8 +1456,7 @@ module.exports = class MenteesHelper {
 					defaults.orgCode ? defaults.orgCode : '',
 					modelName,
 					{},
-					tenantCodes,
-					defaults.tenantCode ? defaults.tenantCode : ''
+					tenantCode
 				)
 				if (getEntityTypesWithEntities.success && getEntityTypesWithEntities.result) {
 					let entityTypesWithEntities = getEntityTypesWithEntities.result
@@ -1576,14 +1576,10 @@ module.exports = class MenteesHelper {
 					responseCode: 'CLIENT_ERROR',
 				})
 
-			let validationData = await entityTypeCache.getEntityTypesAndEntitiesWithCache(
-				{
-					status: common.ACTIVE_STATUS,
-					model_names: { [Op.overlap]: [userExtensionModelName] },
-				},
+			const validationData = await entityTypeCache.getEntityTypesAndEntitiesForModel(
+				userExtensionModelName,
 				tenantCode,
-				organizationCode,
-				userExtensionModelName
+				organizationCode
 			)
 
 			let filteredQuery = utils.validateAndBuildFilters(query, validationData)
@@ -1687,7 +1683,7 @@ module.exports = class MenteesHelper {
 						userExtensionModelName,
 						'organization_code',
 						[],
-						[tenantCode]
+						tenantCode
 					)
 					if (Array.isArray(processedData)) {
 						extensionDetails.data = processedData
@@ -1726,7 +1722,7 @@ module.exports = class MenteesHelper {
 				message: 'MENTEE_LIST',
 				result: {
 					data: extensionDetails.data,
-					count: queryParams.connected_mentees === 'true' ? connectedMenteesCount : extensionDetails.count,
+					count: extensionDetails.count,
 				},
 			})
 		} catch (error) {

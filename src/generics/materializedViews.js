@@ -1,11 +1,13 @@
 'use strict'
+const crypto = require('crypto')
 const entityTypeQueries = require('@database/queries/entityType')
+const schedulerRequests = require('@requests/scheduler')
 const { sequelize } = require('@database/models/index')
 const models = require('@database/models/index')
 const { Op } = require('sequelize')
 const utils = require('@generics/utils')
 const searchConfig = require('@configs/search.json')
-const indexQueries = require('@generics/mViewsIndexQueries')
+const getIndexQueries = require('@generics/mViewsIndexQueries')
 const { getDefaults } = require('@helpers/getDefaultOrgId')
 const { elevateLog } = require('elevate-logger')
 const logger = elevateLog.init()
@@ -209,7 +211,12 @@ const createIndexesOnAllowFilteringFields = async (model, modelEntityTypes, fiel
 const createViewGINIndexOnSearch = async (model, config, fields, tenantCode) => {
 	try {
 		const modelName = model.name
-		const searchType = modelName === 'Session' ? 'session' : modelName === 'MentorExtension' ? 'mentor' : null
+		const searchType =
+			modelName === 'Session'
+				? 'session'
+				: modelName === 'UserExtension' || modelName === 'MentorExtension'
+				? 'mentor'
+				: null
 
 		if (!searchType) {
 			return
@@ -238,9 +245,9 @@ const createViewGINIndexOnSearch = async (model, config, fields, tenantCode) => 
 	}
 }
 // Function to execute index queries for a specific model
-const executeIndexQueries = async (modelName) => {
+const executeIndexQueries = async (modelName, tenantCode) => {
 	// Find the index queries for the specified model
-	const modelQueries = indexQueries.find((item) => item.modelName === modelName)
+	const modelQueries = getIndexQueries(tenantCode).find((item) => item.modelName === modelName)
 
 	if (modelQueries) {
 		console.log(`Executing index queries for ${modelName}`)
@@ -336,7 +343,7 @@ const generateMaterializedView = async (modelEntityTypes, tenantCode) => {
 		await createIndexesOnAllowFilteringFields(model, modelEntityTypes, allFields, tenantCode)
 		await createViewUniqueIndexOnPK(model, tenantCode)
 		await createViewGINIndexOnSearch(model, searchConfig, allFields, tenantCode)
-		await executeIndexQueries(model.name)
+		await executeIndexQueries(model.name, tenantCode)
 	} catch (err) {
 		console.log(err)
 	}
@@ -371,7 +378,7 @@ const getAllowFilteringEntityTypes = async (tenantCode) => {
 		// but support tenant-specific customizations through tenant code combination
 		const entities = await entityTypeQueries.findAllEntityTypes(
 			defaults.orgCode, // Use default org code (global configurations)
-			{ [Op.in]: [tenantCode, defaults.tenantCode] }, // Combination of tenant codes
+			tenantCode, // Tenant isolation: only current tenant
 			['id', 'value', 'label', 'data_type', 'organization_id', 'has_entities', 'model_names'],
 			{
 				allow_filtering: true,
@@ -673,6 +680,45 @@ const triggerPeriodicViewRefreshForAllTenants = async (modelName = null) => {
 	}
 }
 
+const getStableOffset = (tenantCode, modelName, interval) => {
+	if (!tenantCode || !modelName || !interval || Number(interval) <= 0) {
+		logger.error(
+			`[getStableOffset] Invalid params - tenantCode: ${tenantCode}, modelName: ${modelName}, interval: ${interval}`
+		)
+		return 0
+	}
+	const hash = crypto.createHash('md5').update(`${tenantCode}_${modelName}`).digest('hex')
+	return parseInt(hash.substring(0, 8), 16) % Number(interval)
+}
+
+const scheduleViewRefreshJob = (tenantCode, modelName, interval) => {
+	if (!tenantCode || !modelName) {
+		logger.error(
+			`[scheduleViewRefreshJob] Missing required params - tenantCode: ${tenantCode}, modelName: ${modelName}`
+		)
+		return
+	}
+	if (!interval || Number(interval) <= 0) {
+		logger.error(
+			`[scheduleViewRefreshJob] Invalid interval: ${interval} for tenant: ${tenantCode}, model: ${modelName}`
+		)
+		return
+	}
+
+	const jobId = `repeatable_view_job_${tenantCode}_${modelName}`
+	const jobName = `repeatable_view_job_${tenantCode}_${modelName}`
+	const encodedParams = encodeURIComponent(`${tenantCode}|${modelName}`)
+	const urlEndpoint = `/mentoring/v1/admin/triggerPeriodicViewRefreshInternal/${encodedParams}`
+	const offset = getStableOffset(tenantCode, modelName, interval)
+
+	schedulerRequests.createSchedulerJob(jobId, null, jobName, {}, urlEndpoint, 'get', {
+		jobId: jobId,
+		repeat: { every: Number(interval), offset },
+		removeOnComplete: 50,
+		removeOnFail: 200,
+	})
+}
+
 const adminService = {
 	triggerViewBuild,
 	triggerPeriodicViewRefresh,
@@ -680,6 +726,7 @@ const adminService = {
 	checkAndCreateMaterializedViews,
 	triggerViewBuildForAllTenants,
 	triggerPeriodicViewRefreshForAllTenants,
+	scheduleViewRefreshJob,
 }
 
 module.exports = adminService

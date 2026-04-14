@@ -774,6 +774,7 @@ function convertEntitiesForFilter(entityTypes) {
 			value: entityType.value,
 			parent_id: entityType.parent_id,
 			organization_id: entityType.organization_id,
+			organization_code: entityType.organization_code,
 			entities: entityType.entities || [],
 			filterType: filterTypeValue,
 		}
