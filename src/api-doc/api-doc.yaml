@@ -5896,6 +5896,15 @@ paths:
                   type: string
                 type:
                   type: string
+                meta:
+                  type: object
+                  properties:
+                    filterType:
+                      type: string
+                      enum:
+                        - OR
+                        - AND
+
             examples:
               example1:
                 value:
@@ -5908,6 +5917,8 @@ paths:
                   required: true
                   status: ACTIVE
                   type: SYSTEM
+                  meta:
+                    filterType: OR
               example2:
                 value:
                   value: pgender
@@ -5962,6 +5973,11 @@ paths:
                         type: 'null'
                       has_entities:
                         type: boolean
+                      meta:
+                        type: object
+                        properties:
+                          filterType:
+                            type: string
                   field_0:
                     type: string
                   meta:
@@ -5988,6 +6004,8 @@ paths:
                       updated_at: '2023-09-22T12:40:19.817Z'
                       created_at: '2023-09-22T12:40:19.817Z'
                       has_entities: true
+                      meta:
+                        filterType: OR
                     meta:
                       correlation: 3babe76b-d277-4073-8a59-8dfb94face9b
                       meeting_platform: BBB
@@ -6228,6 +6246,14 @@ paths:
                   type: boolean
                 required:
                   type: boolean
+                meta:
+                  type: object
+                  properties:
+                    filterType:
+                      type: string
+                      enum:
+                        - OR
+                        - AND
             examples:
               example1:
                 value:
@@ -6240,6 +6266,8 @@ paths:
                     - UserExtension
                   allow_filtering: true
                   required: true
+                  meta:
+                    filterType: OR
               example2:
                 value:
                   value: pgender
@@ -6296,6 +6324,11 @@ paths:
                         type: string
                       has_entities:
                         type: boolean
+                      meta:
+                        type: object
+                        properties:
+                          filterType:
+                            type: string
                   meta:
                     type: object
                     properties:
@@ -6322,6 +6355,8 @@ paths:
                       deleted_at: null
                       organization_id: '1'
                       has_entities: true
+                      meta:
+                        filterType: OR
                     meta:
                       correlation: 5f384234-cd5a-467e-a5ac-b43365d2a7a3
                       meeting_platform: BBB
