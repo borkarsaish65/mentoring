@@ -294,9 +294,9 @@ module.exports = class OrgAdminService {
 
 				if (
 					policyData?.external_mentor_visibility == common.ASSOCIATED ||
-					policyData?.mentor_visibility_policy == common.ASSOCIATED ||
+					policyData?.mentor_visibility == common.ASSOCIATED ||
 					policyData?.external_mentee_visibility == common.ASSOCIATED ||
-					policyData?.mentee_visibility_policy == common.ASSOCIATED
+					policyData?.mentee_visibility == common.ASSOCIATED
 				) {
 					const organizationDetails = await userRequests.fetchOrgDetails({
 						organizationId: decodedToken.organization_id,
