@@ -2745,11 +2745,13 @@ module.exports = class SessionsHelper {
 	}
 
 	/**
-	 * Get session tenant code for public endpoints
+	 * Get session tenant code and org code for public/internal endpoints.
+	 * Resolves org_code via org extension lookup if not provided.
 	 * @method
 	 * @name getSessionTenantCode
 	 * @param {String} sessionId - session id.
-	 * @returns {Object} - session data with tenant_code.
+	 * @param {String|null} orgCode - org code if already known, null to trigger lookup.
+	 * @returns {Object} - { tenant_code, org_code }
 	 */
 	static async getSessionTenantCode(sessionId, orgCode = null) {
 		try {
