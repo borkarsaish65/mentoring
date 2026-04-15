@@ -284,7 +284,7 @@ exports.getSessionTenantCode = async (sessionId) => {
 	try {
 		return await Session.findOne({
 			where: { id: sessionId },
-			attributes: ['id', 'tenant_code'],
+			attributes: ['id', 'tenant_code', 'mentor_organization_id'],
 			raw: true,
 		})
 	} catch (error) {
