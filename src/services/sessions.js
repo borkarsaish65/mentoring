@@ -490,6 +490,7 @@ module.exports = class SessionsHelper {
 					email_template_code: jobsToCreate[jobIndex].emailTemplate,
 					job_creator_org_id: orgId,
 					tenant_code: tenantCode,
+					org_code: orgCode,
 				}
 				// Create the scheduler job with the calculated delay and other parameters
 				console.log('📧 EMAIL DEBUG: Creating scheduler job:', {
@@ -2744,15 +2745,32 @@ module.exports = class SessionsHelper {
 	}
 
 	/**
-	 * Get session tenant code for public endpoints
+	 * Get session tenant code and org code for public/internal endpoints.
+	 * Resolves org_code via org extension lookup if not provided.
 	 * @method
 	 * @name getSessionTenantCode
 	 * @param {String} sessionId - session id.
-	 * @returns {Object} - session data with tenant_code.
+	 * @param {String|null} orgCode - org code if already known, null to trigger lookup.
+	 * @returns {Object} - { tenant_code, org_code }
 	 */
-	static async getSessionTenantCode(sessionId, tenantCode) {
+	static async getSessionTenantCode(sessionId, orgCode = null) {
 		try {
-			return await sessionQueries.findSessionForPublicEndpoint(sessionId, tenantCode)
+			const session = await sessionQueries.getSessionTenantCode(sessionId)
+			if (!session) return null
+
+			if (!orgCode && session.mentor_organization_id && session.tenant_code) {
+				const orgExtension = await organisationExtensionQueries.findOne(
+					{ organization_id: session.mentor_organization_id },
+					session.tenant_code,
+					{ attributes: ['organization_code'], raw: true }
+				)
+				orgCode = orgExtension?.organization_code || null
+			}
+
+			return {
+				tenant_code: session.tenant_code,
+				org_code: orgCode,
+			}
 		} catch (error) {
 			throw error
 		}
