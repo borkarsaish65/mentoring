@@ -7,6 +7,22 @@
  * existing tenant Kafka consumer (create event), which handles both
  * tenant record creation and config replication from the default tenant.
  *
+ * ── Generating the CSV ───────────────────────────────────────────────────────
+ * Run the following query in the USER SERVICE database to produce the correct
+ * CSV. Replace 'default_code' with the value of DEFAULT_ORGANISATION_CODE from
+ * your .env — this value must be the same in both the user service and the
+ * mentoring service.
+ *
+ *   SELECT t.*, o.id AS org_id, o.code AS org_code
+ *   FROM tenants t
+ *   INNER JOIN organizations o ON o.tenant_code = t.code
+ *   WHERE o.code       = 'default_code'
+ *     AND o.deleted_at IS NULL
+ *     AND t.deleted_at IS NULL;
+ *
+ * Export the query result as a .csv file before running this script.
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
  * CSV format (header row required):
  *   code,name,org_id,org_code
  *
@@ -64,8 +80,8 @@ async function backfillTenants(tenants, options = {}) {
 	let failed = 0
 
 	for (const tenant of tenants) {
-		if (!tenant.code || !tenant.name) {
-			console.error(`[SKIP] Missing required field (code or name):`, tenant)
+		if (!tenant.code || !tenant.name || !tenant.org_id || !tenant.org_code) {
+			console.error('[SKIP] Missing required field (code, name, org_id, org_code):', tenant)
 			failed++
 			continue
 		}
@@ -85,8 +101,7 @@ async function backfillTenants(tenants, options = {}) {
 			description: tenant.description || null,
 			logo: tenant.logo || null,
 			org_id: tenant.org_id || process.env.DEFAULT_ORG_ID,
-			org_code: tenant.org_code || process.env.DEFAULT_ORGANISATION_CODE,
-			backfill: true,
+			org_code: tenant.org_code,
 		}
 
 		try {
