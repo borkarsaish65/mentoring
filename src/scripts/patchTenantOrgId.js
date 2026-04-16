@@ -183,6 +183,18 @@ async function patchOrgIdForTenant(
 			if (rowsUpdated > 0) console.log(`  [${table}] ${rowsUpdated} row(s) patched`)
 			totalUpdated += rowsUpdated
 		} catch (err) {
+			// Check if this is a unique constraint violation (PostgreSQL error code 23505)
+			const isUniqueViolation =
+				err.original?.code === '23505' ||
+				err.message?.includes('unique constraint') ||
+				err.message?.includes('duplicate key')
+
+			console.log(`  [${table}] UPDATE failed — isUniqueViolation: ${isUniqueViolation}, error: ${err.message}`)
+
+			if (!isUniqueViolation) {
+				throw err // Re-throw non-constraint errors
+			}
+
 			// UPDATE hit a unique constraint — some corrupted rows have correct counterparts.
 			// Rollback to savepoint so the transaction stays alive, then:
 			//   1. DELETE only the corrupted rows that have a correct counterpart (EXISTS check)
@@ -193,7 +205,10 @@ async function patchOrgIdForTenant(
 			// Use row-specific EXISTS (matching on the table's unique key columns)
 			// so we only delete rows that truly have a correct duplicate —
 			// not every corrupted row in the tenant.
+			// If this table has no unique constraint on organization_id it should
+			// never reach here — re-throw the bug
 			const existsClause = CONFLICT_DELETE_EXISTS_CLAUSE[table]
+			if (!existsClause) throw err
 			const [, deleteMeta] = await db.sequelize.query(
 				`DELETE FROM "${table}"
 				  WHERE tenant_code       = :tenantCode
@@ -318,7 +333,7 @@ if (require.main === module) {
 	const csvPath = args.find((a) => !a.startsWith('--'))
 
 	if (!csvPath) {
-		console.error('Usage: node src/scripts/patchTenantOrgId.js <path-to-csv> [--dry-run]')
+		console.error('Usage: node src/scripts/patchTenantOrgId.js <path-to-csv> [--dry-run] [--count]')
 		console.error('\nCSV format (header row required):')
 		console.error('  code,org_id,org_code')
 		process.exit(1)
