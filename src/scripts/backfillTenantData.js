@@ -100,7 +100,7 @@ async function backfillTenants(tenants, options = {}) {
 			status: tenant.status || 'ACTIVE',
 			description: tenant.description || null,
 			logo: tenant.logo || null,
-			org_id: tenant.org_id || process.env.DEFAULT_ORG_ID,
+			org_id: tenant.org_id,
 			org_code: tenant.org_code,
 		}
 
