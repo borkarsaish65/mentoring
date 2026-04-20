@@ -67,16 +67,16 @@ exports.getEnrolledMentees = async (sessionId, queryParams, tenantCode) => {
 		}
 
 		// Process entity types to add value labels
-		const uniqueOrgIds = [...new Set(enrolledUsers.map((user) => user.organization_id))]
+		const uniqueOrgCodes = [...new Set(enrolledUsers.map((user) => user.organization_code).filter(Boolean))]
 		const modelName = await menteeExtensionQueries.getModelName()
 
 		const processedUsers = await entityTypeService.processEntityTypesToAddValueLabels(
 			enrolledUsers,
-			uniqueOrgIds,
+			uniqueOrgCodes,
 			[modelName],
-			'organization_id',
+			'organization_code',
 			[],
-			[tenantCode]
+			tenantCode
 		)
 
 		// Check if processing actually returned processed data or error

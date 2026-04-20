@@ -14,9 +14,11 @@ const rolechangeConsumer = require('@generics/kafka/consumers/rolechange')
 const createuserConsumer = require('@generics/kafka/consumers/createuser')
 const updateuserConsumer = require('@generics/kafka/consumers/updateuser')
 const organizationConsumer = require('@generics/kafka/consumers/organization')
+const tenantConsumer = require('@generics/kafka/consumers/tenant')
 
 module.exports = async () => {
 	const kafkaIps = process.env.KAFKA_URL.split(',')
+
 	const KafkaClient = new Kafka({
 		clientId: 'mentoring',
 		brokers: kafkaIps,
@@ -37,9 +39,9 @@ module.exports = async () => {
 	global.kafkaProducer = producer
 	global.kafkaClient = KafkaClient
 
-	startConsumer(KafkaClient).catch((err) =>
+	startConsumer(KafkaClient).catch((err) => {
 		logger.error('Kafka consumer failed to start', { err: err?.stack || err?.message })
-	)
+	})
 }
 
 async function startConsumer(kafkaClient) {
@@ -64,8 +66,12 @@ async function startConsumer(kafkaClient) {
 	await consumer.connect()
 	logger.info('Kafka Consumer: Connected to broker')
 
-	const topics = [process.env.EVENTS_TOPIC, process.env.CLEAR_INTERNAL_CACHE]
-
+	const topics = [
+		process.env.EVENTS_TOPIC,
+		process.env.CLEAR_INTERNAL_CACHE,
+		process.env.EVENT_TENANT_KAFKA_TOPIC,
+		process.env.EVENT_ORGANIZATION_KAFKA_TOPIC,
+	].filter(Boolean)
 	await consumer.subscribe({ topics })
 	logger.info(`Kafka Consumer: Subscribed to topics = ${JSON.stringify(topics)}`)
 
@@ -90,7 +96,7 @@ async function startConsumer(kafkaClient) {
 				logger.info(`Kafka Batch: Message | topic=${topic} | partition=${partition} | offset=${offset}`)
 
 				if (!rawValue) {
-					logger.warn(`Kafka Batch: Empty message skipped`)
+					logger.warn('Kafka Batch: Empty message skipped')
 					resolveOffset(offset)
 					continue
 				}
@@ -113,8 +119,13 @@ async function startConsumer(kafkaClient) {
 				let response
 
 				try {
-					if (topic === process.env.EVENTS_TOPIC && payload) {
-						// Handle organization events
+					if (payload && topic === process.env.EVENT_TENANT_KAFKA_TOPIC) {
+						if (payload.eventType === 'create' || payload.eventType === 'update') {
+							response = await tenantConsumer.messageReceived(payload)
+						}
+					}
+
+					if (payload && topic === process.env.EVENT_ORGANIZATION_KAFKA_TOPIC) {
 						if (
 							payload.entity === 'organization' &&
 							(payload.eventType === 'create' ||
@@ -123,32 +134,36 @@ async function startConsumer(kafkaClient) {
 						) {
 							response = await organizationConsumer.messageReceived(payload)
 						}
+					}
 
-						// Handle user events
+					if (payload && topic === process.env.EVENTS_TOPIC) {
 						if (payload.entity === 'user') {
 							if (payload.eventType === 'roleChange') {
 								response = await rolechangeConsumer.messageReceived(payload)
 							}
-
 							if (payload.eventType === 'create' || payload.eventType === 'bulk-create') {
 								response = await createuserConsumer.messageReceived(payload)
 							}
-
 							if (payload.eventType === 'delete') {
 								response = await deleteuserConsumer.messageReceived(payload)
 							}
-
 							if (payload.eventType === 'update' || payload.eventType === 'bulk-update') {
 								response = await updateuserConsumer.messageReceived(payload)
 							}
 						}
-					} else if (topic === process.env.CLEAR_INTERNAL_CACHE && payload?.type === 'CLEAR_INTERNAL_CACHE') {
+					}
+
+					if (
+						payload &&
+						topic === process.env.CLEAR_INTERNAL_CACHE &&
+						payload?.type === 'CLEAR_INTERNAL_CACHE'
+					) {
 						response = await utils.internalDel(payload.value)
 					}
 
 					logger.info(`Kafka event handling response: ${response}`)
 				} catch (handlerErr) {
-					logger.error(`Kafka Batch: Error handling message`, {
+					logger.error('Kafka Batch: Error handling message', {
 						topic,
 						partition,
 						offset,

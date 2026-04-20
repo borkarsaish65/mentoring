@@ -320,7 +320,6 @@ module.exports = class SessionsHelper {
 				!userOrgDetails.success ||
 				(userOrgDetails.data && userOrgDetails.data.responseCode === 'UNAUTHORIZED')
 			) {
-				console.log('Skipping organization validation due to permission issue, using local organization data')
 				// Create a mock organization response using the data we have
 				userOrgDetails = {
 					success: true,
@@ -491,6 +490,7 @@ module.exports = class SessionsHelper {
 					email_template_code: jobsToCreate[jobIndex].emailTemplate,
 					job_creator_org_id: orgId,
 					tenant_code: tenantCode,
+					org_code: orgCode,
 				}
 				// Create the scheduler job with the calculated delay and other parameters
 				console.log('📧 EMAIL DEBUG: Creating scheduler job:', {
@@ -599,6 +599,10 @@ module.exports = class SessionsHelper {
 					responseCode: 'CLIENT_ERROR',
 				})
 			}
+
+			// Normalize fields that may be stored as processed {value, label} objects in cache
+			sessionDetail.status = sessionDetail.status?.value ?? sessionDetail.status
+			sessionDetail.type = sessionDetail.type?.value ?? sessionDetail.type
 
 			// let triggerSessionMeetinkAddEmail = false
 			// if (
@@ -919,7 +923,12 @@ module.exports = class SessionsHelper {
 					mentorUpdated = true
 					const newMentor =
 						(await cacheHelper.mentor.getCacheOnly(tenantCode, bodyData.mentor_id)) ??
-						(await mentorExtensionQueries.getMentorExtension(bodyData.mentor_id, ['name'], true))
+						(await mentorExtensionQueries.getMentorExtension(
+							bodyData.mentor_id,
+							['name'],
+							false,
+							tenantCode
+						))
 					if (newMentor?.name) {
 						bodyData.mentor_name = newMentor.name
 					}
@@ -1461,10 +1470,17 @@ module.exports = class SessionsHelper {
 
 			if (utils.isNumeric(id) && sessionDetailedResponse) {
 				try {
+					const sessionTypeValue = sessionDetailedResponse.type?.value ?? sessionDetailedResponse.type
+
+					let sessionAttendee = sessionDetailedResponse.mentees?.find(
+						(mentee) => String(mentee.id) === String(userId)
+					)
+					sessionDetailedResponse.is_enrolled = userId && sessionAttendee ? true : false
+
 					// Check accessibility for cached response
 					if (userId !== '' && isAMentor !== '') {
 						let isAccessible = await this.checkIfSessionIsAccessible(
-							sessionDetailedResponse,
+							{ ...sessionDetailedResponse, type: sessionTypeValue },
 							userId,
 							isAMentor,
 							tenantCode,
@@ -1479,10 +1495,6 @@ module.exports = class SessionsHelper {
 						}
 					}
 
-					let sessionAttendee = sessionDetailedResponse.mentees?.find(
-						(mentee) => String(mentee.id) === String(userId)
-					)
-
 					if (!sessionAttendee) {
 						let validateDefaultRules
 
@@ -1492,8 +1504,8 @@ module.exports = class SessionsHelper {
 								requesterId: userId,
 								roles: roles,
 								requesterOrganizationCode: orgCode,
-								data: sessionDetailedResponse,
-								tenant_code: tenantCode,
+								data: { ...sessionDetailedResponse, type: sessionTypeValue },
+								tenantCode: tenantCode,
 							})
 						}
 						if (validateDefaultRules?.error && validateDefaultRules?.error?.missingField) {
@@ -1513,9 +1525,7 @@ module.exports = class SessionsHelper {
 						}
 					}
 
-					sessionDetailedResponse.is_enrolled = false
 					if (userId && sessionAttendee) {
-						sessionDetailedResponse.is_enrolled = true
 						sessionDetailedResponse.enrolment_type = sessionAttendee.type
 					}
 
@@ -1591,7 +1601,7 @@ module.exports = class SessionsHelper {
 						roles: roles,
 						requesterOrganizationCode: orgCode,
 						data: sessionDetails,
-						tenant_code: tenantCode,
+						tenantCode: tenantCode,
 					})
 				}
 				if (validateDefaultRules?.error && validateDefaultRules?.error?.missingField) {
@@ -2054,6 +2064,9 @@ module.exports = class SessionsHelper {
 				})
 			}
 
+			// Normalize fields that may be stored as processed {value, label} objects in cache
+			session.type = session.type?.value ?? session.type
+
 			let validateDefaultRules
 			if (isSelfEnrolled) {
 				validateDefaultRules = await validateDefaultRulesFilter({
@@ -2062,7 +2075,7 @@ module.exports = class SessionsHelper {
 					roles: roles,
 					requesterOrganizationCode: orgCode,
 					data: session,
-					tenant_code: tenantCode,
+					tenantCode: tenantCode,
 				})
 			}
 			if (validateDefaultRules?.error && validateDefaultRules?.error?.missingField) {
@@ -2190,16 +2203,20 @@ module.exports = class SessionsHelper {
 				})
 			}
 
-			// Update seat count (decrease available seats)
-			const seatUpdateResult = await sessionQueries.updateEnrollmentCount(sessionId, false, tenantCode)
-			if (!seatUpdateResult) {
-				// Rollback the enrollment if seat update fails
-				await sessionAttendeesQueries.unEnrollFromSession(sessionId, userId, tenantCode)
-				return responses.failureResponse({
-					message: 'FAILED_TO_UPDATE_SEAT_COUNT',
-					statusCode: httpStatusCode.internal_server_error,
-					responseCode: 'SERVER_ERROR',
-				})
+			// Update seat count (decrease available seats) - only if user is not the session creator
+			let seatsUpdated = false
+			if (session.created_by !== userId) {
+				const seatUpdateResult = await sessionQueries.updateEnrollmentCount(sessionId, false, tenantCode)
+				if (!seatUpdateResult) {
+					// Rollback the enrollment if seat update fails
+					await sessionAttendeesQueries.unEnrollFromSession(sessionId, userId, tenantCode)
+					return responses.failureResponse({
+						message: 'FAILED_TO_UPDATE_SEAT_COUNT',
+						statusCode: httpStatusCode.internal_server_error,
+						responseCode: 'SERVER_ERROR',
+					})
+				}
+				seatsUpdated = true
 			}
 
 			const templateData = await cacheHelper.notificationTemplates.get(tenantCode, orgCode, emailTemplateCode)
@@ -2236,8 +2253,14 @@ module.exports = class SessionsHelper {
 				// Cache invalidation failure - continue operation
 			}
 
-			// Clear user cache since sessions_attended count changed
-			await this._clearUserCache(userId, tenantCode)
+			// Clear user cache when:
+			// 1. Enrollment is created (sessions_attended count changes)
+			// 2. Seats are updated (seats_remaining changes, affecting session data)
+			// Note: seatsUpdated is true when seats are decremented (user is not session creator)
+			// Even if user is session creator, we clear cache when enrollment is created
+			if (enrollmentResult.created || seatsUpdated) {
+				await this._clearUserCache(userId, tenantCode)
+			}
 
 			return responses.successResponse({
 				statusCode: httpStatusCode.created,
@@ -2382,6 +2405,7 @@ module.exports = class SessionsHelper {
 			}
 
 			// Clear user cache since sessions_attended count changed
+			// Note: deletedRows > 0 is guaranteed here since we return early if deletedRows === 0
 			await this._clearUserCache(userId, tenantCode)
 
 			return responses.successResponse({
@@ -2563,7 +2587,8 @@ module.exports = class SessionsHelper {
 					{
 						status: common.LIVE_STATUS,
 						started_at: utils.utcFormat(),
-					}
+					},
+					tenantCode
 				)
 			}
 			if (session?.meeting_info?.link) {
@@ -2606,7 +2631,8 @@ module.exports = class SessionsHelper {
 					session.mentee_password,
 					session.mentor_password,
 					sessionDuration,
-					tenantDomain
+					tenantDomain,
+					tenantCode
 				)
 				if (!meetingDetails.success) {
 					return responses.failureResponse({
@@ -2719,15 +2745,32 @@ module.exports = class SessionsHelper {
 	}
 
 	/**
-	 * Get session tenant code for public endpoints
+	 * Get session tenant code and org code for public/internal endpoints.
+	 * Resolves org_code via org extension lookup if not provided.
 	 * @method
 	 * @name getSessionTenantCode
 	 * @param {String} sessionId - session id.
-	 * @returns {Object} - session data with tenant_code.
+	 * @param {String|null} orgCode - org code if already known, null to trigger lookup.
+	 * @returns {Object} - { tenant_code, org_code }
 	 */
-	static async getSessionTenantCode(sessionId, tenantCode) {
+	static async getSessionTenantCode(sessionId, orgCode = null) {
 		try {
-			return await sessionQueries.findSessionForPublicEndpoint(sessionId, tenantCode)
+			const session = await sessionQueries.getSessionTenantCode(sessionId)
+			if (!session) return null
+
+			if (!orgCode && session.mentor_organization_id && session.tenant_code) {
+				const orgExtension = await organisationExtensionQueries.findOne(
+					{ organization_id: session.mentor_organization_id },
+					session.tenant_code,
+					{ attributes: ['organization_code'], raw: true }
+				)
+				orgCode = orgExtension?.organization_code || null
+			}
+
+			return {
+				tenant_code: session.tenant_code,
+				org_code: orgCode,
+			}
 		} catch (error) {
 			throw error
 		}
@@ -3217,7 +3260,8 @@ module.exports = class SessionsHelper {
 				common.sessionModelName,
 				'mentor_organization_id',
 				[],
-				[tenantCode]
+				tenantCode,
+				true
 			)
 
 			await Promise.all(
@@ -3491,7 +3535,7 @@ module.exports = class SessionsHelper {
 			const enrollPromises = mentees.map((menteeData) =>
 				this.enroll(
 					sessionId,
-					{ user_id: menteeData.user_id },
+					{ user_id: menteeData.user_id, email: menteeData.email, name: menteeData.name },
 					timeZone,
 					menteeData.is_mentor,
 					false,
@@ -3594,6 +3638,7 @@ module.exports = class SessionsHelper {
 			}
 
 			const templateData = await cacheHelper.notificationTemplates.get(tenantCode, orgCode, templateCode)
+			if (!templateData) return null
 
 			// Construct data
 			const payload = {
@@ -3891,7 +3936,6 @@ module.exports = class SessionsHelper {
 				organization_code: organizationCode,
 				created_by: userId,
 				tenant_code: tenantCode,
-				defaultTenantCode: defaults.tenantCode,
 				defaultOrganizationCode: defaults.orgCode,
 			}
 
@@ -4137,7 +4181,7 @@ module.exports = class SessionsHelper {
 				}
 
 				if (!mentor) {
-					mentor = await mentorQueries.getMentorExtension(mentorId, ['organization_code'], tenantCode)
+					mentor = await mentorQueries.getMentorExtension(mentorId, ['organization_code'], false, tenantCode)
 				}
 				if (!mentor) throw new MentorError('Invalid Mentor Id', { mentorId })
 
@@ -4155,7 +4199,6 @@ module.exports = class SessionsHelper {
 				await adminService.unenrollAndNotifySessionAttendees(
 					removedSessionsDetail,
 					{ [Op.in]: [mentor.organization_code, defaults.orgCode] },
-					{ [Op.in]: [tenantCode, defaults.tenantCode] },
 					tenantCode,
 					mentor.organization_code
 				)
@@ -4194,7 +4237,6 @@ module.exports = class SessionsHelper {
 				await adminService.unenrollAndNotifySessionAttendees(
 					removedSessionsDetail,
 					{ [Op.in]: [mentor.organization_code] },
-					{ [Op.in]: [tenantCode] },
 					tenantCode,
 					mentor.organization_code
 				)

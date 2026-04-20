@@ -90,8 +90,8 @@ module.exports = class MenteesHelper {
 		}
 
 		delete mentee.user_id
+		const visibleToOrganizations = mentee.visible_to_organizations
 		delete mentee.visible_to_organizations
-		delete mentee.image
 
 		const defaults = await getDefaults()
 		if (!defaults.orgCode)
@@ -231,9 +231,8 @@ module.exports = class MenteesHelper {
 			user_id: id, // Add user_id to match mentor read response
 			...sanitizedMenteeData,
 			...processDbResponse,
-			visible_to_organizations: mentee.visible_to_organizations, // Add to match mentor read
+			visible_to_organizations: visibleToOrganizations, // Add to match mentor read
 			settings: mentee.settings, // Add settings to match mentor read
-			image: mentee.image, // Keep original image (may already be downloadable URL)
 			displayProperties,
 		}
 
@@ -272,7 +271,7 @@ module.exports = class MenteesHelper {
 	 * @returns {JSON} - List of sessions
 	 */
 
-	static async sessions(userId, page, limit, search = '', organizationId, tenantCode) {
+	static async sessions(userId, page, limit, search = '', tenantCode) {
 		try {
 			/** Upcoming user's enrolled sessions {My sessions}*/
 			/* Fetch sessions if it is not expired or if expired then either status is live or if mentor 
@@ -448,7 +447,7 @@ module.exports = class MenteesHelper {
 	 * @returns {JSON} - Mentees join session link.
 	 */
 
-	static async joinSession(sessionId, userId, organizationCode, tenantCode) {
+	static async joinSession(sessionId, userId, tenantCode) {
 		try {
 			const mentee = await cacheHelper.mentee.get(tenantCode, userId)
 			if (!mentee) {
@@ -473,19 +472,27 @@ module.exports = class MenteesHelper {
 						attendee_meeting_info: sessionWithAttendee.meeting_info ?? sessionData.meeting_info,
 					}
 				}
+				// If mentee_password is missing from cache, fetch from database
+				if (!sessionData.mentee_password) {
+					const fullSessionData = await sessionQueries.findOne({ id: sessionId }, tenantCode)
+					if (fullSessionData?.mentee_password) {
+						sessionData.mentee_password = fullSessionData.mentee_password
+					}
+				}
 			} else {
+				// Cache miss: fetch session with attendee in a single query
 				sessionWithAttendee = await sessionQueries.findSessionWithAttendee(
 					sessionId,
 					mentee.user_id,
 					tenantCode
 				)
 
-				sessionData = { ...sessionWithAttendee }
-				// Normalize DB result to match cache structure
 				if (sessionWithAttendee) {
-					sessionWithAttendee.attendee_id = sessionWithAttendee.id
-					sessionWithAttendee.enrolled_type = sessionWithAttendee.enrolled_type || sessionWithAttendee.type
-					sessionWithAttendee.attendee_meeting_info = sessionWithAttendee.meeting_info
+					// Use the same object as sessionData since it already contains full session fields
+					// (including mentee_password, meeting_info, etc.) and attendee fields via attendeeData DTO
+					sessionData = { ...sessionWithAttendee }
+				} else {
+					sessionData = null
 				}
 			}
 
@@ -496,6 +503,9 @@ module.exports = class MenteesHelper {
 					responseCode: 'CLIENT_ERROR',
 				})
 			}
+
+			// Normalize status that may be stored as processed {value, label} object in cache
+			sessionData.status = sessionData.status?.value ?? sessionData.status
 
 			const sessionAttendeeExist = sessionWithAttendee.attendee_id
 				? {
@@ -536,7 +546,7 @@ module.exports = class MenteesHelper {
 
 				await sessionAttendeesQueries.updateOne(
 					{
-						id: sessionWithAttendee.id,
+						id: sessionWithAttendee.attendee_id,
 					},
 					{
 						meeting_info: meetingInfo,
@@ -550,12 +560,24 @@ module.exports = class MenteesHelper {
 					result: meetingInfo,
 				})
 			}
+
 			if (sessionAttendeeExist?.meeting_info?.link) {
-				meetingInfo = sessionWithAttendee.meeting_info
+				// Existing BBB attendee link present in DB – just reuse it
+				meetingInfo = sessionAttendeeExist.meeting_info
 			} else {
+				// No existing link – generate a fresh one from BBB and store it
+				if (!sessionData.mentee_password) {
+					return responses.failureResponse({
+						message: 'MENTEE_PASSWORD_NOT_FOUND',
+						statusCode: httpStatusCode.bad_request,
+						responseCode: 'CLIENT_ERROR',
+					})
+				}
+
+				const menteeName = mentee.name || 'Attendee'
 				const attendeeLink = await bigBlueButtonService.joinMeetingAsAttendee(
 					sessionId,
-					mentee.name,
+					menteeName,
 					sessionData.mentee_password
 				)
 				meetingInfo = {
@@ -565,7 +587,7 @@ module.exports = class MenteesHelper {
 				}
 				await sessionAttendeesQueries.updateOne(
 					{
-						id: sessionWithAttendee.id,
+						id: sessionWithAttendee.attendee_id,
 					},
 					{
 						meeting_info: meetingInfo,
@@ -678,7 +700,7 @@ module.exports = class MenteesHelper {
 			requesterId: userId,
 			roles: roles,
 			requesterOrganizationCode: organizationCode,
-			tenantCode: { [Op.in]: [tenantCode, defaults.tenantCode] },
+			tenantCode: tenantCode,
 		})
 
 		if (defaultRuleFilter.error && defaultRuleFilter.error.missingField) {
@@ -705,7 +727,8 @@ module.exports = class MenteesHelper {
 				common.sessionModelName,
 				'mentor_organization_id',
 				[],
-				[tenantCode]
+				tenantCode,
+				true
 			)
 		}
 
@@ -858,7 +881,8 @@ module.exports = class MenteesHelper {
 					common.sessionModelName,
 					'mentor_organization_id',
 					[],
-					[tenantCode]
+					tenantCode,
+					true
 				)
 				sessionDetails.rows = await this.sessionMentorDetails(sessionDetails.rows, tenantCode)
 				sessionDetails.rows = sessionDetails.rows.map((r) => ({ ...r, is_enrolled: true }))
@@ -1397,7 +1421,6 @@ module.exports = class MenteesHelper {
 			const filter_type = filterType !== '' ? filterType : common.MENTOR_ROLE
 
 			let organization_codes = []
-			let tenantCodes = []
 			let organizationInfo = []
 			const organizations = await getOrgIdAndEntityTypes.getOrganizationIdBasedOnPolicy(
 				tokenInformation.id,
@@ -1410,7 +1433,6 @@ module.exports = class MenteesHelper {
 
 			if (organizations && organizations.result.organizationInfo?.length > 0) {
 				organization_codes = organizations.result.organizationCodes
-				tenantCodes = organizations.result.tenantCodes
 
 				organizationInfo = organizations.result.organizationInfo
 				if (organizationInfo.length > 1) {
@@ -1437,8 +1459,7 @@ module.exports = class MenteesHelper {
 					defaults.orgCode ? defaults.orgCode : '',
 					modelName,
 					{},
-					tenantCodes,
-					defaults.tenantCode ? defaults.tenantCode : ''
+					tenantCode
 				)
 				if (getEntityTypesWithEntities.success && getEntityTypesWithEntities.result) {
 					let entityTypesWithEntities = getEntityTypesWithEntities.result
@@ -1492,15 +1513,17 @@ module.exports = class MenteesHelper {
 				additionalProjectionString = queryParams.fields
 				delete queryParams.fields
 			}
-			let organization_ids = []
 
+			// Parse organization codes from query parameters
+			let organization_codes = []
+			if (queryParams.hasOwnProperty('organization_ids')) {
+				organization_codes = queryParams['organization_ids'].split(',')
+			}
+
+			// Extract sort parameters
 			const [sortBy, order] = ['name'].includes(queryParams.sort_by)
 				? [queryParams.sort_by, queryParams.order || 'ASC']
 				: [false, 'ASC']
-
-			if (queryParams.hasOwnProperty('organization_ids')) {
-				organization_ids = queryParams['organization_ids'].split(',')
-			}
 
 			const query = utils.processQueryParametersWithExclusions(queryParams)
 			const userExtensionModelName = await menteeQueries.getModelName()
@@ -1518,7 +1541,7 @@ module.exports = class MenteesHelper {
 					connectedQuery,
 					searchText,
 					queryParams.mentorId ? queryParams.mentorId : userId,
-					organization_ids,
+					organization_codes,
 					[], // roles can be passed if needed
 					tenantCode
 				)
@@ -1556,21 +1579,13 @@ module.exports = class MenteesHelper {
 					responseCode: 'CLIENT_ERROR',
 				})
 
-			let validationData = await entityTypeCache.getEntityTypesAndEntitiesWithCache(
-				{
-					status: common.ACTIVE_STATUS,
-					model_names: { [Op.overlap]: [userExtensionModelName] },
-				},
+			const validationData = await entityTypeCache.getEntityTypesAndEntitiesForModel(
+				userExtensionModelName,
 				tenantCode,
-				organizationCode,
-				userExtensionModelName
+				organizationCode
 			)
 
-			let filteredQuery = utils.validateAndBuildFilters(
-				query,
-				JSON.parse(JSON.stringify(validationData)),
-				userExtensionModelName
-			)
+			let filteredQuery = utils.validateAndBuildFilters(query, validationData)
 
 			const emailIds = []
 			const searchTextArray = searchText ? searchText.split(',') : []
@@ -1585,7 +1600,7 @@ module.exports = class MenteesHelper {
 			const saasFilter = await this.filterMenteeListBasedOnSaasPolicy(
 				userId,
 				isAMentor,
-				organization_ids,
+				organization_codes,
 				tenantCode,
 				organizationCode
 			)
@@ -1633,18 +1648,15 @@ module.exports = class MenteesHelper {
 			extensionDetails.data = await Promise.all(
 				extensionDetails.data.map(async (user) => {
 					let decryptedEmail = null
-					// Safely decrypt email with error handling
 					if (user.email) {
 						try {
 							decryptedEmail = await emailEncryption.decrypt(user.email)
 						} catch (decryptError) {
-							// Keep original email or set to null if decryption fails
 							decryptedEmail = null
 						}
 					}
 
 					let imageUrl = null
-					// Safely get downloadable URL for image with error handling
 					if (user.image) {
 						try {
 							imageUrl = (await utils.getDownloadableUrl(user.image)) ?? null
@@ -1667,21 +1679,21 @@ module.exports = class MenteesHelper {
 			// Step 5: Process entity types (reuse organizationIds) with error handling
 			if (extensionDetails.data.length > 0) {
 				try {
+					const organizationCodes = uniqueOrgs.map((org) => org.organization_code).filter(Boolean)
 					const processedData = await entityTypeService.processEntityTypesToAddValueLabels(
 						extensionDetails.data,
-						organizationIds,
+						organizationCodes,
 						userExtensionModelName,
-						'organization_id',
+						'organization_code',
 						[],
-						[tenantCode] // Pass tenantCode to the entity processing service
+						tenantCode
 					)
 					if (Array.isArray(processedData)) {
 						extensionDetails.data = processedData
-					} else {
-						// Keep original data if processing fails
 					}
 				} catch (entityError) {
-					// Keep original data if processing fails
+					console.error('Error processing entity types:', entityError)
+					throw entityError
 				}
 			}
 
@@ -1713,14 +1725,14 @@ module.exports = class MenteesHelper {
 				message: 'MENTEE_LIST',
 				result: {
 					data: extensionDetails.data,
-					count: queryParams.connected_mentees === 'true' ? connectedMenteesCount : extensionDetails.count,
+					count: extensionDetails.count,
 				},
 			})
 		} catch (error) {
 			throw error
 		}
 	}
-	static async filterMenteeListBasedOnSaasPolicy(userId, isAMentor, organization_ids = [], tenantCode, orgCode) {
+	static async filterMenteeListBasedOnSaasPolicy(userId, isAMentor, organizationCodes = [], tenantCode, orgCode) {
 		try {
 			// let extensionColumns = isAMentor ? await mentorQueries.getColumns() : await menteeQueries.getColumns()
 			// // check for external_mentee_visibility else fetch external_mentor_visibility
@@ -1732,13 +1744,13 @@ module.exports = class MenteesHelper {
 			const userPolicyDetails = isAMentor
 				? await mentorQueries.getMentorExtension(
 						userId,
-						['external_mentee_visibility', 'organization_id'],
+						['external_mentee_visibility', 'organization_id', 'organization_code'],
 						false,
 						tenantCode
 				  )
 				: await menteeQueries.getMenteeExtension(
 						userId,
-						['external_mentee_visibility', 'organization_id'],
+						['external_mentee_visibility', 'organization_id', 'organization_code'],
 						false,
 						tenantCode
 				  )
@@ -1784,12 +1796,19 @@ module.exports = class MenteesHelper {
 			}
 
 			let filter = ''
-			// searching for specific organization
-			let additionalFilter = ``
-			if (organization_ids.length !== 0) {
-				additionalFilter = `AND "organization_id" in (${organization_ids.map((id) => `'${id}'`).join(',')}) `
+			let additionalFilter = ''
+
+			if (organizationCodes.length !== 0) {
+				additionalFilter = `AND "organization_code" in (${organizationCodes
+					.map((code) => `'${code}'`)
+					.join(',')}) `
 			}
-			if (getOrgPolicy.external_mentee_visibility_policy && userPolicyDetails.organization_id) {
+			const requesterOrgCode = userPolicyDetails.organization_code
+			const requesterOrgId = userPolicyDetails.organization_id
+
+			// Important: visible_to_organizations stores organization IDs (from related_orgs), not codes
+			// So we must use organization_id when checking visible_to_organizations
+			if (getOrgPolicy?.external_mentee_visibility_policy && requesterOrgCode && requesterOrgId) {
 				const visibilityPolicy = getOrgPolicy.external_mentee_visibility_policy
 
 				// Filter user data based on policy
@@ -1799,7 +1818,7 @@ module.exports = class MenteesHelper {
 					 * if user external_mentor_visibility is current. He can only see his/her organizations mentors
 					 * so we will check mentor's organization_id and user organization_id are matching
 					 */
-					filter = `AND "organization_id" = '${userPolicyDetails.organization_id}'`
+					filter = `AND "organization_code" = '${requesterOrgCode}'`
 				} else if (visibilityPolicy === common.ASSOCIATED) {
 					/**
 					 * If user external_mentor_visibility is associated
@@ -1807,9 +1826,9 @@ module.exports = class MenteesHelper {
 					 */
 					filter =
 						additionalFilter +
-						`AND ( (:userOrgId = ANY("visible_to_organizations") AND "mentee_visibility" != 'CURRENT')`
+						`AND ( ('${requesterOrgId}' = ANY("visible_to_organizations") AND "mentee_visibility" != 'CURRENT')`
 
-					if (additionalFilter.length === 0) filter += ` OR organization_id = :userOrgId )`
+					if (additionalFilter.length === 0) filter += ` OR organization_code = '${requesterOrgCode}' )`
 					else filter += `)`
 				} else if (visibilityPolicy === common.ALL) {
 					/**
@@ -1818,7 +1837,7 @@ module.exports = class MenteesHelper {
 					 */
 					filter =
 						additionalFilter +
-						`AND (('${userPolicyDetails.organization_id}' = ANY("visible_to_organizations") AND "mentee_visibility" != 'CURRENT' ) OR "mentee_visibility" = 'ALL' OR "organization_id" = '${userPolicyDetails.organization_id}')`
+						`AND (('${requesterOrgId}' = ANY("visible_to_organizations") AND "mentee_visibility" != 'CURRENT' ) OR "mentee_visibility" = 'ALL' OR "organization_code" = '${requesterOrgCode}')`
 				}
 			}
 
@@ -2078,7 +2097,7 @@ module.exports = class MenteesHelper {
 						roles: roles,
 						requesterOrganizationCode: organizationCode,
 						data: cacheProfileDetails,
-						tenant_code: tenantCode,
+						tenantCode: tenantCode,
 					})
 					if (validateDefaultRules.error && validateDefaultRules.error.missingField) {
 						return responses.failureResponse({
@@ -2158,7 +2177,7 @@ module.exports = class MenteesHelper {
 					roles: roles,
 					requesterOrganizationCode: organizationCode,
 					data: requestedUserExtension,
-					tenant_code: tenantCode,
+					tenantCode: tenantCode,
 				})
 				if (validateDefaultRules.error && validateDefaultRules.error.missingField) {
 					return responses.failureResponse({
@@ -2291,6 +2310,9 @@ module.exports = class MenteesHelper {
 
 			// Get permissions for the details response
 			const userPermissions = await permissions.getPermissions(roles, tenantCode, organizationCode)
+			const requestedUserExtensionImage = requestedUserExtension.image
+				? await utils.getDownloadableUrl(requestedUserExtension.image)
+				: null
 
 			// Construct the final details response
 			const finalDetailsResponse = {
@@ -2298,7 +2320,7 @@ module.exports = class MenteesHelper {
 				...processDbResponse,
 				visible_to_organizations: requestedUserExtension.visible_to_organizations, // Add to match mentor read
 				settings: requestedUserExtension.settings, // Add settings to match mentor read
-				image: requestedUserExtension.image, // Keep original image (may already be downloadable URL)
+				image: requestedUserExtensionImage, // Keep original image (may already be downloadable URL)
 				displayProperties,
 				Permissions: userPermissions,
 			}

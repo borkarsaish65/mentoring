@@ -107,7 +107,7 @@ module.exports = class MentorsHelper {
 				requesterId: menteeUserId,
 				roles: roles,
 				requesterOrganizationCode: orgCode,
-				tenantCode: { [Op.in]: [tenantCode, defaults.tenantCode] },
+				tenantCode: tenantCode,
 			})
 
 			if (defaultRuleFilter.error && defaultRuleFilter.error.missingField) {
@@ -162,7 +162,8 @@ module.exports = class MentorsHelper {
 				common.sessionModelName,
 				'mentor_organization_id',
 				[],
-				[tenantCode]
+				tenantCode,
+				true
 			)
 
 			upcomingSessions.data = await this.sessionMentorDetails(upcomingSessions.data, tenantCode)
@@ -832,7 +833,7 @@ module.exports = class MentorsHelper {
 						roles: roles,
 						requesterOrganizationCode: orgCode,
 						data: requestedMentorExtension,
-						tenant_code: tenantCode,
+						tenantCode: tenantCode,
 					})
 					if (validateDefaultRules.error && validateDefaultRules.error.missingField) {
 						return responses.failureResponse({
@@ -926,7 +927,7 @@ module.exports = class MentorsHelper {
 					roles: roles,
 					requesterOrganizationCode: orgCode,
 					data: mentorExtension,
-					tenant_code: tenantCode,
+					tenantCode: tenantCode,
 				})
 				if (validateDefaultRules.error && validateDefaultRules.error.missingField) {
 					return responses.failureResponse({
@@ -1098,6 +1099,8 @@ module.exports = class MentorsHelper {
 
 			// Construct the final profile response (INCLUDE sessions_attended for read endpoint)
 			const totalSessionsAttended = await sessionAttendeesQueries.countEnrolledSessions(id, tenantCode)
+
+			const mentorImage = mentorExtension.image ? await utils.getDownloadableUrl(mentorExtension.image) : null
 			const finalProfile = {
 				user_id: id, // Add user_id to match mentee read response
 				...mentorExtension,
@@ -1108,7 +1111,7 @@ module.exports = class MentorsHelper {
 				sessions_hosted: totalSessionHosted,
 				visible_to_organizations: mentorExtension.visible_to_organizations, // Add to match mentee read
 				settings: mentorExtension.settings, // Add settings to match mentee read
-				image: mentorExtension.image, // Keep original image (may already be downloadable URL)
+				image: mentorImage, // Keep original image (may already be downloadable URL)
 				sessions_attended: totalSessionsAttended, // Add sessions_attended
 				profile_mandatory_fields: processDbResponse.profile_mandatory_fields, // Ensure not overwritten
 				organization: mentorExtension.organization, // Ensure not overwritten
@@ -1278,7 +1281,7 @@ module.exports = class MentorsHelper {
 				if (queryParams.hasOwnProperty(key) & ((key === 'email') | (key === 'name'))) {
 					userServiceQueries[key] = queryParams[key]
 				}
-				if (queryParams.hasOwnProperty(key) & (key === 'organization_codes')) {
+				if (queryParams.hasOwnProperty(key) & (key === 'organization_ids')) {
 					organization_codes = queryParams[key].split(',')
 				}
 
@@ -1375,7 +1378,7 @@ module.exports = class MentorsHelper {
 				requesterId: queryParams.menteeId ? queryParams.menteeId : userId,
 				roles: roles,
 				requesterOrganizationCode: orgCode,
-				tenantCode: { [Op.in]: [tenantCode, defaults.tenantCode] },
+				tenantCode: tenantCode,
 			})
 
 			if (defaultRuleFilter.error && defaultRuleFilter.error.missingField) {
@@ -1516,7 +1519,7 @@ module.exports = class MentorsHelper {
 					userExtensionsModelName, // Use UserExtension model name for entity processing
 					'organization_code',
 					[], // Empty array means process ALL entity types for this model
-					[tenantCode]
+					tenantCode
 				)
 			}
 
@@ -1626,7 +1629,7 @@ module.exports = class MentorsHelper {
 
 					filter =
 						additionalFilter +
-						`AND ( ('${userPolicyDetails.organization_code}' = ANY("visible_to_organizations") AND "mentor_visibility" != 'CURRENT')`
+						`AND ( ('${userPolicyDetails.organization_id}' = ANY("visible_to_organizations") AND "mentor_visibility" != 'CURRENT')`
 
 					if (additionalFilter.length === 0)
 						filter += ` OR organization_code = '${userPolicyDetails.organization_code}' )`
@@ -1638,7 +1641,7 @@ module.exports = class MentorsHelper {
 					 */
 					filter =
 						additionalFilter +
-						`AND (('${userPolicyDetails.organization_code}' = ANY("visible_to_organizations") AND "mentor_visibility" != 'CURRENT' ) OR "mentor_visibility" = 'ALL' OR "organization_code" = '${userPolicyDetails.organization_code}')`
+						`AND (('${userPolicyDetails.organization_id}' = ANY("visible_to_organizations") AND "mentor_visibility" != 'CURRENT' ) OR "mentor_visibility" = 'ALL' OR "organization_code" = '${userPolicyDetails.organization_code}')`
 				}
 			}
 
@@ -1739,20 +1742,20 @@ module.exports = class MentorsHelper {
 					}
 				}
 				item.is_assigned = item.mentor_id !== item.created_by
+				// Normalize org code from enriched organization object for entity type resolution
+				item.organization_code = item.organization?.organization_code || null
 			})
 
 			// Extract organization codes for entity processing
-			const uniqueOrgIds = [
-				...new Set(sessionDetails.rows.map((obj) => obj.organization?.organization_code).filter(Boolean)),
-			]
+			const uniqueOrgCodes = [...new Set(sessionDetails.rows.map((obj) => obj.organization_code).filter(Boolean))]
 
 			sessionDetails.rows = await entityTypeService.processEntityTypesToAddValueLabels(
 				sessionDetails.rows,
-				uniqueOrgIds,
+				uniqueOrgCodes,
 				common.sessionModelName,
-				'mentor_organization_id',
+				'organization_code',
 				[],
-				[tenantCode]
+				tenantCode
 			)
 
 			return responses.successResponse({
