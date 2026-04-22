@@ -71,8 +71,19 @@ services:
       timeout: 5s
       retries: 5
 
+  mock-bbb:
+    image: node:20-alpine
+    volumes:
+      - ../src/:/var/src
+    working_dir: /var/src
+    command: node integration-tests-new/mocks/bbb-mock-server.js
+    ports:
+      - '8190:8190'
+    networks:
+      - elevate_net
+
   mentoring:
-    build: '../' 
+    build: '../'
     image: elevate/mentoring:2.4
     volumes:
       - ../src/:/var/src
@@ -93,6 +104,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      mock-bbb:
+        condition: service_started
     networks:
       - elevate_net
     env_file:

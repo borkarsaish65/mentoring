@@ -342,7 +342,7 @@
 							"chat_enabled": { "type": "boolean" }
 						}
 					},
-					"image": { "type": "string" },
+					"image": { "type": ["string", "null"] },
 					"gender": {
 						"type": "null"
 					},
@@ -355,7 +355,7 @@
 					"tenant_code": {
 						"type": "string"
 					},
-					"user_name": {
+					"username": {
 						"type": "null"
 					},
 					"created_at": {
