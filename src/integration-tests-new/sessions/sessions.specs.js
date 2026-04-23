@@ -79,7 +79,7 @@ describe('sessions endpoints generated from api-doc.yaml', () => {
 		test('POST /mentoring/v1/sessions/enroll/{sessionId} - should return 200 on successful enrollment', async () => {
 			const url = `/mentoring/v1/sessions/enroll/${createdSessionId}`
 			let req = request(BASE).post(url)
-			req = req.set('x-auth-token', menteeDetails.token).set('timezone', 'Asia/Calcutta') // Use mentee's token and add timezone // Make the API call
+			req = req.set('x-auth-token', menteeDetails.token).set('timezone', 'Asia/Calcutta')
 			const res = await req
 			expect(res.status).toBe(201)
 			// validate response schema
@@ -96,7 +96,7 @@ describe('sessions endpoints generated from api-doc.yaml', () => {
 		test('POST /mentoring/v1/sessions/unenroll/{sessionId} - should return 200 on successful unenrollment', async () => {
 			const url = `/mentoring/v1/sessions/unEnroll/${createdSessionId}` // Corrected to camelCase 'unEnroll'
 			let req = request(BASE).post(url)
-			req = req.set('x-auth-token', menteeDetails.token) // Use mentee's token to unenroll // Make the API call
+			req = req.set('x-auth-token', menteeDetails.token)
 			const res = await req
 			expect(res.status).toBe(202)
 			// validate response schema

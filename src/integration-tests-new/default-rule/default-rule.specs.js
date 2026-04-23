@@ -7,7 +7,6 @@ const schemas = require('./schemas/default-rule.schemas.json')
 
 let adminDetails = null
 let testEntityTypeValue = null
-let createdRuleId = null
 
 beforeAll(async () => {
 	adminDetails = await commonHelper.adminLogin()
@@ -50,8 +49,6 @@ describe('default-rule endpoints generated from api-doc.yaml', () => {
 				.set('Content-Type', 'application/json')
 
 			const res = await req
-			expect(res.status).toBe(201)
-			createdRuleId = res.body.result.id // Save the ID for update/delete tests
 			expect(res.status).toBe(201)
 			// validate response schema
 			expect(res.body).toMatchSchema(schemas['POST_mentoring_v1_default-rule_create'])
@@ -174,4 +171,8 @@ describe('default-rule endpoints generated from api-doc.yaml', () => {
 			expect(res.body).toMatchSchema(schemas['DELETE_mentoring_v1_default-rule_delete_id'])
 		})
 	})
+})
+
+afterAll(async () => {
+	await global.db.query('DELETE FROM default_rules')
 })
