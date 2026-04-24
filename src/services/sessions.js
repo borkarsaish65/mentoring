@@ -687,16 +687,19 @@ module.exports = class SessionsHelper {
 				userId = bodyData.mentor_id
 			}
 
-			let mentorExtension =
-				(await cacheHelper.mentor.getCacheOnly(tenantCode, userId)) ??
-				(await mentorExtensionQueries.getMentorExtension(userId, [], false, tenantCode))
-			if (!mentorExtension) {
-				return responses.failureResponse({
-					message: 'INVALID_PERMISSION',
-					statusCode: httpStatusCode.bad_request,
-					responseCode: 'CLIENT_ERROR',
-				})
+			if (method !== common.DELETE_METHOD) {
+				let mentorExtension =
+					(await cacheHelper.mentor.getCacheOnly(tenantCode, userId)) ??
+					(await mentorExtensionQueries.getMentorExtension(userId, [], false, tenantCode))
+				if (!mentorExtension) {
+					return responses.failureResponse({
+						message: 'INVALID_PERMISSION',
+						statusCode: httpStatusCode.bad_request,
+						responseCode: 'CLIENT_ERROR',
+					})
+				}
 			}
+
 			let isEditingAllowedAtAnyTime = process.env.SESSION_EDIT_WINDOW_MINUTES == 0
 
 			const currentDate = moment.utc()
