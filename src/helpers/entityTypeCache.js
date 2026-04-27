@@ -31,6 +31,19 @@ async function getEntityTypesAndEntitiesWithCache(originalFilter, tenantCode, or
 	const orgFilter = { [Op.in]: orgCodeArray.filter(Boolean) }
 
 	try {
+		// If no modelName provided, use direct database query with user-centric approach
+		if (!modelName) {
+			// Step 1: ALWAYS fetch from user tenant and org codes
+			let userFilter = {
+				...originalFilter,
+				organization_code: orgFilter,
+			}
+			const userResults = await entityTypeQueries.findUserEntityTypesAndEntities(userFilter, tenantCode)
+			let dbResult = userResults ? [...userResults] : []
+
+			return dbResult || []
+		}
+
 		// Get entity values from filter for cache checking
 		const entityValues = originalFilter.value && originalFilter.value[Op.in] ? originalFilter.value[Op.in] : []
 
