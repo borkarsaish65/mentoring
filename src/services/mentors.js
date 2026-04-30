@@ -1478,8 +1478,6 @@ module.exports = class MentorsHelper {
 			}
 			const organizations = Array.from(uniqueOrganizations.values())
 
-			const userDetails = await userRequests.getUserDetailedListUsingCache(mentorIds, tenantCode)
-
 			const orgMap = {}
 			if (organizations.length > 0) {
 				await Promise.all(
@@ -1525,33 +1523,30 @@ module.exports = class MentorsHelper {
 				)
 			}
 
-			// Create a map from userDetails.result for quick lookups
-			const userDetailsMap = new Map(
-				userDetails.result.map((userDetail) => [String(userDetail.user_id), userDetail])
-			)
-
 			// Map over extensionDetails.data to merge with the corresponding userDetail
-			extensionDetails.data = extensionDetails.data
-				.map((extensionDetail) => {
-					const user_id = `${extensionDetail.user_id}`
-					const isConnected = connectedMentorIds.has(extensionDetail.user_id)
+			extensionDetails.data = (
+				await Promise.all(
+					extensionDetails.data.map(async (extensionDetail) => {
+						const isConnected = connectedMentorIds.has(extensionDetail.user_id)
 
-					if (userDetailsMap.has(user_id)) {
-						let userDetail = userDetailsMap.get(user_id)
 						// Merge userDetail with extensionDetail, prioritize extensionDetail properties
-						// image is explicitly taken from userDetail as it holds the downloadable URL
-						const downloadableImage = userDetail.image
-						userDetail = { ...userDetail, ...extensionDetail, is_connected: isConnected }
-						userDetail.image = downloadableImage ?? null
+						let userDetail = { ...extensionDetail, is_connected: isConnected }
+						if (userDetail.image && userDetail.image !== '') {
+							try {
+								userDetail.image = await utils.getDownloadableUrl(userDetail.image)
+							} catch (error) {
+								console.error('Failed to get downloadable URL for mentor image:', error)
+								userDetail.image = null
+							}
+						}
 						delete userDetail.user_id
 						delete userDetail.mentor_visibility
 						delete userDetail.mentee_visibility
 						delete userDetail.meta
 						return userDetail
-					}
-					return null
-				})
-				.filter((extensionDetail) => extensionDetail !== null)
+					})
+				)
+			).filter((extensionDetail) => extensionDetail !== null)
 			if (directory) {
 				let foundKeys = {}
 				let result = []
