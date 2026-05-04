@@ -357,9 +357,9 @@ const getAllowFilteringEntityTypes = async (tenantCode) => {
 			return []
 		}
 
-		// Use combination of given tenant + default tenant with default org code
-		// Entity types with allow_filtering=true are global configurations from default org
-		// but support tenant-specific customizations through tenant code combination
+		// Fetch allow_filtering entity types across all orgs for this tenant.
+		// All orgs can define filterable entity types; including them ensures
+		// materialized view columns cover non-default org fields too.
 		const entities = await entityTypeQueries.findAllEntityTypes(
 			null, // no org filter — include all orgs under the tenant
 			tenantCode,
