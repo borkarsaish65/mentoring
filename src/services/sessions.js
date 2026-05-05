@@ -687,7 +687,7 @@ module.exports = class SessionsHelper {
 				userId = bodyData.mentor_id
 			}
 
-			if (method !== common.DELETE_METHOD) {
+			if (method !== common.DELETE_METHOD && (sessionDetail.mentor_id || bodyData.mentor_id)) {
 				let mentorExtension =
 					(await cacheHelper.mentor.getCacheOnly(tenantCode, userId)) ??
 					(await mentorExtensionQueries.getMentorExtension(userId, [], false, tenantCode))
