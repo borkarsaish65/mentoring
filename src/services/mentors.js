@@ -1524,19 +1524,29 @@ module.exports = class MentorsHelper {
 			}
 
 			// Map over extensionDetails.data to merge with the corresponding userDetail
-			extensionDetails.data = extensionDetails.data
-				.map((extensionDetail) => {
-					const isConnected = connectedMentorIds.has(extensionDetail.user_id)
+			extensionDetails.data = (
+				await Promise.all(
+					extensionDetails.data.map(async (extensionDetail) => {
+						const isConnected = connectedMentorIds.has(extensionDetail.user_id)
 
-					// Merge userDetail with extensionDetail, prioritize extensionDetail properties
-					let userDetail = { ...extensionDetail, is_connected: isConnected }
-					delete userDetail.user_id
-					delete userDetail.mentor_visibility
-					delete userDetail.mentee_visibility
-					delete userDetail.meta
-					return userDetail
-				})
-				.filter((extensionDetail) => extensionDetail !== null)
+						// Merge userDetail with extensionDetail, prioritize extensionDetail properties
+						let userDetail = { ...extensionDetail, is_connected: isConnected }
+						if (userDetail.image && userDetail.image !== '') {
+							try {
+								userDetail.image = await utils.getDownloadableUrl(userDetail.image)
+							} catch (error) {
+								console.error('Failed to get downloadable URL for mentor image:', error)
+								userDetail.image = null
+							}
+						}
+						delete userDetail.user_id
+						delete userDetail.mentor_visibility
+						delete userDetail.mentee_visibility
+						delete userDetail.meta
+						return userDetail
+					})
+				)
+			).filter((extensionDetail) => extensionDetail !== null)
 			if (directory) {
 				let foundKeys = {}
 				let result = []
