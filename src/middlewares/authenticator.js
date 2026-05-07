@@ -188,7 +188,10 @@ module.exports = async function (req, res, next) {
 
 					if (!overrideOrg) {
 						throw responses.failureResponse({
-							message: 'INVALID_ORG_CODE_FOR_TENANT',
+							message: {
+								key: 'INVALID_ORG_CODE_FOR_TENANT',
+								interpolation: { orgCodeHeader: orgCodeHeaderName },
+							},
 							statusCode: httpStatusCode.bad_request,
 							responseCode: 'CLIENT_ERROR',
 						})
@@ -218,7 +221,13 @@ module.exports = async function (req, res, next) {
 
 					if (!overrideOrg) {
 						throw responses.failureResponse({
-							message: 'INVALID_ORG_OR_TENANT_CODE',
+							message: {
+								key: 'INVALID_ORG_OR_TENANT_CODE',
+								interpolation: {
+									orgCodeHeader: orgCodeHeaderName,
+									tenantCodeHeader: tenantCodeHeaderName,
+								},
+							},
 							statusCode: httpStatusCode.bad_request,
 							responseCode: 'CLIENT_ERROR',
 						})
