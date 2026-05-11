@@ -107,8 +107,12 @@ jobs:
         if [ "$PROD_RESPONSE" -eq 200 ]; then
           echo "Error: Production tag $PROD_VERSION already exists on Docker Hub"
           exit 1
+        elif [ "$PROD_RESPONSE" -eq 404 ]; then
+          echo "Production tag $PROD_VERSION not found on Docker Hub — safe to promote"
+        else
+          echo "Error: Unexpected HTTP $PROD_RESPONSE from Docker Hub production tag check; aborting to fail safe"
+          exit 1
         fi
-        echo "Production tag $PROD_VERSION not found on Docker Hub — safe to promote"
 
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v3

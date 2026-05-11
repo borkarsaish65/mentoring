@@ -85,9 +85,35 @@ jobs:
 
           if [ -n "$LATEST_RC" ]; then
             echo "Latest RC tag: $LATEST_RC"
-            BASE=$(echo "$LATEST_RC" | sed 's/-rc\.[0-9]*$//')
-            RC_NUM=$(echo "$LATEST_RC" | grep -oE '[0-9]+$')
-            VERSION="${BASE}-rc.$((RC_NUM + 1))"
+            EXISTING_BASE=$(echo "$LATEST_RC" | sed 's/-rc\.[0-9]*$//')
+
+            # Compute the desired base version from latest stable tag + BUMP
+            LATEST_STABLE=$(git tag --sort=-v:refname | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || true)
+            if [ -z "$LATEST_STABLE" ]; then
+              case "$BUMP" in
+                major) DESIRED_BASE="1.0.0" ;;
+                minor) DESIRED_BASE="0.1.0" ;;
+                *)     DESIRED_BASE="0.0.1" ;;
+              esac
+            else
+              MAJOR=$(echo "$LATEST_STABLE" | cut -d. -f1)
+              MINOR=$(echo "$LATEST_STABLE" | cut -d. -f2)
+              PATCH=$(echo "$LATEST_STABLE" | cut -d. -f3)
+              case "$BUMP" in
+                major) DESIRED_BASE="$((MAJOR + 1)).0.0" ;;
+                minor) DESIRED_BASE="${MAJOR}.$((MINOR + 1)).0" ;;
+                *)     DESIRED_BASE="${MAJOR}.${MINOR}.$((PATCH + 1))" ;;
+              esac
+            fi
+
+            if [ "$EXISTING_BASE" == "$DESIRED_BASE" ]; then
+              # Same base — increment RC number
+              RC_NUM=$(echo "$LATEST_RC" | grep -oE '[0-9]+$')
+              VERSION="${EXISTING_BASE}-rc.$((RC_NUM + 1))"
+            else
+              # Different bump level requested — start a new RC series
+              VERSION="${DESIRED_BASE}-rc.1"
+            fi
           else
             # No existing RC — compute next release version from latest release tag and add -rc.1
             LATEST=$(git tag --sort=-v:refname | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || true)
