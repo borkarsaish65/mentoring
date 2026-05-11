@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       tag_version:
-        description: 'Docker image tag version (e.g., 3.3.11) — leave blank to auto-increment'
+        description: 'Docker image tag version (e.g., 3.4.0) — leave blank to auto-increment'
         required: false
         default: ''
       version_bump:
@@ -16,6 +16,11 @@ on:
           - minor
           - major
         default: patch
+      is_rc:
+        description: 'Tag this as a Release Candidate (e.g. 3.4.1-rc.1)'
+        required: false
+        type: boolean
+        default: false
       branch:
         description: 'Branch to build from (default: staging)'
         required: false
@@ -51,27 +56,59 @@ jobs:
       run: |
         INPUT="${{ github.event.inputs.tag_version }}"
         BUMP="${{ github.event.inputs.version_bump }}"
+        IS_RC="${{ github.event.inputs.is_rc }}"
 
         if [ -n "$INPUT" ]; then
-          # Manual version provided — strip leading "v" and validate
+          # Manual version — strip leading "v" and validate
           VERSION="${INPUT#v}"
-          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Error: tag_version must be in x.y.z format (e.g. 3.4.0)"
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$ ]]; then
+            echo "Error: tag_version must be x.y.z or x.y.z-rc.N (e.g. 3.4.0 or 3.4.0-rc.1)"
             exit 1
           fi
-        else
-          # Auto-increment from latest tag
-          LATEST=$(git tag --sort=-v:refname | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+        elif [ "$IS_RC" == "true" ]; then
+          # Auto-increment RC
+          # If an RC tag already exists, increment its RC number
+          LATEST_RC=$(git tag --sort=-v:refname | grep -E '^[0-9]+\.[0-9]+\.[0-9]+-rc\.[0-9]+$' | head -1)
 
+          if [ -n "$LATEST_RC" ]; then
+            echo "Latest RC tag: $LATEST_RC"
+            BASE=$(echo "$LATEST_RC" | sed 's/-rc\.[0-9]*$//')
+            RC_NUM=$(echo "$LATEST_RC" | grep -oE '[0-9]+$')
+            VERSION="${BASE}-rc.$((RC_NUM + 1))"
+          else
+            # No existing RC — compute next release version from latest release tag and add -rc.1
+            LATEST=$(git tag --sort=-v:refname | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+            if [ -z "$LATEST" ]; then
+              case "$BUMP" in
+                major) BASE="1.0.0" ;;
+                minor) BASE="0.1.0" ;;
+                *)     BASE="0.0.1" ;;
+              esac
+            else
+              echo "Latest release tag: $LATEST"
+              MAJOR=$(echo "$LATEST" | cut -d. -f1)
+              MINOR=$(echo "$LATEST" | cut -d. -f2)
+              PATCH=$(echo "$LATEST" | cut -d. -f3)
+              case "$BUMP" in
+                major) BASE="$((MAJOR + 1)).0.0" ;;
+                minor) BASE="${MAJOR}.$((MINOR + 1)).0" ;;
+                *)     BASE="${MAJOR}.${MINOR}.$((PATCH + 1))" ;;
+              esac
+            fi
+            VERSION="${BASE}-rc.1"
+          fi
+          echo "Auto-incremented RC version: $VERSION"
+        else
+          # Auto-increment regular release
+          LATEST=$(git tag --sort=-v:refname | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
           if [ -z "$LATEST" ]; then
-            echo "No existing tags found — starting from scratch"
             case "$BUMP" in
               major) VERSION="1.0.0" ;;
               minor) VERSION="0.1.0" ;;
               *)     VERSION="0.0.1" ;;
             esac
           else
-            echo "Latest tag: $LATEST"
+            echo "Latest release tag: $LATEST"
             MAJOR=$(echo "$LATEST" | cut -d. -f1)
             MINOR=$(echo "$LATEST" | cut -d. -f2)
             PATCH=$(echo "$LATEST" | cut -d. -f3)
