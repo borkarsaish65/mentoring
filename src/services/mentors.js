@@ -29,6 +29,7 @@ const connectionQueries = require('@database/queries/connection')
 const communicationHelper = require('@helpers/communications')
 const searchConfig = require('@root/config.json')
 const cacheHelper = require('@generics/cacheHelper')
+const getOrgIdAndEntityTypes = require('@helpers/getOrgIdAndEntityTypewithEntitiesBasedOnPolicy')
 module.exports = class MentorsHelper {
 	/**
 	 * upcomingSessions.
@@ -83,6 +84,15 @@ module.exports = class MentorsHelper {
 					statusCode: httpStatusCode.bad_request,
 					responseCode: 'CLIENT_ERROR',
 				})
+			const policyOrgs = await getOrgIdAndEntityTypes.getOrganizationIdBasedOnPolicy(
+				menteeUserId,
+				orgCode,
+				common.SESSION,
+				tenantCode
+			)
+			const sessionOrgCodes =
+				policyOrgs?.result?.organizationCodes?.length > 0 ? policyOrgs.result.organizationCodes : [orgCode]
+
 			let validationData = await entityTypeCache.getEntityTypesAndEntitiesWithCache(
 				{
 					status: common.ACTIVE_STATUS,
@@ -90,7 +100,7 @@ module.exports = class MentorsHelper {
 					model_names: { [Op.contains]: [sessionModelName] },
 				},
 				tenantCode,
-				orgCode,
+				sessionOrgCodes,
 				sessionModelName
 			)
 

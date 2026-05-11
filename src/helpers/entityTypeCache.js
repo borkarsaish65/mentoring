@@ -18,21 +18,25 @@ const common = require('@constants/common')
  * @returns {JSON} - Entity types with entities
  */
 async function getEntityTypesAndEntitiesWithCache(originalFilter, tenantCode, orgCode, modelName = null) {
+	let defaults = null
+	try {
+		defaults = await getDefaults()
+	} catch (error) {
+		console.error('Failed to get defaults for getEntityTypesAndEntitiesWithCache:', error.message)
+	}
+	const orgCodeArray = Array.isArray(orgCode) ? [...orgCode] : [orgCode]
+	if (defaults?.orgCode && !orgCodeArray.includes(defaults.orgCode)) {
+		orgCodeArray.push(defaults.orgCode)
+	}
+	const orgFilter = { [Op.in]: orgCodeArray.filter(Boolean) }
+
 	try {
 		// If no modelName provided, use direct database query with user-centric approach
 		if (!modelName) {
-			// Get defaults internally for database query
-			let defaults = null
-			try {
-				defaults = await getDefaults()
-			} catch (error) {
-				console.error('Failed to get defaults for getEntityTypesAndEntitiesWithCache:', error.message)
-			}
-
 			// Step 1: ALWAYS fetch from user tenant and org codes
 			let userFilter = {
 				...originalFilter,
-				organization_code: orgCode,
+				organization_code: orgFilter,
 			}
 			const userResults = await entityTypeQueries.findUserEntityTypesAndEntities(userFilter, tenantCode)
 			let dbResult = userResults ? [...userResults] : []
@@ -99,20 +103,11 @@ async function getEntityTypesAndEntitiesWithCache(originalFilter, tenantCode, or
 
 		// Cache miss - fetch from database with user-centric approach
 
-		// Get defaults internally for database query
-		let defaults = null
-		try {
-			defaults = await getDefaults()
-		} catch (error) {
-			console.error('Failed to get defaults for getEntityTypesAndEntitiesWithCache:', error.message)
-		}
-
 		let dbResult = null
 		try {
-			// First try with user tenant and org codes
 			let userFilter = {
 				...originalFilter,
-				organization_code: orgCode,
+				organization_code: orgFilter,
 			}
 			dbResult = await entityTypeQueries.findUserEntityTypesAndEntities(userFilter, tenantCode)
 		} catch (dbError) {
@@ -145,7 +140,7 @@ async function getEntityTypesAndEntitiesWithCache(originalFilter, tenantCode, or
 		try {
 			let userFilter = {
 				...originalFilter,
-				organization_code: orgCode,
+				organization_code: orgFilter,
 			}
 			return await entityTypeQueries.findUserEntityTypesAndEntities(userFilter, tenantCode)
 		} catch (fallbackError) {
