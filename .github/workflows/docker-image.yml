@@ -65,6 +65,10 @@ jobs:
             echo "Error: tag_version must be x.y.z or x.y.z-rc.N (e.g. 3.4.0 or 3.4.0-rc.1)"
             exit 1
           fi
+          # If is_rc is checked and no RC suffix was typed, append -rc.1
+          if [ "$IS_RC" == "true" ] && [[ ! "$VERSION" =~ -rc\.[0-9]+$ ]]; then
+            VERSION="${VERSION}-rc.1"
+          fi
         elif [ "$IS_RC" == "true" ]; then
           # Auto-increment RC
           # If an RC tag already exists, increment its RC number
