@@ -17,6 +17,7 @@ const notificationQueries = require('@database/queries/notificationTemplate')
 const kafkaCommunication = require('@generics/kafka-communication')
 const mentorExtensionQueries = require('@database/queries/mentorExtension')
 const cacheHelper = require('@generics/cacheHelper')
+const getOrgIdAndEntityTypes = require('@helpers/getOrgIdAndEntityTypewithEntitiesBasedOnPolicy')
 
 module.exports = class ConnectionHelper {
 	/**
@@ -442,6 +443,18 @@ module.exports = class ConnectionHelper {
 					responseCode: 'CLIENT_ERROR',
 				})
 
+			const [mentorPolicyOrgs, menteePolicyOrgs] = await Promise.all([
+				getOrgIdAndEntityTypes.getOrganizationIdBasedOnPolicy(userId, orgCode, common.MENTOR_ROLE, tenantCode),
+				getOrgIdAndEntityTypes.getOrganizationIdBasedOnPolicy(userId, orgCode, common.MENTEE_ROLE, tenantCode),
+			])
+			const connectionOrgCodes = [
+				...new Set([
+					...(mentorPolicyOrgs?.result?.organizationCodes || []),
+					...(menteePolicyOrgs?.result?.organizationCodes || []),
+				]),
+			]
+			if (connectionOrgCodes.length === 0) connectionOrgCodes.push(orgCode)
+
 			// Fetch validation data for filtering connections (excluding roles) - using cache with fallback
 			const validationData = await entityTypeCache.getEntityTypesAndEntitiesWithCache(
 				{
@@ -450,7 +463,7 @@ module.exports = class ConnectionHelper {
 					model_names: { [Op.contains]: [userExtensionsModelName] },
 				},
 				tenantCode,
-				orgCode,
+				connectionOrgCodes,
 				userExtensionsModelName
 			)
 

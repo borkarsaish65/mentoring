@@ -357,28 +357,12 @@ const getAllowFilteringEntityTypes = async (tenantCode) => {
 			return []
 		}
 
-		const defaults = await getDefaults()
-		if (!defaults.orgCode) {
-			return responses.failureResponse({
-				message: 'DEFAULT_ORG_CODE_NOT_SET',
-				statusCode: httpStatusCode.bad_request,
-				responseCode: 'CLIENT_ERROR',
-			})
-		}
-		if (!defaults.tenantCode) {
-			return responses.failureResponse({
-				message: 'DEFAULT_TENANT_CODE_NOT_SET',
-				statusCode: httpStatusCode.bad_request,
-				responseCode: 'CLIENT_ERROR',
-			})
-		}
-
-		// Use combination of given tenant + default tenant with default org code
-		// Entity types with allow_filtering=true are global configurations from default org
-		// but support tenant-specific customizations through tenant code combination
+		// Fetch allow_filtering entity types across all orgs for this tenant.
+		// All orgs can define filterable entity types; including them ensures
+		// materialized view columns cover non-default org fields too.
 		const entities = await entityTypeQueries.findAllEntityTypes(
-			defaults.orgCode, // Use default org code (global configurations)
-			tenantCode, // Tenant isolation: only current tenant
+			null, // no org filter — include all orgs under the tenant
+			tenantCode,
 			['id', 'value', 'label', 'data_type', 'organization_id', 'has_entities', 'model_names'],
 			{
 				allow_filtering: true,
