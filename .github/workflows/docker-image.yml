@@ -34,7 +34,7 @@ on:
 env:
   DOCKER_IMAGE_NAME: elevate-mentoring
   DOCKER_REGISTRY: docker.io
-  DOCKER_NAMESPACE: shikshalokamqa
+  DOCKER_NAMESPACE: borkarsaish65
 
 permissions:
   contents: write
