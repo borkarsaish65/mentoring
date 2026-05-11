@@ -29,6 +29,7 @@ const connectionQueries = require('@database/queries/connection')
 const communicationHelper = require('@helpers/communications')
 const searchConfig = require('@root/config.json')
 const cacheHelper = require('@generics/cacheHelper')
+const getOrgIdAndEntityTypes = require('@helpers/getOrgIdAndEntityTypewithEntitiesBasedOnPolicy')
 module.exports = class MentorsHelper {
 	/**
 	 * upcomingSessions.
@@ -83,6 +84,15 @@ module.exports = class MentorsHelper {
 					statusCode: httpStatusCode.bad_request,
 					responseCode: 'CLIENT_ERROR',
 				})
+			const policyOrgs = await getOrgIdAndEntityTypes.getOrganizationIdBasedOnPolicy(
+				menteeUserId,
+				orgCode,
+				common.SESSION,
+				tenantCode
+			)
+			const sessionOrgCodes =
+				policyOrgs?.result?.organizationCodes?.length > 0 ? policyOrgs.result.organizationCodes : [orgCode]
+
 			let validationData = await entityTypeCache.getEntityTypesAndEntitiesWithCache(
 				{
 					status: common.ACTIVE_STATUS,
@@ -90,7 +100,7 @@ module.exports = class MentorsHelper {
 					model_names: { [Op.contains]: [sessionModelName] },
 				},
 				tenantCode,
-				orgCode,
+				sessionOrgCodes,
 				sessionModelName
 			)
 
@@ -1524,19 +1534,29 @@ module.exports = class MentorsHelper {
 			}
 
 			// Map over extensionDetails.data to merge with the corresponding userDetail
-			extensionDetails.data = extensionDetails.data
-				.map((extensionDetail) => {
-					const isConnected = connectedMentorIds.has(extensionDetail.user_id)
+			extensionDetails.data = (
+				await Promise.all(
+					extensionDetails.data.map(async (extensionDetail) => {
+						const isConnected = connectedMentorIds.has(extensionDetail.user_id)
 
-					// Merge userDetail with extensionDetail, prioritize extensionDetail properties
-					let userDetail = { ...extensionDetail, is_connected: isConnected }
-					delete userDetail.user_id
-					delete userDetail.mentor_visibility
-					delete userDetail.mentee_visibility
-					delete userDetail.meta
-					return userDetail
-				})
-				.filter((extensionDetail) => extensionDetail !== null)
+						// Merge userDetail with extensionDetail, prioritize extensionDetail properties
+						let userDetail = { ...extensionDetail, is_connected: isConnected }
+						if (userDetail.image && userDetail.image !== '') {
+							try {
+								userDetail.image = await utils.getDownloadableUrl(userDetail.image)
+							} catch (error) {
+								console.error('Failed to get downloadable URL for mentor image:', error)
+								userDetail.image = null
+							}
+						}
+						delete userDetail.user_id
+						delete userDetail.mentor_visibility
+						delete userDetail.mentee_visibility
+						delete userDetail.meta
+						return userDetail
+					})
+				)
+			).filter((extensionDetail) => extensionDetail !== null)
 			if (directory) {
 				let foundKeys = {}
 				let result = []
