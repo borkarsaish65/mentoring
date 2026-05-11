@@ -687,13 +687,13 @@ module.exports = class SessionsHelper {
 				userId = bodyData.mentor_id
 			}
 
-			if (method !== common.DELETE_METHOD && (sessionDetail.mentor_id || bodyData.mentor_id)) {
-				let mentorExtension =
-					(await cacheHelper.mentor.getCacheOnly(tenantCode, userId)) ??
-					(await mentorExtensionQueries.getMentorExtension(userId, [], false, tenantCode))
+			if (method !== common.DELETE_METHOD && bodyData.mentor_id) {
+				const mentorExtension =
+					(await cacheHelper.mentor.getCacheOnly(tenantCode, bodyData.mentor_id)) ??
+					(await mentorExtensionQueries.getMentorExtension(bodyData.mentor_id, [], false, tenantCode))
 				if (!mentorExtension) {
 					return responses.failureResponse({
-						message: 'INVALID_PERMISSION',
+						message: 'MENTORS_NOT_FOUND',
 						statusCode: httpStatusCode.bad_request,
 						responseCode: 'CLIENT_ERROR',
 					})
