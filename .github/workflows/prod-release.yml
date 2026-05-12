@@ -42,6 +42,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
+        ref: ${{ steps.validate.outputs.rc_tag }}
         fetch-depth: 0
 
     - name: Check RC tag exists in repository
