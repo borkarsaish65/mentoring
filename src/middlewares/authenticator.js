@@ -521,6 +521,7 @@ const validRoles = new Set([
 	common.ORG_ADMIN_ROLE,
 	common.ADMIN_ROLE,
 	common.SESSION_MANAGER_ROLE,
+	common.TENANT_ADMIN_ROLE,
 ])
 
 async function keycloakPublicKeyAuthentication(token) {
