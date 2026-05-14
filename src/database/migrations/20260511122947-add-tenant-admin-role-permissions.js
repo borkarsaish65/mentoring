@@ -6,20 +6,29 @@ module.exports = {
 		const transaction = await queryInterface.sequelize.transaction()
 
 		try {
-			// Step 1: Get all unique tenant+org combinations from existing role_extensions
-			const [orgsByTenant] = await queryInterface.sequelize.query(
-				`SELECT DISTINCT tenant_code, organization_id, organization_code
-				FROM role_extensions
-				WHERE deleted_at IS NULL
-				ORDER BY tenant_code, organization_id`,
-				{ transaction }
+			// Step 1: Get all tenants from organization_extension restricted to the default org
+			const defaultOrgCode = process.env.DEFAULT_ORGANISATION_CODE
+			if (!defaultOrgCode) {
+				throw new Error('DEFAULT_ORGANISATION_CODE env variable is not set')
+			}
+
+			const [defaultOrgPerTenants] = await queryInterface.sequelize.query(
+				`SELECT DISTINCT oe.tenant_code, oe.organization_id, oe.organization_code
+				FROM organization_extension oe
+				INNER JOIN tenants t ON t.code = oe.tenant_code AND t.deleted_at IS NULL
+				WHERE oe.deleted_at IS NULL
+					AND oe.organization_code = :defaultOrgCode
+				ORDER BY oe.tenant_code, oe.organization_id`,
+				{ transaction, replacements: { defaultOrgCode } }
 			)
 
-			if (orgsByTenant.length === 0) {
-				console.log('No active tenant-org combinations found. Skipping role_extensions insert.')
+			if (defaultOrgPerTenants.length === 0) {
+				console.log(
+					'No active tenant-org combinations found in organization_extension. Skipping role_extensions insert.'
+				)
 			} else {
 				// Step 2: Insert tenant_admin into role_extensions for each tenant+org combination
-				const roleExtensionInserts = orgsByTenant.map((row) => ({
+				const roleExtensionInserts = defaultOrgPerTenants.map((row) => ({
 					title: 'tenant_admin',
 					label: 'Tenant Admin',
 					status: 'ACTIVE',
@@ -37,7 +46,7 @@ module.exports = {
 					ignoreDuplicates: true,
 				})
 
-				console.log(`Inserted tenant_admin role for ${roleExtensionInserts.length} tenant-org combinations`)
+				console.log(`Inserted tenant_admin role for ${defaultOrgPerTenants.length} active tenants`)
 			}
 
 			// Step 3: Copy all admin permissions except the admin module
